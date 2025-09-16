@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" compressor="vtkZLibDataCompressor">
+<!--This file was created by meshio v5.3.5-->
+<UnstructuredGrid>
+<Piece NumberOfPoints="7" NumberOfCells="6">
+<Points>
+<DataArray type="Float64" Name="Points" NumberOfComponents="3" format="binary">
+AQAAAACAAACoAAAAZQAAAA==eJybNRMETtozgMEDewlpYyBo3nNNBURfhovLtYHUVe6pLAHRN+HiG86C+Jl71I7/B4L7cHEQ2RAvsKtWHmTOY7h4SAxYvc2z6DQgeAYXPzcfbL7NLLB7XsLF/b3B7rEBABj+PJY=
+</DataArray>
+</Points>
+<Cells>
+<DataArray type="Int64" Name="connectivity" format="binary">
+AQAAAACAAABgAAAAHAAAAA==eJxjYIAARjSaCY1mRqNZ0GhWNJoNSgMABWgAJQ==
+</DataArray>
+<DataArray type="Int64" Name="offsets" format="binary">
+AQAAAACAAAAwAAAAGAAAAA==eJxjYoAAFijNBqU5oDQXlOaB0gADsAAr
+</DataArray>
+<DataArray type="Int64" Name="types" format="binary">
+AQAAAACAAAAwAAAADgAAAA==eJxjZoAAZiJpAAIoABM=
+</DataArray>
+</Cells>
+<PointData>
+<DataArray type="Int64" Name="node_id" format="binary">
+AQAAAACAAAA4AAAAGwAAAA==eJxjYIAARijNBKWZoTQLlGaF0mxQGgAB+AAW
+</DataArray>
+</PointData>
+<CellData>
+<DataArray type="Float64" Name="aperture" format="binary">
+AQAAAACAAAAwAAAAEQAAAA==eJybNRMEdtrPIpIGAKQCG1s=
+</DataArray>
+<DataArray type="Int64" Name="cell_id" format="binary">
+AQAAAACAAAAwAAAAGAAAAA==eJxjYIAARijNBKWZoTQLlGaF0gABSAAQ
+</DataArray>
+<DataArray type="Float64" Name="contact_traction" NumberOfComponents="2" format="binary">
+AQAAAACAAABgAAAADAAAAA==eJxjYKAtAAAAYAAB
+</DataArray>
+<DataArray type="Int64" Name="grid_dim" format="binary">
+AQAAAACAAAAwAAAADgAAAA==eJxjZIAARiJpAADYAAc=
+</DataArray>
+<DataArray type="Int64" Name="is_mortar" format="binary">
+AQAAAACAAAAwAAAADAAAAA==eJxjYCANAAAAMAAB
+</DataArray>
+<DataArray type="Int64" Name="mortar_side" format="binary">
+AQAAAACAAAAwAAAADAAAAA==eJxjYCANAAAAMAAB
+</DataArray>
+<DataArray type="Float64" Name="specific_volume" format="binary">
+AQAAAACAAAAwAAAAEQAAAA==eJybNRMEdtrPIpIGAKQCG1s=
+</DataArray>
+<DataArray type="Int64" Name="subdomain_id" format="binary">
+AQAAAACAAAAwAAAADgAAAA==eJxjZIAARiJpAADYAAc=
+</DataArray>
+</CellData>
+</Piece>
+</UnstructuredGrid>
+</VTKFile>
