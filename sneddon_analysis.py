@@ -1,6 +1,6 @@
 """
 Evaluate the singularity order (exponent) and stress intensity factor (SIF) 
-at fracture tips within a simulation domain.
+at fracture tips within a simulation domain for Sneddon's problem.
 
 Currently, the script only supports a single fracture with two fracture tips.
 
@@ -18,16 +18,18 @@ Features:
     
     Stress intensity factor (SIF) KI: 
         Single-scale option: 
-            Option 1: 
+            Option 1: The location is selected on the third cell closest to the frature tip (r_j=5*h/2). 
+            The singularity order is set as 0.5.
+            Option 2: The location is the same as Option 1, but the singularity order is from the single-scale option.
+            Option 3: The location is selected on cell center j from the two-scale option. The singularity order is also 
+            from the two-scale option. 
+
+        Two-scale option: the expression is derived from theoretical solution with elimination of the second term. 
 
  - Perform both single-scale and two-scale convergence analysis. 
    The single-scale analysis evaluates convergence only with respect to mesh size (cell size: h),
    while the two-scale analysis involves coarse and fine models.
 
-
-        
-
-   
 """
 
 import porepy as pp
