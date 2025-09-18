@@ -68,3 +68,13 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         rel_error_per_tip = abs_l2_error_tip / self.exact_singularity_order
 
         return rel_l2_error_ave, rel_error_per_tip
+    
+    def get_number_of_fracture_cells(self): 
+        # Get 1D fracture grid (in 2D model)
+        fracture_grids = self.mdg.subdomains(dim=1)
+        # Usually only one fracture in Sneddon problem
+        fracture_grid = fracture_grids[0]
+        # Number of fracture cells
+        num_frac_cells = fracture_grid.num_cells
+
+        return num_frac_cells
