@@ -1,5 +1,7 @@
 # Fracture tip singularity convergence analysis
 # Only valid for one single fracture
+from __future__ import annotations
+
 import porepy as pp
 import numpy as np
 
