@@ -1,4 +1,4 @@
-# Fracture Tip Convergence Analysis
+# Fracture Tip Convergence Analysis 
 
 ## Introduction: 
 Evaluate the near-tip singularity order (exponent) and Stress Intensity Factor (SIF) for Sneddon’s problem through sampling displacement jump along the fracture, with single-scale and two-scale options. 
