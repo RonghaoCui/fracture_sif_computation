@@ -32,31 +32,20 @@ class ComputeSifValue(FractureDisplacementJump):
         self.poi = self.lam / 2.0 / (self.mu + self.lam)      # possion ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)        # Young's modulus
     
-    # def KI_from_exact_singularity(
-    #         self, u_jump_n_one, r_n_one
-    # ) -> np.ndarray: 
-    #     """
-    #     Singularity order is set as 0.5 by default in class ComputeSingularityErrorForModel
-
-    #     """
-    #     KIs = self.E / (8.0 * (1 - self.poi**2.0)) * np.sqrt(2.0 * np.pi / r_n_one) * u_jump_n_one
-
-    #     return KIs
-    
     def KI_from_one_point(
-            self, u_jump_n_two, r_n_two, singularity_orders
+            self, u_jump_n_one, r_n_one, singularity_orders
     ) -> np.ndarray: 
     
         KIs = (
             self.E / (8.0 * (1 - self.poi**2.0))
-            * np.power(2.0 * np.pi / r_n_two, singularity_orders)
-            * u_jump_n_two
+            * np.power(2.0 * np.pi / r_n_one, singularity_orders)
+            * u_jump_n_one
         )
 
         return KIs
     
     def KI_from_two_points(
-            self, model_fine: FractureDisplacementJump
+            self, jumpmodel_fine: FractureDisplacementJump
     ) -> np.ndarray: 
         sampling_cfg = self.params.get("sampling", {})
         step_mode = sampling_cfg.get("mode", None)
@@ -67,7 +56,7 @@ class ComputeSifValue(FractureDisplacementJump):
             raise ValueError("Sampling mode should be defined: 'refinement'. ") 
         
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
-        u_jump_n_two, r_n_two = model_fine.extract_sampling_normal_jump()
+        u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump()
         h = self.params["meshing_arguments"]["cell_size"]
         
         coeff1 = (4.0*refinement_level + 5.0) / (4.0*refinement_level - 3.0)
