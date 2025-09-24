@@ -142,4 +142,18 @@ class FractureDisplacementJump:
         u_jump = self.tangential_displacement_jump()[current_frac_cells]
         return u_jump, r_cell_to_tip
     
+    def get_number_of_fracture_cells(self) -> int: 
+        """
+        Return the number of cells on the 1D fracture subdomain.
+
+        This assumes a single fracture (the 1D subdomain in the model).
+
+        Returns:
+            int: Number of 1D fracture cells.
+        """
+        # Number of fracture cells
+        num_frac_cells = self.sd_frac.num_cells
+
+        return num_frac_cells
+    
     
