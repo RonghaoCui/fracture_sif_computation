@@ -123,15 +123,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
 
-        # Relative L2 error
-        rel_l2_error_ave = (
-            np.linalg.norm(KIs - KI_exact, ord=2) /
-            (KI_exact * np.sqrt(len(KIs)))
-        )
-
-        rel_error_per_tip = np.abs(KIs - KI_exact) / KI_exact
-
-        return rel_l2_error_ave, rel_error_per_tip
+        return self._relative_L2_error(KIs, KI_exact)
 
     def two_points_two_scales_normal(
         self, jumpmodel_fine: FractureDisplacementJump
@@ -165,6 +157,9 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
 
+        return self._relative_L2_error(KIs, KI_exact)
+    
+    def _relative_L2_error(self, KIs, KI_exact) -> tuple[float, np.ndarray]:
         # Relative L2 error
         rel_l2_error_ave = (
             np.linalg.norm(KIs - KI_exact, ord=2) /
@@ -174,4 +169,3 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         rel_error_per_tip = np.abs(KIs - KI_exact) / KI_exact
 
         return rel_l2_error_ave, rel_error_per_tip
-
