@@ -120,7 +120,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         r_n_two: np.ndarray
     ) -> tuple[float, np.ndarray]:
         """
-        Compute exponent estimates from two (u, r) samples and return errors.
+        Compute exponent error estimates from two (u, r) samples and return errors.
 
         Args:
             u_jump_n_one (np.ndarray): First set of normal displacement jumps.
