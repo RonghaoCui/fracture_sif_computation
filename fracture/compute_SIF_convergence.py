@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import porepy as pp
 import numpy as np
 
@@ -13,7 +15,7 @@ from .compute_singularity_convergence import ComputeSingularityErrorForModel
 from .compute_SIF_value import ComputeSifValue
 
 
-class ComputeSifErrorConvergence(FractureDisplacementJump):
+class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
     """
     Estimate fracture-tip singularity order (exponent) and its convergence 
     using single-scale or two-scale methods.
@@ -39,6 +41,7 @@ class ComputeSifErrorConvergence(FractureDisplacementJump):
             displacement results, projection operators, and a ``params`` dictionary
         """
         super().__init__(model)
+        self.singularity_order: Optional[float] = None
 
     def single_point_option_normal(
         self, steps_pair: tuple[int, int]
@@ -53,18 +56,17 @@ class ComputeSifErrorConvergence(FractureDisplacementJump):
         if step_mode is None:
             raise ValueError("Sampling mode should be defined: 'refinement' or 'fixed'. ") 
 
-        # Note: only the single-scale option("mode": 'fixed') should be specified with a location
-        # No need to check the two-scale option ("mode": "refinement") when extracting the displacement
-        # The point far from the fracture tip is chosen by default in steps_pair   
+        # Note: only the single-scale option("mode": 'fixed') is used here
         if step_mode == "fixed": 
+            self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
+            u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
             self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
-        
-        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
+            u_jump_n_two, r_n_two = self.extract_sampling_normal_jump()
 
-        print("Displacement jump n value 2: ", u_jump_n_one)
-        print("Displacement jump n r 2: ", r_n_one)
+        print("Displacement jump n value 2: ", u_jump_n_two)
+        print("Displacement jump n r 2: ", r_n_two)
         
-        return self.SinglePoint_SIF_KI_errors(u_jump_n_one, r_n_one)
+        return self.SinglePoint_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
     
     # def two_scale_option_normal(
     #     self, model_fine: FractureDisplacementJump
@@ -87,6 +89,8 @@ class ComputeSifErrorConvergence(FractureDisplacementJump):
         self, 
         u_jump_n_one: np.ndarray, 
         r_n_one: np.ndarray,
+        u_jump_n_two: np.ndarray, 
+        r_n_two: np.ndarray,
     ) -> tuple[float, np.ndarray]:
         """
         Compute SIF KI error estimates from one (u, r) sample and return errors.
@@ -103,7 +107,12 @@ class ComputeSifErrorConvergence(FractureDisplacementJump):
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
         SIFValue = ComputeSifValue(self.model)
-        KIs = SIFValue.KI_from_exact_singularity(u_jump_n_one, r_n_one)
+        if self.singularity_order is None:
+            singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+        else: 
+            singularity_orders = self.singularity_order
+
+        KIs = SIFValue.KI_from_one_point(u_jump_n_two, r_n_two, singularity_orders)
         print("KI at tips:", KIs)
 
         KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()

@@ -32,22 +32,25 @@ class ComputeSifValue(FractureDisplacementJump):
         self.poi = self.lam / 2.0 / (self.mu + self.lam)      # possion ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)        # Young's modulus
     
-    def KI_from_exact_singularity(
-            self, u_jump_n_one, r_n_one
-    ) -> np.ndarray: 
-       
-        KIs = self.E / (8.0 * (1 - self.poi**2.0)) * np.sqrt(2.0 * np.pi / r_n_one) * u_jump_n_one
+    # def KI_from_exact_singularity(
+    #         self, u_jump_n_one, r_n_one
+    # ) -> np.ndarray: 
+    #     """
+    #     Singularity order is set as 0.5 by default in class ComputeSingularityErrorForModel
 
-        return KIs
+    #     """
+    #     KIs = self.E / (8.0 * (1 - self.poi**2.0)) * np.sqrt(2.0 * np.pi / r_n_one) * u_jump_n_one
+
+    #     return KIs
     
-    def KI_from_calculated_singularity(
-            self, r_n_one, u_jump_n_one, orders_singularity
+    def KI_from_one_point(
+            self, u_jump_n_two, r_n_two, singularity_orders
     ) -> np.ndarray: 
     
         KIs = (
             self.E / (8.0 * (1 - self.poi**2.0))
-            * np.power(2.0 * np.pi / r_n_one, orders_singularity)
-            * u_jump_n_one
+            * np.power(2.0 * np.pi / r_n_two, singularity_orders)
+            * u_jump_n_two
         )
 
         return KIs

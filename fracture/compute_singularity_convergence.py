@@ -24,9 +24,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         exact_singularity_order (float): Reference singularity order 
         (default 0.5).
     """
-    def __init__(
-        self, model: object, exact_singularity_order: float = 0.5
-    ) -> None:
+    def __init__(self, model: object) -> None:
         """
         Initialize the singularity error computation class.
 
@@ -34,12 +32,8 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         model : object
             A PorePy-based model that contains the mixed-dimensional grid (mdg),
             displacement results, projection operators, and a ``params`` dictionary
-        exact_singularity_order : float, optional
-            Exact analytical singularity order as the reference value
-            (default is 0.5).
         """
         super().__init__(model)
-        self.exact_singularity_order = float(exact_singularity_order)
 
     def single_scale_option_normal(
         self, steps_pair: tuple[int, int]
@@ -133,6 +127,49 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
+        singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
+        singularity_order_ave = np.mean(singularity_orders)
+        exact_singularity_order = self.exact_singularity()
+
+        print("The order of singularity:", singularity_orders.tolist())
+        print("The order average of singularity:", singularity_order_ave)
+
+        abs_l2_error_ave = np.linalg.norm(singularity_orders - exact_singularity_order, ord=2)
+
+        # Relative L2 error
+        rel_l2_error_ave = (
+            abs_l2_error_ave /
+            (exact_singularity_order * np.sqrt(len(singularity_orders)))
+        )
+
+        ####### error for each tips
+        # Absolute error per tip
+        abs_l2_error_tip = np.abs(singularity_orders - exact_singularity_order)
+        # Relative error per tip
+        rel_error_per_tip = abs_l2_error_tip / exact_singularity_order
+
+        return rel_l2_error_ave, rel_error_per_tip
+    
+    def estimated_singularity(
+        self, 
+        u_jump_n_one: np.ndarray, 
+        r_n_one: np.ndarray, 
+        u_jump_n_two: np.ndarray, 
+        r_n_two: np.ndarray
+    ) -> np.ndarray:
+        """
+        Compute singularity orders from two (u, r) samples and return values of both fracture tips.
+
+        Args:
+            u_jump_n_one (np.ndarray): First set of normal displacement jumps.
+            r_n_one (np.ndarray): Distances to tip for the first set.
+            u_jump_n_two (np.ndarray): Second set of normal displacement jumps.
+            r_n_two (np.ndarray): Distances to tip for the second set.
+
+        Returns:
+            np.ndarray:
+                ``singularity_orders``: singularity orders from estimations for two tips.
+        """
         # Get log10
         log_u_jump_n_one = np.log10(np.abs(u_jump_n_one))
         log_u_jump_n_two   = np.log10(np.abs(u_jump_n_two))
@@ -140,41 +177,14 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         log_r_n_two   = np.log10(r_n_two)
 
         singularity_orders = (log_u_jump_n_one - log_u_jump_n_two) / (log_r_n_one - log_r_n_two)
-        singularity_order_ave = np.mean(singularity_orders)
 
-        print("The order of singularity:", singularity_orders.tolist())
-        print("The order average of singularity:", singularity_order_ave)
-
-        abs_l2_error_ave = np.linalg.norm(singularity_orders - self.exact_singularity_order, ord=2)
-
-        # Relative L2 error
-        rel_l2_error_ave = (
-            abs_l2_error_ave /
-            (self.exact_singularity_order * np.sqrt(len(singularity_orders)))
-        )
-
-        ####### error for each tips
-        # Absolute error per tip
-        abs_l2_error_tip = np.abs(singularity_orders - self.exact_singularity_order)
-        # Relative error per tip
-        rel_error_per_tip = abs_l2_error_tip / self.exact_singularity_order
-
-        return rel_l2_error_ave, rel_error_per_tip
+        return singularity_orders
     
-    def get_number_of_fracture_cells(self) -> int: 
+    def exact_singularity(self) -> float:
         """
-        Return the number of cells on the 1D fracture subdomain.
-
-        This assumes a single fracture (the 1D subdomain in the model).
-
-        Returns:
-            int: Number of 1D fracture cells.
+            Set an exact analytical singularity order as the reference value
+            (default is 0.5).
         """
-        # Get 1D fracture grid (in 2D model)
-        fracture_grids = self.mdg.subdomains(dim=1)
-        # Usually only one fracture in Sneddon problem
-        fracture_grid = fracture_grids[0]
-        # Number of fracture cells
-        num_frac_cells = fracture_grid.num_cells
+        exact_singularity_order = 0.5
 
-        return num_frac_cells
+        return exact_singularity_order
