@@ -14,15 +14,22 @@ from .compute_singularity_convergence import ComputeSingularityErrorForModel
 
 class ComputeSifValue(FractureDisplacementJump):
     """
-    Calculate stress intensity factor (SIF) values using single-point or two-point methods.
+    Calculate methods for calculating stress intensity factor (SIF) values.
 
-    Note: the current script is only used for the open mode (KI)
+    Attributes: 
+        mu (float):shear modulus
+        lam (float): Lame parameter
+        poi (float): Poisson's ratio
+        E (float): Young's modulus
     """
     def __init__(
             self, model: object
     ) -> None:
         """
-        Initialize the SIF convergence computation class.
+        Initialize elastic constants from the model.
+
+        Args:
+            model: A solved PorePy model instance
         """
         # Calculate SIF KI with given parameters in the model
         super().__init__(model)
@@ -33,9 +40,25 @@ class ComputeSifValue(FractureDisplacementJump):
         self.E = 2.0 * self.mu * (1.0 + self.poi)        # Young's modulus
     
     def KI_from_one_point(
-            self, u_jump_n_one, r_n_one, singularity_orders
+            self, 
+            u_jump_n_one: np.ndarray, 
+            r_n_one: np.ndarray, 
+            singularity_orders: np.ndarray
     ) -> np.ndarray: 
-    
+        """
+        Compute KI from given displacement jumps, distances to the fracture tip, 
+        and singularity orders at a single point. 
+
+        Args:
+            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
+            r_n_one (np.ndarray): Distances to tip for the first set.
+            singularity_orders (np.ndarray): singularity orders for two tips
+
+        Returns:
+            np.ndarray:
+                ``KIs``: KI value array for two tips.
+
+        """
         KIs = (
             self.E / (8.0 * (1 - self.poi**2.0))
             * np.power(2.0 * np.pi / r_n_one, singularity_orders)
@@ -47,6 +70,19 @@ class ComputeSifValue(FractureDisplacementJump):
     def KI_from_two_points(
             self, jumpmodel_fine: FractureDisplacementJump
     ) -> np.ndarray: 
+        """
+        Compute KI from coarse and fine models. 
+
+        Args:
+            jumpmodel_fine (FractureDisplacementJump): Displacement jump extraction
+            on the fine-mesh model. It must provide
+            :meth:`extract_sampling_normal_jump`.
+
+        Returns:
+            np.ndarray:
+                ``KIs``: KI value array for two tips.
+
+        """
         sampling_cfg = self.params.get("sampling", {})
         step_mode = sampling_cfg.get("mode", None)
 
@@ -71,7 +107,14 @@ class ComputeSifValue(FractureDisplacementJump):
         return KIs
     
     def calculate_exact_SIF_KI_sneddon(self) -> float: 
-       
+        """
+        Calculate the analytical solution of SIF KI for Sneddon's problem
+
+        Returns: 
+            float:
+                ``KI_exact``: an analytical KI value.
+
+        """
         pres0 = self.params["p0"]
         frac_half_length = self.params["a"]
         KI_exact =  pres0 * np.sqrt(np.pi * frac_half_length)

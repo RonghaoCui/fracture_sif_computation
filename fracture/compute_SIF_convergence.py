@@ -17,17 +17,18 @@ from .compute_SIF_value import ComputeSifValue
 
 class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
     """
-    Estimate fracture-tip singularity order (exponent) and its convergence 
+    Estimate fracture-tip stress intensity factor (SIF) and its convergence 
     using single-scale or two-scale methods.
+    
+    The current script is only used for the opening mode (SIF KI).
 
     This class extends :class:`FractureDisplacementJump` to compute convergence
-    of near-tip singularity exponents using both single-scale and two-scale
+    of near-tip SIF using both single-scale and two-scale
     approaches. It provides utilities to measure the deviation between the
-    numerically computed exponent and the analytical reference value.
+    numerically computed SIF and the analytical reference value.
 
     Attributes: 
-        exact_singularity_order (float): Reference singularity order 
-        (default 0.5).
+        singularity_order (float): values manually provided by :class: `ComputeSifValue`
     """
     def __init__(
         self, model: object
@@ -47,7 +48,26 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         self, steps_pair: tuple[int, int]
     ) -> tuple[float, np.ndarray]:
         """
-        The single-point option with a single-scale sampling displacement location.
+        The single-point option with a single-scale sampling fracture cell.
+
+        Set the sampling configuration (`steps`` values under ``{"mode": "fixed"}``), 
+        extract the normal displacement jump and corresponding distances to the tip, and then
+        compute relative errors of the SIF.
+
+        Args:
+            steps_pair (tuple[int, int]): 
+            Two integers ``(k0, k1)`` specifying the
+                number of fracture cells away from the tip to sampling locations.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+
+        Notes:
+            This method assumes that ``params["sampling"]`` uses the
+              ``{"mode": "fixed", "steps": k}`` option.
+            steps_pair[1] is farther from the fracture tip than steps_pair[0]
 
         """
         sampling_cfg = self.params.get("sampling", {})
@@ -71,13 +91,32 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         self, jumpmodel_fine: FractureDisplacementJump
     ) -> tuple[float, np.ndarray]:
         """
-        The single-point option with a two-scale sampling displacement location.
+        The single-point option with a two-scale sampling fracture cell.
+        
+        Extract normal displacement jump samples and distances from
+        ``self`` (coarse model) and from ``jumpmodel_fine`` (fine model) via 
+        :meth:`extract_sampling_normal_jump`, then compute the relative errors 
+        of the SIF using coarse models.
+
+        Args:
+            jumpmodel_fine (FractureDisplacementJump): Displacement jump extraction
+                on the fine-mesh model. It must provide
+                :meth:`extract_sampling_normal_jump`.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+
+        Notes:
+            This method assumes that ``params["sampling"]`` uses the 
+            {"mode": "refinement", "level": refinement_level} option.
 
         """
         sampling_cfg = self.params.get("sampling", {})
         step_mode = sampling_cfg.get("mode", None) 
 
-        # Note: only the single-scale option("mode": 'fixed') is used here
+        # Note: only the two-scale option("mode": 'refinement') is used here
         if step_mode == "refinement": 
             u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
             u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump()
@@ -99,12 +138,12 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         r_n_two: np.ndarray,
     ) -> tuple[float, np.ndarray]:
         """
-        Compute SIF KI error estimates from two (u, r) samples and return errors.
+        Compute SIF KI error estimates from a single (u, r) sample and return errors.
 
         Args:
-            u_jump_n_one (np.ndarray): First set of normal displacement jumps.
+            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): Second set of normal displacement jumps.
+            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
             r_n_two (np.ndarray): Distances to tip for the second set.
 
         Returns:
@@ -129,8 +168,27 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         self, jumpmodel_fine: FractureDisplacementJump
     ) -> tuple[float, np.ndarray]:
         """
-        The single-point option with a two-scale sampling displacement location.
+        The two-point option with two-scale sampling fracture cells.
+        
+        Extract normal displacement jump samples and distances from
+        ``self`` (coarse model) and from ``jumpmodel_fine`` (fine model) via 
+        :meth:`extract_sampling_normal_jump`, then compute the relative errors of the SIF
+        using coarse and fine models.
 
+        Args:
+            jumpmodel_fine (FractureDisplacementJump): Displacement jump extraction
+                on the fine-mesh model. It must provide
+                :meth:`extract_sampling_normal_jump`.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+
+        Notes:
+            This method assumes that ``params["sampling"]`` uses the 
+            {"mode": "refinement", "level": refinement_level} option.
+            ``self.singularity_order`` must be set as 0.5. 
         """
         sampling_cfg = self.params.get("sampling", {})
         step_mode = sampling_cfg.get("mode", None) 
@@ -159,8 +217,21 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         return self._relative_L2_error(KIs, KI_exact)
     
-    def _relative_L2_error(self, KIs, KI_exact) -> tuple[float, np.ndarray]:
-        # Relative L2 error
+    def _relative_L2_error(
+        self, KIs: np.ndarray, KI_exact: float
+    ) -> tuple[float, np.ndarray]:
+        """
+        Compute relative errors of SIF KI against an exact reference.
+
+        Args:
+            KIs (np.ndarray): Estimated KI values per tip (shape e.g. `(2,)` for two tips).
+            KI_exact (float): Exact KI used as the scalar reference.
+
+        Returns:
+            tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+        """
         rel_l2_error_ave = (
             np.linalg.norm(KIs - KI_exact, ord=2) /
             (KI_exact * np.sqrt(len(KIs)))

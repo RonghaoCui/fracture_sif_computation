@@ -20,9 +20,6 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
     approaches. It provides utilities to measure the deviation between the
     numerically computed exponent and the analytical reference value.
 
-    Attributes: 
-        exact_singularity_order (float): Reference singularity order 
-        (default 0.5).
     """
     def __init__(self, model: object) -> None:
         """
@@ -49,7 +46,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         Args:
             steps_pair (tuple[int, int]): 
             Two integers ``(k0, k1)`` specifying the
-                number of fracture cells away from the tip to sample at each pass.
+                number of fracture cells away from the tip to sampling locations.
 
         Returns:
             Tuple[float, np.ndarray]:
@@ -59,6 +56,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         Notes:
             This method assumes that ``params["sampling"]`` uses the
               ``{"mode": "fixed", "steps": k}`` option.
+            steps_pair[1] is farther from the fracture tip than steps_pair[0]
         """
         self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
@@ -76,11 +74,12 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         self, jumpmodel_fine: FractureDisplacementJump
     ) -> tuple[float, np.ndarray]:
         """
-        The two-scale option using coarse and fine models at the given locations.
+        The two-scale option using coarse and fine models at the given sampling locations.
 
-        Extracts normal displacement jump samples and distances from
-        ``self`` (coarse model) and from ``jumpmodel_fine`` (fine model), then
-        estimates the exponent by comparing the two samples.
+        Extract normal displacement jump samples and distances from
+        ``self`` (coarse model) and from ``jumpmodel_fine`` (fine model) via 
+        :meth:`extract_sampling_normal_jump`, then compute the relative error (L2) by 
+        comparing the exact value.
 
         Args:
             jumpmodel_fine (FractureDisplacementJump): Displacement jump extraction
@@ -117,15 +116,15 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         Compute exponent error estimates from two (u, r) samples and return errors.
 
         Args:
-            u_jump_n_one (np.ndarray): First set of normal displacement jumps.
+            u_jump_n_one (np.ndarray): The first set (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): Second set of normal displacement jumps.
+            u_jump_n_two (np.ndarray): The second set (closer) of normal displacement jumps.
             r_n_two (np.ndarray): Distances to tip for the second set.
 
         Returns:
             Tuple[float, np.ndarray]:
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                ``rel_error_per_tip``: Relative error array from two tips.
         """
         singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
         singularity_order_ave = np.mean(singularity_orders)
@@ -161,14 +160,14 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         Compute singularity orders from two (u, r) samples and return values of both fracture tips.
 
         Args:
-            u_jump_n_one (np.ndarray): First set of normal displacement jumps.
+            u_jump_n_one (np.ndarray): First set  (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): Second set of normal displacement jumps.
+            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
             r_n_two (np.ndarray): Distances to tip for the second set.
 
         Returns:
             np.ndarray:
-                ``singularity_orders``: singularity orders from estimations for two tips.
+                ``singularity_orders``: computed singularity orders for two tips.
         """
         # Get log10
         log_u_jump_n_one = np.log10(np.abs(u_jump_n_one))
