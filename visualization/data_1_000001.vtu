@@ -2,52 +2,52 @@
 <VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian" compressor="vtkZLibDataCompressor">
 <!--This file was created by meshio v5.3.5-->
 <UnstructuredGrid>
-<Piece NumberOfPoints="25" NumberOfCells="24">
+<Piece NumberOfPoints="13" NumberOfCells="12">
 <Points>
 <DataArray type="Float64" Name="Points" NumberOfComponents="3" format="binary">
-AQAAAACAAABYAgAATwEAAA==eJybNRMETtozgMEDe10JYyBo3tN2/AwIwMXNG0HqGve8/fwfCM7Dxdmvgfj1ezZOBMlfhItPWgbSXrPnmgrIvMtwcY8GkLrKPY07QfJX4OKfwtKAoGzPSh8QfQ0uvsgApL94z7n7IHuuw8UjuEB0wZ7KEpB5N+HiLIdA/Mw9apwgfbfh4gH5IH7ynotzQfbeQbjHchZQfeSeLwYge+/BxRMcZgPFPfeoHQfZex8uDqau8O7atwlkzgO4uALHDJB6GzVwOD2Ei094BRKPtAkKAJn/CC6+4p0RyD02tfIgdz1GmJ8Bdr/Nk7cgexHiFrdB/Hwbgb0ge5/AxX20wOFjU9UD0vcULv4lHRyeNs+iQfQzuPiSpeDwtwnSBul7DhcPeQyOL5sDv0D2IMTbBEB0g43eKZD8C7h40npwerCZBU4/L+HiVn7g9GMDAPBX7H8=
+AQAAAACAAAA4AQAAtgAAAA==eJybNRMETtozgMEDex1JYyBo3vP2838gOA8XZ70B4tfvuaYCkr8MF3drAumv3LPSJw0IrsHFFxiB1BXvqSwByd+EizMcA/Ez91ycewYI7sDFHRxnAcUj96gdB9lzH6EeBC7z7VJrBOl7CBef8WgGSL1NrTzInsdwcZYUsPk2AntB5j+Bi/tpgN1j8ywa5M5ncPFli8HutznwC2Tvc7h4Oz+IbrCZBQ6fl3Bxa19w+NgAAKPad0A=
 </DataArray>
 </Points>
 <Cells>
 <DataArray type="Int64" Name="connectivity" format="binary">
-AQAAAACAAACAAQAAOwAAAA==eJxdxbcBgCAAADDsXQTr/5c66JQsCeFTcMkV19xwyx33PPDIE8+88MqRN06ceeeDT7745uf/BSpvAkE=
+AQAAAACAAADAAAAAJwAAAA==eJxdxacBACAAACD3/v9egyYohPBETpy5cOXGnQdPXrz5/C8m8ACR
 </DataArray>
 <DataArray type="Int64" Name="offsets" format="binary">
-AQAAAACAAADAAAAAPQAAAA==eJwtxdEGgDAAAMBMJkmSJMkkmUnS/39dD929XKh+taMbt+7ce/DoybMXr96cvPvw6eziy7cfv/4Ao0ACWQ==
+AQAAAACAAABgAAAAKAAAAA==eJxjYoAAFijNBqU5oDQXlOaB0nxQWgBKC0FpESgtBqUloDQAFyAAnQ==
 </DataArray>
 <DataArray type="Int64" Name="types" format="binary">
-AQAAAACAAADAAAAADwAAAA==eJxjZoAA5iFKAwAc4ABJ
+AQAAAACAAABgAAAADgAAAA==eJxjZoAAZhrRAAewACU=
 </DataArray>
 </Cells>
 <PointData>
 <DataArray type="Int64" Name="node_id" format="binary">
-AQAAAACAAADIAAAANwAAAA==eJwtxUcCQDAAALCapWZR/P+lDpJLQvhVrt24defe0YNHJ0+evXj15t3Zh09fLr79+PUHUggBLQ==
+AQAAAACAAABoAAAAJQAAAA==eJwtxbcBACAMAKDY6//3OggLEV9ydnF1c/fw9PL28fUDC8gATw==
 </DataArray>
 </PointData>
 <CellData>
 <DataArray type="Float64" Name="aperture" format="binary">
-AQAAAACAAADAAAAAEQAAAA==eJybNRMEdtrPGqI0AFc3bWk=
+AQAAAACAAABgAAAAEQAAAA==eJybNRMEdtrPohENAGk+NrU=
 </DataArray>
 <DataArray type="Int64" Name="cell_id" format="binary">
-AQAAAACAAADAAAAANgAAAA==eJwtxUkCQCAAAMCSfQuF///UwcxlQvhFN05u3bn34NGTZy9evXl39uHTl4urbz9+/QFIoAEV
+AQAAAACAAABgAAAAJAAAAA==eJwtxbcBACAMAKBYY/n/XwdhIeIrrm7uHp5OL28fXz8JUABD
 </DataArray>
 <DataArray type="Float64" Name="contact_traction" NumberOfComponents="2" format="binary">
-AQAAAACAAACAAQAADQAAAA==eJxjYBgFAwkAAYAAAQ==
+AQAAAACAAADAAAAAKwAAAA==eJxjYICAIpmHz5YvWrAPymUwO6YddpV1Ipw/2MD/kiV372zfsg8A9LgOnA==
 </DataArray>
 <DataArray type="Int64" Name="grid_dim" format="binary">
-AQAAAACAAADAAAAADwAAAA==eJxjZIAAxiFKAwAKIAAZ
+AQAAAACAAABgAAAADgAAAA==eJxjZIAARhrRAALQAA0=
 </DataArray>
 <DataArray type="Int64" Name="is_mortar" format="binary">
-AQAAAACAAADAAAAADAAAAA==eJxjYBjaAAAAwAAB
+AQAAAACAAABgAAAADAAAAA==eJxjYKAtAAAAYAAB
 </DataArray>
 <DataArray type="Int64" Name="mortar_side" format="binary">
-AQAAAACAAADAAAAADAAAAA==eJxjYBjaAAAAwAAB
+AQAAAACAAABgAAAADAAAAA==eJxjYKAtAAAAYAAB
 </DataArray>
 <DataArray type="Float64" Name="specific_volume" format="binary">
-AQAAAACAAADAAAAAEQAAAA==eJybNRMEdtrPGqI0AFc3bWk=
+AQAAAACAAABgAAAAEQAAAA==eJybNRMEdtrPohENAGk+NrU=
 </DataArray>
 <DataArray type="Int64" Name="subdomain_id" format="binary">
-AQAAAACAAADAAAAADwAAAA==eJwzZIAAwyFKAwDMLwSZ
+AQAAAACAAABgAAAADgAAAA==eJyTZIAASRrRAD1QAS0=
 </DataArray>
 </CellData>
 </Piece>
