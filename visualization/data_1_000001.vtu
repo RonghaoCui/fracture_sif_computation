@@ -32,7 +32,7 @@ AQAAAACAAABgAAAAEQAAAA==eJybNRMEdtrPohENAGk+NrU=
 AQAAAACAAABgAAAAJAAAAA==eJwtxbcBACAMAKBYY/n/XwdhIeIrrm7uHp5OL28fXz8JUABD
 </DataArray>
 <DataArray type="Float64" Name="contact_traction" NumberOfComponents="2" format="binary">
-AQAAAACAAADAAAAAKwAAAA==eJxjYICAIpmHz5YvWrAPymUwO6YddpV1Ipw/2MD/kiV372zfsg8A9LgOnA==
+AQAAAACAAADAAAAAKwAAAA==eJxjYICAOLmHz5YvWrAPymUwO6IddpV1Ipw/2MDlkiV372zfsg8A5RgOXA==
 </DataArray>
 <DataArray type="Int64" Name="grid_dim" format="binary">
 AQAAAACAAABgAAAADgAAAA==eJxjZIAARhrRAALQAA0=
@@ -47,7 +47,7 @@ AQAAAACAAABgAAAADAAAAA==eJxjYKAtAAAAYAAB
 AQAAAACAAABgAAAAEQAAAA==eJybNRMEdtrPohENAGk+NrU=
 </DataArray>
 <DataArray type="Int64" Name="subdomain_id" format="binary">
-AQAAAACAAABgAAAADgAAAA==eJyTZIAASRrRAD1QAS0=
+AQAAAACAAABgAAAADgAAAA==eJxjZIAARhrRAALQAA0=
 </DataArray>
 </CellData>
 </Piece>
