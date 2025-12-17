@@ -56,7 +56,6 @@ formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))   
 
 # Plot grids 
-# fig1 = plt.figure(figsize=(3.5, 4.0))  # inches
 pp.plot_grid(
     model.mdg,
     rgb=[1, 1, 1],
@@ -64,7 +63,7 @@ pp.plot_grid(
     plot_2d=True,           
     linewidth=0.3,
     alpha=0.5,
-    title="Grid before fracture propagation"
+    title="Grid before fracture propagation: ws"
 )
 plt.tight_layout()
 plt.savefig(
@@ -142,11 +141,11 @@ plt.close()
 fracture_grid = model.mdg.subdomains(dim=1)[0]
 x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
 
-# Get numerical normal/tangential COD
+# Get numerical normal/tangential displacement jump
 u_jump = model.displacement_jump([fracture_grid])
 u_jump_val = u_jump.value(model.equation_system)
 normal_op = model.normal_component([fracture_grid])
-u_cod_numerical = (normal_op @ u_jump).value(model.equation_system)
+u_open_numerical = (normal_op @ u_jump).value(model.equation_system)
 tangent_op = model.tangential_component([fracture_grid])
 u_slip_numerical = (tangent_op @ u_jump).value(model.equation_system)
 u_slip_analytical = model.exact_sol.exact_sol_tangential_fracture(model.mdg)
@@ -175,9 +174,9 @@ ax4.set_xlabel("Distance from fracture tip 1 ($x$)")
 ax4.set_ylabel("Tangential displacement jump ($y$)")
 ax4.set_title("Tangential displacement jump: ws")
 ax4.set_xlim(0.19, 0.81)
-ax4.set_ylim(1.0e-5, 4.8e-5)
+ax4.set_ylim(1.0e-5, 5.0e-5)
 ax4.set_xticks(np.arange(0.20, 0.8, 0.1))
-ax4.set_yticks(np.arange(1.0e-5, 4.1e-5, 1.0e-5))
+ax4.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
@@ -194,7 +193,7 @@ plt.close(fig4)
 fig5, ax5 = plt.subplots(figsize=(3.5, 3.0))   # inches
 ax5.plot(
     x_plot,
-    u_cod_numerical,
+    u_open_numerical,
     '-',
     color='tab:blue',
     linewidth=2, 
