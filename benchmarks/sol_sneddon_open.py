@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "benchmarks"
+save_dir = "benchmarks/figures_sol"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
