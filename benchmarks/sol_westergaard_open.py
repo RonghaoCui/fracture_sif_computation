@@ -98,7 +98,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "uy map_wo.tiff"),
+    os.path.join(save_dir, "uy_map_wo.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -127,7 +127,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "ux map_wo.tiff"),
+    os.path.join(save_dir, "ux_map_wo.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
