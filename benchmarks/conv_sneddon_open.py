@@ -174,7 +174,7 @@ ax.grid(True, which="both", linestyle="--", alpha=0.5)
 ax.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "deltaU_converg_simplex_so.tiff"),
+    os.path.join(save_dir, "deltaU_conv_simplex_so.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
