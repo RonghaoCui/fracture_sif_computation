@@ -32,7 +32,7 @@ AQAAAACAAABgAAAAEQAAAA==eJybNRMEdtrPohENAGk+NrU=
 AQAAAACAAABgAAAAJAAAAA==eJwtxbcBACAMAKBYY/n/XwdhIeIrrm7uHp5OL28fXz8JUABD
 </DataArray>
 <DataArray type="Float64" Name="contact_traction" NumberOfComponents="2" format="binary">
-AQAAAACAAADAAAAAKwAAAA==eJxjYICAOLmHz5YvWrAPymUwO6IddpV1Ipw/2MDlkiV372zfsg8A5RgOXA==
+AQAAAACAAADAAAAAKwAAAA==eJxjYICAELmHz5YvWrAPymXwOqwddpV1Ipw/2MCkkiV372zfsg8A6FkOJA==
 </DataArray>
 <DataArray type="Int64" Name="grid_dim" format="binary">
 AQAAAACAAABgAAAADgAAAA==eJxjZIAARhrRAALQAA0=
