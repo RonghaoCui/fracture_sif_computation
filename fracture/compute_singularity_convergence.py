@@ -33,7 +33,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         super().__init__(model)
 
     def single_scale_option_normal(
-        self, steps_pair: tuple[int, int]
+        self, sampling_pair: list
     ) -> tuple[float, np.ndarray]:
         """
         The single-scale option on the same model with two sampling displacement locations.
@@ -58,10 +58,10 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
               ``{"mode": "fixed", "steps": k}`` option.
             steps_pair[1] is farther from the fracture tip than steps_pair[0]
         """
-        self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
-        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
-        self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
-        u_jump_n_two, r_n_two = self.extract_sampling_normal_jump()
+        # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
+        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
+        # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
+        u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
 
         print("Displacement jump n value 1: ", u_jump_n_one)
         print("Displacement jump n value 2: ", u_jump_n_two)
@@ -71,7 +71,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         return self.calculate_singularity_convergence(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
     
     def two_scale_option_normal(
-        self, jumpmodel_fine: FractureDisplacementJump
+        self, jumpmodel_fine: FractureDisplacementJump, sampling_pair: list
     ) -> tuple[float, np.ndarray]:
         """
         The two-scale option using coarse and fine models at the given sampling locations.
@@ -95,8 +95,8 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
             This method assumes that ``params["sampling"]`` uses the 
             {"mode": "refinement", "level": refinement_level} option.
         """
-        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
-        u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump()
+        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
+        u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump(sampling_pair[0])
 
         print("Displacement jump n value 1: ", u_jump_n_one)
         print("Displacement jump n value 2: ", u_jump_n_two)

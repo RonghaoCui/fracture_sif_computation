@@ -75,55 +75,63 @@ params = {
 #     "sampling": {"mode": "fixed", "steps": 1}
 # })
 
-# # test the single-scale option for convergence error at one step
-# h = 0.1
-# params["meshing_arguments"] = {"cell_size": h}
+# test the single-scale option for convergence error at one step
+h = 0.1
+params["meshing_arguments"] = {"cell_size": h}
 # params["sampling"] = {"mode": "fixed", "steps": 1}
-# model = ManuSneddonModel2d(params=params)
-# pp.run_time_dependent_model(model)
-# comp = ComputeSingularityErrorForModel(model)
-# steps_pair=(0, 2)
-# rel_l2_error_ave, rel_error_per_tip = comp.single_scale_option_normal(steps_pair)
-# print("Relative L2 error:", rel_l2_error_ave)
-# print("Relative error per tip:", rel_error_per_tip)
+model = ManuSneddonModel2d(params=params)
+pp.run_time_dependent_model(model)
+comp = ComputeSingularityErrorForModel(model)
+sampling_pair = [0, 2]
+rel_l2_error_ave, rel_error_per_tip = comp.single_scale_option_normal(sampling_pair)
+print("Relative L2 error:", rel_l2_error_ave)
+print("Relative error per tip:", rel_error_per_tip)
 
-# # test the two-scale option for convergence error at one step
-# h_coarse = 0.1
-# refinement_level = 1
+# test the two-scale option for convergence error at one step
+h_coarse = 0.1
+refinement_level = 1
 # params["meshing_arguments"] = {"cell_size": h_coarse}
 # params["sampling"] = {"mode": "refinement", "level": refinement_level}
-# model_coarse = ManuSneddonModel2d(params=params)
-# pp.run_time_dependent_model(model_coarse)
-# comp_coarse = ComputeSingularityErrorForModel(model_coarse)
+model_coarse = ManuSneddonModel2d(params=params)
+pp.run_time_dependent_model(model_coarse)
+comp_coarse = ComputeSingularityErrorForModel(model_coarse)
 
-# h_fine = h_coarse / 2.0
-# params["meshing_arguments"] = {"cell_size": h_fine}
+h_fine = h_coarse / 2.0
+params["meshing_arguments"] = {"cell_size": h_fine}
 # params["sampling"] = {"mode": "refinement", "level": refinement_level+1}
-# model_fine = ManuSneddonModel2d(params=params)
-# pp.run_time_dependent_model(model_fine)
-# jumpmodel_fine = FractureDisplacementJump(model_fine)
+model_fine = ManuSneddonModel2d(params=params)
+pp.run_time_dependent_model(model_fine)
+jumpmodel_fine = FractureDisplacementJump(model_fine)
+sampling_pair = [refinement_level*2, (refinement_level+1)*2]
+rel_l2_error_ave, rel_error_per_tip = comp_coarse.two_scale_option_normal(jumpmodel_fine, sampling_pair)
 
-# rel_l2_error_ave, rel_error_per_tip = comp_coarse.two_scale_option_normal(jumpmodel_fine)
-
-# print("Relative L2 error:", rel_l2_error_ave)
-# print("Relative error per tip:", rel_error_per_tip)
+print("Relative L2 error:", rel_l2_error_ave)
+print("Relative error per tip:", rel_error_per_tip)
 
 # Convergence curves of the single-scale option
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+pairs_in_cellsizes = [
+    [0, 2],
+    [0, 2],
+    [0, 2],
+    [0, 2],
+    [0, 2],
+    [0, 2]
+]
 error_ave_set = []
 error_per_tip_set = []
 num_frac_cells_set = []
-for h in cell_sizes:
+for i, h in enumerate(cell_sizes):
     params["meshing_arguments"] = {"cell_size": h}
     # this steps value is only for keyword initialization 
     # and does not work for the simulation results 
-    params["sampling"] = {"mode": "fixed", "level": 1}
+    # params["sampling"] = {"mode": "fixed", "level": 1}
     model = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model)
     comp = ComputeSingularityErrorForModel(model)
     # This steps_pair will work for the keywords: params["sampling"] = {"mode": "fixed", "steps": X}
-    steps_pair=(0, 2)
-    rel_l2_error_ave, rel_error_per_tip = comp.single_scale_option_normal(steps_pair)
+    sampling_pair = pairs_in_cellsizes[i]
+    rel_l2_error_ave, rel_error_per_tip = comp.single_scale_option_normal(sampling_pair)
     print("Relative L2 error:", rel_l2_error_ave)
     print("Relative error per tip:", rel_error_per_tip)
     error_ave_set.append(rel_l2_error_ave)
@@ -227,26 +235,27 @@ plt.close(fig1)
 
 # Convergence curves of the two-scale option
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+refinement_level = 1
 error_ave_set = []
 error_per_tip_set = []
 num_frac_cells_set = []
-refinement_level = 1
-for h in cell_sizes:
+for i, h in enumerate(cell_sizes):
     h_coarse = h
     params["meshing_arguments"] = {"cell_size": h_coarse}
-    params["sampling"] = {"mode": "refinement", "level": refinement_level}
+    # params["sampling"] = {"mode": "refinement", "level": refinement_level}
     model_coarse = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model_coarse)
     comp_coarse = ComputeSingularityErrorForModel(model_coarse)
 
     h_fine = h_coarse / 2.0
     params["meshing_arguments"] = {"cell_size": h_fine}
-    params["sampling"] = {"mode": "refinement", "level": refinement_level+1}
+    # params["sampling"] = {"mode": "refinement", "level": refinement_level+1}
     model_fine = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model_fine)
     jumpmodel_fine = FractureDisplacementJump(model_fine)
 
-    rel_l2_error_ave, rel_error_per_tip = comp_coarse.two_scale_option_normal(jumpmodel_fine)
+    sampling_pair = [(refinement_level+1)*2, refinement_level*2]
+    rel_l2_error_ave, rel_error_per_tip = comp_coarse.two_scale_option_normal(jumpmodel_fine, sampling_pair)
 
     print("Relative L2 error:", rel_l2_error_ave)
     print("Relative error per tip:", rel_error_per_tip)
@@ -274,7 +283,7 @@ ax2.loglog(
     color='tab:blue',
     linewidth=2,
     markersize=4, 
-    label="Single-scale: Tip 1"
+    label="Two-scale: Tip 1"
 )
 
 ax2.loglog(
@@ -284,7 +293,7 @@ ax2.loglog(
     color='tab:orange',
     linewidth=2,
     markersize=4, 
-    label="Single-scale: Tip 2"
+    label="Two-scale: Tip 2"
 )
 
 ax2.loglog(
@@ -294,7 +303,7 @@ ax2.loglog(
     color='tab:pink',
     linewidth=2,
     markersize=4, 
-    label="Single-scale: Average"
+    label="Two-scale: Average"
 )
 
 ax2.plot(

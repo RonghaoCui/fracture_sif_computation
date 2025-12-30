@@ -71,7 +71,7 @@ class FractureDisplacementJump:
         u_jump_whole_frac = (tangential_op @ u_jump).value(self.equation_system)
         return u_jump_whole_frac
 
-    def sampling_frac_cell(self) -> np.ndarray:
+    def sampling_frac_cell(self, n_steps: int) -> np.ndarray:
         """Compute fracture cell indices to sample based on ``params['sampling']``.
 
         Expects ``self.params`` to contain a ``"sampling"`` configuration with one of:
@@ -86,29 +86,29 @@ class FractureDisplacementJump:
         Raises:
             ValueError: If sampling mode is missing/unknown or required keys are absent.
         """
-        sampling_cfg = self.params.get("sampling", {})
-        step_mode = sampling_cfg.get("mode", None)
+        # sampling_cfg = self.params.get("sampling", {})
+        # step_mode = sampling_cfg.get("mode", None)
 
-        if step_mode is None:
-            raise ValueError("Sampling mode should be defined: 'refinement' or 'fixed'. ")    
+        # if step_mode is None:
+        #     raise ValueError("Sampling mode should be defined: 'refinement' or 'fixed'. ")    
 
-        if step_mode == "refinement":
-            refinement_level = sampling_cfg.get("level", None)
-            if refinement_level is None:
-                raise ValueError("mode='refinement': keywords 'level' should be defined.")
-            n_steps = 2 * refinement_level
-        elif step_mode == "fixed": 
-            n_steps_fixed = sampling_cfg.get("steps", None)
-            if n_steps_fixed is None:
-                raise ValueError("mode='fixed': 'steps' should be defined. ")
-            n_steps = n_steps_fixed
-        else: 
-            raise ValueError(f"Unknown step_mode='{step_mode}'")
- 
+        # if step_mode == "refinement":
+        #     refinement_level = sampling_cfg.get("level", None)
+        #     if refinement_level is None:
+        #         raise ValueError("mode='refinement': keywords 'level' should be defined.")
+        #     n_steps = 2 * refinement_level
+        # elif step_mode == "fixed": 
+        #     n_steps_fixed = sampling_cfg.get("steps", None)
+        #     if n_steps_fixed is None:
+        #         raise ValueError("mode='fixed': 'steps' should be defined. ")
+        #     n_steps = n_steps_fixed
+        # else: 
+        #     raise ValueError(f"Unknown step_mode='{step_mode}'")
+        
         current_frac_cells = np.where(self.tip_cells == 0, n_steps, self.tip_cells - n_steps)
         return current_frac_cells
     
-    def extract_sampling_normal_jump(self) -> tuple[np.ndarray, np.ndarray]:
+    def extract_sampling_normal_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Sample normal displacement jumps and distances at selected fracture cells of two tips.
 
@@ -118,7 +118,7 @@ class FractureDisplacementJump:
                 - ``r_cell_to_tip``: distances from sampled cell centers to tip face centers.
         """
         sd_frac = self.sd_frac
-        current_frac_cells = self.sampling_frac_cell()
+        current_frac_cells = self.sampling_frac_cell(n_steps)
         r_cell_to_tip = np.linalg.norm(
             self.tip_face_centers - sd_frac.cell_centers[:, current_frac_cells], axis=0
         )
