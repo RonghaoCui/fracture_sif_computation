@@ -10,18 +10,18 @@ Features:
 
 - Calculate   
     SIF KI: 
-        Single-scale single-point option:
-            Option 1: The location is selected from one of two fracture cell centers in the scale of radial distance. 
-            The example on the third cell closest to the frature tip (r_j=5*h/2) is provided. The exact singularity 
-            order is set as 0.5 by default.
-            Option 2: The location is selected from one of two fracture cell centers in the single-scale option. 
-            The example on the third cell closest to the frature tip (r_j=5*h/2) is provided. The singularity order 
-            is from the single-scale option.
-            Option 3: The location is selected on cell center j from the two-scale option. The singularity order is 
-            also from the two-scale option (Option 3a). But the exact singularity order (0.5 by default) can be 
-            allowed as Option 3b. 
+        Single-scale single-point option: The location is selected from one fracture cell center in the scale 
+        of radial distance. The example on the third cell closest to the frature tip (r_j=5*h/2) is provided. 
+        The exact singularity order is set as 0.5 by default.
 
-        Two-point option: the expression is derived from theoretical solution with elimination of the second term. 
+        Single-scale two-point option: The location is selected from two fracture cell centers in the 
+        single-scale option. The example on the third cell closest to the frature tip (r_j=5*h/2) is provided. 
+        The singularity order is set as 0.5 by default, or comes from the single-scale option. 
+            
+        Two-scale two-point option: The locations are selected on two cell centers from the two mesh. The SIF 
+        expression is derived from theoretical solution with elimination of the second term. The singularity 
+        order is also from the two-scale option (Option 3a). But the exact singularity order (0.5 by default) 
+        can be allowed as Option 3b. 
 
  - Perform both single-point and two-point convergence analysis. 
    The convergence analysis on SIF can be conducted not only with respect to mesh size (cell size: h),
@@ -38,8 +38,6 @@ import porepy as pp
 import numpy as np
 
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
-from fracture import FractureDisplacementJump
-from fracture import ComputeSingularityErrorForModel
 from fracture import ComputeSifErrorConvergence
 
 import math
@@ -48,7 +46,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "convergence"
+save_dir = "figures/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -70,52 +68,56 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.1,
 }
 
-params.update({
-    "sampling": {"mode": "fixed", "steps": 1}
-})
+# params.update({
+#     "sampling": {"mode": "fixed", "steps": 1}
+# })
 
 # test the single-point option
 h = 0.1
 params["meshing_arguments"] = {"cell_size": h}
-params["sampling"] = {"mode": "fixed", "steps": 1}
+# params["sampling"] = {"mode": "fixed", "steps": 1}
 model = ManuSneddonModel2d(params=params)
 pp.run_time_dependent_model(model)
 compSIF = ComputeSifErrorConvergence(model)
-steps_pair=(0, 2)
-compSIF.singularity_order = compSIF.exact_singularity()
-rel_l2_error_ave, rel_error_per_tip = compSIF.single_point_single_scale_normal(steps_pair)
+# Here we use sampling pairs instead of single point, because this can allow computed singularity to be used
+# But for SIF, we only use the second element
+sampling_pair = [0, 2]
+# Use the default singularity exponent 0.5
+compSIF.singularity_order = compSIF.exact_singularity()  
+rel_l2_error_ave, rel_error_per_tip = compSIF.single_point_single_scale_normal(sampling_pair)
 print("Relative L2 error:", rel_l2_error_ave)
 print("Relative error per tip:", rel_error_per_tip)
 
 #  Define mesh sizes to test 
-cell_sizes = [0.2, 0.1, 0.05, 0.025, 0.0125, 0.0075, 0.00375]
-error_set = []
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+pairs_in_cellsizes = [
+    [0, 2],
+    [0, 4],
+    [0, 6],
+    [0, 10],
+    [0, 15],
+    [0, 25]
+]
+error_ave_set = []
+error_per_tip_set = []
 num_frac_cells_set = []
-
-# Run simulations 
-for h in cell_sizes:
+for i, h in enumerate(cell_sizes):
     print(f"Running for mesh size h = {h}")
-    
-    # Update cell size
     params["meshing_arguments"] = {"cell_size": h}
-
-    # Run model
     model = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model)
-
-    # Collect error in normal displacement
-    error = model.collect_data().error_displacement
-    print(f"Relative error: {error:.4e}")
-    error_set.append(error)
-
-    # Get 1D fracture grid (in 2D model)
-    fracture_grids = model.mdg.subdomains(dim=1)
-
-    # Usually only one fracture in Sneddon problem
-    fracture_grid = fracture_grids[0]
+    compSIF = ComputeSifErrorConvergence(model)
+    
+    sampling_pair = pairs_in_cellsizes[i]
+    compSIF.singularity_order = compSIF.exact_singularity()  
+    rel_l2_error_ave, rel_error_per_tip = compSIF.single_point_single_scale_normal(sampling_pair)
+    print("Relative L2 error:", rel_l2_error_ave)
+    print("Relative error per tip:", rel_error_per_tip)
+    error_ave_set.append(rel_l2_error_ave)
+    error_per_tip_set.append(rel_error_per_tip)
 
     # Number of fracture cells
-    num_frac_cells = fracture_grid.num_cells
+    num_frac_cells = compSIF.get_number_of_fracture_cells()
     print("Number of fracture cells:", num_frac_cells)
     num_frac_cells_set.append(num_frac_cells)
 
@@ -137,22 +139,45 @@ mpl.rcParams.update({
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))   
 
-# Plot the convergence curve for displacement jump
-errors_delta_u = np.array(error_set)
+# Plot the convergence curve for singularity exponents
+errors_ave = np.array(error_ave_set)
+errors_per_tip = np.array(error_per_tip_set)
 num_frac_cells = np.array(num_frac_cells_set)
-first_order_line = errors_delta_u[3] * (num_frac_cells[3] / num_frac_cells)
+first_order_line = errors_ave[0] * (num_frac_cells[0] / num_frac_cells)
+half_order_line = errors_ave[0] * (num_frac_cells[0] / num_frac_cells) ** 0.5
 
-fig, ax = plt.subplots(figsize=(3.5, 3.0))   # inches
-ax.loglog(
+fig1, ax1 = plt.subplots(figsize=(3.5, 3.0))   # inches
+ax1.loglog(
     num_frac_cells,
-    errors_delta_u,
+    errors_per_tip[:, 0],
     'o-',
     color='tab:blue',
     linewidth=2,
     markersize=4, 
-    label="Numerical"
+    label="Single-point: Tip 1"
 )
-ax.plot(
+
+ax1.loglog(
+    num_frac_cells,
+    errors_per_tip[:, 1],
+    'o-',
+    color='tab:orange',
+    linewidth=2,
+    markersize=4, 
+    label="Single-point: Tip 2"
+)
+
+ax1.loglog(
+    num_frac_cells,
+    errors_ave,
+    'o-',
+    color='tab:pink',
+    linewidth=2,
+    markersize=4, 
+    label="Single-point: Average"
+)
+
+ax1.plot(
     num_frac_cells,
     first_order_line,
     '--',
@@ -161,29 +186,38 @@ ax.plot(
     label="Reference slope=-1"
 )
 
-ax.set_xlabel("Number of fracture cells")
-ax.set_ylabel("Relative error")
+ax1.plot(
+    num_frac_cells,
+    half_order_line,
+    '--',
+    color='tab:grey',
+    linewidth=2, 
+    label="Reference slope=-0.5"
+)
+
+ax1.set_xlabel("Number of fracture cells")
+ax1.set_ylabel("Relative error")
 
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
-ax.yaxis.set_major_formatter(formatter)
-ax.set_xlim(1.0, 220)
-ax.set_ylim(1.0e-4, 1.0e-1)
-ax.xaxis.set_major_locator(LogLocator(base=10))
-ax.xaxis.set_major_formatter(LogFormatterMathtext())
-ax.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+ax1.yaxis.set_major_formatter(formatter)
+ax1.set_xlim(5.5, 220)
+ax1.set_ylim(0.0002, 1.0)
+ax1.xaxis.set_major_locator(LogLocator(base=10))
+ax1.xaxis.set_major_formatter(LogFormatterMathtext())
+ax1.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 
-ax.yaxis.set_major_locator(LogLocator(base=10))
-ax.yaxis.set_major_formatter(LogFormatterMathtext())
-ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
-ax.grid(True, which="both", linestyle="--", alpha=0.5)
-ax.legend(loc="lower left")
+ax1.yaxis.set_major_locator(LogLocator(base=10))
+ax1.yaxis.set_major_formatter(LogFormatterMathtext())
+ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+ax1.grid(True, which="both", linestyle="--", alpha=0.5)
+ax1.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "deltaU_converg_simplex_so.tiff"),
+    os.path.join(save_dir, "conv_sif_so_spss.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.close(fig)
+plt.close(fig1)

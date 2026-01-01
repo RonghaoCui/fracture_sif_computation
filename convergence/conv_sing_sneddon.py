@@ -30,10 +30,6 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-import math
-import matplotlib.pyplot as plt
-import scipy.sparse as sps
-
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 from fracture import FractureDisplacementJump
 from fracture import ComputeSingularityErrorForModel
@@ -122,14 +118,12 @@ error_ave_set = []
 error_per_tip_set = []
 num_frac_cells_set = []
 for i, h in enumerate(cell_sizes):
+    print(f"Running for mesh size h = {h}")
     params["meshing_arguments"] = {"cell_size": h}
-    # this steps value is only for keyword initialization 
-    # and does not work for the simulation results 
-    # params["sampling"] = {"mode": "fixed", "level": 1}
     model = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model)
     comp = ComputeSingularityErrorForModel(model)
-    # This steps_pair will work for the keywords: params["sampling"] = {"mode": "fixed", "steps": X}
+
     sampling_pair = pairs_in_cellsizes[i]
     rel_l2_error_ave, rel_error_per_tip = comp.single_scale_option_normal(sampling_pair)
     print("Relative L2 error:", rel_l2_error_ave)

@@ -45,7 +45,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         self.singularity_order: Optional[float] = None
 
     def single_point_single_scale_normal(
-        self, steps_pair: tuple[int, int]
+        self, sampling_pair: list
     ) -> tuple[float, np.ndarray]:
         """
         The single-point option with a single-scale sampling fracture cell.
@@ -70,17 +70,17 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             steps_pair[1] is farther from the fracture tip than steps_pair[0]
 
         """
-        sampling_cfg = self.params.get("sampling", {})
-        step_mode = sampling_cfg.get("mode", None) 
+        # sampling_cfg = self.params.get("sampling", {})
+        # step_mode = sampling_cfg.get("mode", None) 
 
-        # Note: only the single-scale option("mode": 'fixed') is used here
-        if step_mode == "fixed": 
-            self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
-            u_jump_n_one, r_n_one = self.extract_sampling_normal_jump()
-            self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
-            u_jump_n_two, r_n_two = self.extract_sampling_normal_jump()
-        else: 
-            raise ValueError("Sampling mode 'fixed' should be required. ")
+        # # Note: only the single-scale option("mode": 'fixed') is used here
+        # if step_mode == "fixed": 
+            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
+        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
+            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
+        u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
+        # else: 
+        #     raise ValueError("Sampling mode 'fixed' should be required. ")
 
         print("Displacement jump n value 2: ", u_jump_n_one)
         print("Displacement jump n r 2: ", r_n_one)
