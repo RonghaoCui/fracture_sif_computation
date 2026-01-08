@@ -68,6 +68,46 @@ class ComputeSifValue(FractureDisplacementJump):
         return KIs
     
     def KI_from_two_points(
+            self, 
+            u_jump_n_one: np.ndarray, 
+            r_n_one: np.ndarray, 
+            u_jump_n_two: np.ndarray, 
+            r_n_two: np.ndarray,
+            singularity_orders: np.ndarray
+    ) -> np.ndarray: 
+        """
+        Compute KI from given displacement jumps, distances to the fracture tip, 
+        and singularity orders at a single point. 
+
+        Args:
+            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
+            r_n_one (np.ndarray): Distances to tip for the first set.
+            u_jump_n_two (np.ndarray): First set (farther) of normal displacement jumps.
+            r_n_two (np.ndarray): Distances to tip for the first set.
+            singularity_orders (np.ndarray): singularity orders for two tips
+
+        Returns:
+            np.ndarray:
+                ``KIs``: KI value array for two tips.
+
+        """
+        KIs_n_one = (
+            self.E / (8.0 * (1 - self.poi**2.0))
+            * np.power(2.0 * np.pi / r_n_one, singularity_orders)
+            * u_jump_n_one
+        )
+
+        KIs_n_two = (
+            self.E / (8.0 * (1 - self.poi**2.0))
+            * np.power(2.0 * np.pi / r_n_two, singularity_orders)
+            * u_jump_n_two
+        )
+
+        KIs = KIs_n_one + r_n_one / (r_n_two - r_n_one) * (KIs_n_one - KIs_n_two)
+
+        return KIs
+    
+    def KI_from_two_scales(
             self, jumpmodel_fine: FractureDisplacementJump
     ) -> np.ndarray: 
         """

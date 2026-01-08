@@ -50,10 +50,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         """
         The single-point option with a single-scale sampling fracture cell.
 
-        Set the sampling configuration (`steps`` values under ``{"mode": "fixed"}``), 
-        extract the normal displacement jump and corresponding distances to the tip, and then
-        compute relative errors of the SIF.
-
         Args:
             steps_pair (tuple[int, int]): 
             Two integers ``(k0, k1)`` specifying the
@@ -65,9 +61,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
 
         Notes:
-            This method assumes that ``params["sampling"]`` uses the
-              ``{"mode": "fixed", "steps": k}`` option.
-            steps_pair[1] is farther from the fracture tip than steps_pair[0]
+            This method assumes that steps_pair[1] is farther from the fracture tip 
+            than steps_pair[0]
 
         """
         # sampling_cfg = self.params.get("sampling", {})
@@ -86,6 +81,46 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         print("Displacement jump n r 2: ", r_n_one)
         
         return self.SinglePoint_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+    
+    def two_points_single_scale_normal(
+        self, sampling_pair: list
+    ) -> tuple[float, np.ndarray]:
+        """
+        The two-point option with a single-scale sampling fracture cell.
+
+        Args:
+            steps_pair (tuple[int, int]): 
+            Two integers ``(k0, k1)`` specifying the
+                number of fracture cells away from the tip to sampling locations.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+
+        Notes:
+            This method assumes that steps_pair[1] is farther from the fracture tip 
+            than steps_pair[0]
+
+        """
+        # sampling_cfg = self.params.get("sampling", {})
+        # step_mode = sampling_cfg.get("mode", None) 
+
+        # # Note: only the single-scale option("mode": 'fixed') is used here
+        # if step_mode == "fixed": 
+            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
+        u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
+            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
+        u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
+        # else: 
+        #     raise ValueError("Sampling mode 'fixed' should be required. ")
+
+        print("Displacement jump n value 1: ", u_jump_n_one)
+        print("Displacement jump n value 2: ", u_jump_n_two)
+        print("Displacement jump n r 1: ", r_n_one)
+        print("Displacement jump n r 2: ", r_n_two)
+        
+        return self.TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
     
     def single_point_two_scales_normal(
         self, jumpmodel_fine: FractureDisplacementJump
@@ -129,40 +164,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         print("Displacement jump n r 2: ", r_n_two)
         
         return self.SinglePoint_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
-    
-    def SinglePoint_SIF_KI_errors(
-        self, 
-        u_jump_n_one: np.ndarray, 
-        r_n_one: np.ndarray,
-        u_jump_n_two: np.ndarray, 
-        r_n_two: np.ndarray,
-    ) -> tuple[float, np.ndarray]:
-        """
-        Compute SIF KI error estimates from a single (u, r) sample and return errors.
-
-        Args:
-            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
-            r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
-            r_n_two (np.ndarray): Distances to tip for the second set.
-
-        Returns:
-            Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
-        """
-        SIFValue = ComputeSifValue(self.model)
-        if self.singularity_order is None:
-            singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
-        else: 
-            singularity_orders = self.singularity_order
-
-        KIs = SIFValue.KI_from_one_point(u_jump_n_one, r_n_one, singularity_orders)
-        print("KI at tips:", KIs)
-
-        KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
-
-        return self._relative_L2_error(KIs, KI_exact)
 
     def two_points_two_scales_normal(
         self, jumpmodel_fine: FractureDisplacementJump
@@ -207,7 +208,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         SIFValue = ComputeSifValue(self.model)
         if self.singularity_order == 0.5:
-            KIs = SIFValue.KI_from_two_points(jumpmodel_fine)
+            KIs = SIFValue.KI_from_two_scales(jumpmodel_fine)
         else:
             raise ValueError(f"Unsupported singularity_order={self.singularity_order}.")
         
@@ -217,6 +218,74 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         return self._relative_L2_error(KIs, KI_exact)
     
+    def SinglePoint_SIF_KI_errors(
+        self, 
+        u_jump_n_one: np.ndarray, 
+        r_n_one: np.ndarray,
+        u_jump_n_two: np.ndarray, 
+        r_n_two: np.ndarray,
+    ) -> tuple[float, np.ndarray]:
+        """
+        Compute SIF KI error estimates from a single (u, r) sample and return errors.
+
+        Args:
+            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
+            r_n_one (np.ndarray): Distances to tip for the first set.
+            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
+            r_n_two (np.ndarray): Distances to tip for the second set.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+        """
+        SIFValue = ComputeSifValue(self.model)
+        if self.singularity_order is None:
+            singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+        else: 
+            singularity_orders = self.singularity_order
+
+        KIs = SIFValue.KI_from_one_point(u_jump_n_one, r_n_one, singularity_orders)
+        print("KI at tips:", KIs)
+
+        KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
+
+        return self._relative_L2_error(KIs, KI_exact)
+
+    def TwoPoints_SIF_KI_errors(
+        self, 
+        u_jump_n_one: np.ndarray, 
+        r_n_one: np.ndarray,
+        u_jump_n_two: np.ndarray, 
+        r_n_two: np.ndarray,
+    ) -> tuple[float, np.ndarray]:
+        """
+        Compute SIF KI error estimates from a single (u, r) sample and return errors.
+
+        Args:
+            u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
+            r_n_one (np.ndarray): Distances to tip for the first set.
+            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
+            r_n_two (np.ndarray): Distances to tip for the second set.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+        """
+        SIFValue = ComputeSifValue(self.model)
+        if self.singularity_order is None:
+            singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+        else: 
+            singularity_orders = self.singularity_order
+
+        KIs = SIFValue.KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
+        print("KI at tips:", KIs)
+
+        KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
+
+        return self._relative_L2_error(KIs, KI_exact)
+
     def _relative_L2_error(
         self, KIs: np.ndarray, KI_exact: float
     ) -> tuple[float, np.ndarray]:

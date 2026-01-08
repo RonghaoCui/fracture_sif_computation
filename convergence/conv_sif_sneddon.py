@@ -68,14 +68,9 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.1,
 }
 
-# params.update({
-#     "sampling": {"mode": "fixed", "steps": 1}
-# })
-
 # test the single-point option
 h = 0.1
 params["meshing_arguments"] = {"cell_size": h}
-# params["sampling"] = {"mode": "fixed", "steps": 1}
 model = ManuSneddonModel2d(params=params)
 pp.run_time_dependent_model(model)
 compSIF = ComputeSifErrorConvergence(model)
@@ -221,3 +216,19 @@ plt.savefig(
     pil_kwargs={"compression": "tiff_lzw"}
 )
 plt.close(fig1)
+
+
+# test the two-point option
+h = 0.1
+params["meshing_arguments"] = {"cell_size": h}
+model = ManuSneddonModel2d(params=params)
+pp.run_time_dependent_model(model)
+compSIF = ComputeSifErrorConvergence(model)
+# Here we use sampling pairs for SIF and this can allow computed singularity to be used
+sampling_pair = [0, 2]
+# Use the default singularity exponent 0.5
+compSIF.singularity_order = compSIF.exact_singularity()  
+rel_l2_error_ave, rel_error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
+print("Relative L2 error:", rel_l2_error_ave)
+print("Relative error per tip:", rel_error_per_tip)
+
