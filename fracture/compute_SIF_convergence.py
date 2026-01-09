@@ -65,17 +65,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             than steps_pair[0]
 
         """
-        # sampling_cfg = self.params.get("sampling", {})
-        # step_mode = sampling_cfg.get("mode", None) 
-
-        # # Note: only the single-scale option("mode": 'fixed') is used here
-        # if step_mode == "fixed": 
-            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
-            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
         u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
-        # else: 
-        #     raise ValueError("Sampling mode 'fixed' should be required. ")
 
         print("Displacement jump n value 2: ", u_jump_n_one)
         print("Displacement jump n r 2: ", r_n_one)
@@ -103,17 +94,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             than steps_pair[0]
 
         """
-        # sampling_cfg = self.params.get("sampling", {})
-        # step_mode = sampling_cfg.get("mode", None) 
-
-        # # Note: only the single-scale option("mode": 'fixed') is used here
-        # if step_mode == "fixed": 
-            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
-            # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
         u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
-        # else: 
-        #     raise ValueError("Sampling mode 'fixed' should be required. ")
 
         print("Displacement jump n value 1: ", u_jump_n_one)
         print("Displacement jump n value 2: ", u_jump_n_two)
@@ -121,6 +103,43 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         print("Displacement jump n r 2: ", r_n_two)
         
         return self.TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+    
+    def multipoints_single_scale_normal(
+        self, sampled_cell: int, num_more_cells: int
+    ) -> tuple[float, np.ndarray]:
+        """
+        The two-point option with a single-scale sampling fracture cell.
+
+        Args:
+            steps_pair (tuple[int, int]): 
+            Two integers ``(k0, k1)`` specifying the
+                number of fracture cells away from the tip to sampling locations.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+
+        Notes:
+            This method assumes that steps_pair[1] is farther from the fracture tip 
+            than steps_pair[0]
+
+        """
+        sampled_cells = np.arange(sampled_cell - num_more_cells, sampled_cell + num_more_cells + 1)
+        # sampled_cells = np.arange(sampled_cell, sampled_cell + num_more_cells + 1)
+        # sampled_cells = sampled_cells[(sampled_cells <= i_mid) & (sampled_cells >= k_min)]
+        num_tips = 2
+        u_jump_n = np.full((len(sampled_cells), num_tips), np.nan)
+        r_n = np.full((len(sampled_cells), num_tips), np.nan)
+        for i, cell_id in enumerate(sampled_cells): 
+            u_jump_value, r_n_value = self.extract_sampling_normal_jump(cell_id)
+            u_jump_n[i, :] = u_jump_value
+            r_n[i, :] = r_n_value
+
+        print("Displacement jump n value at the given sampled cell: ", u_jump_n[0, :])
+        print("Displacement jump n at the given sampled cell: ", r_n[0, :])
+        
+        return self.multipoints_SIF_KI_errors(u_jump_n, r_n)
     
     def single_point_two_scales_normal(
         self, jumpmodel_fine: FractureDisplacementJump
@@ -260,7 +279,9 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         r_n_two: np.ndarray,
     ) -> tuple[float, np.ndarray]:
         """
-        Compute SIF KI error estimates from a single (u, r) sample and return errors.
+        Compute SIF KI error estimates from two (u, r) samples and return errors.
+        Two singularity exponents can be used: exact value 0.5 and numerical singularity 
+        exponents calculated from these two samples. 
 
         Args:
             u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
@@ -280,6 +301,35 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             singularity_orders = self.singularity_order
 
         KIs = SIFValue.KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
+        print("KI at tips:", KIs)
+
+        KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
+
+        return self._relative_L2_error(KIs, KI_exact)
+    
+    def multipoints_SIF_KI_errors(
+        self, 
+        u_jump_n: np.ndarray, 
+        r_n: np.ndarray,
+    ) -> tuple[float, np.ndarray]:
+        """
+        Compute SIF KI error estimates from multiple (u, r) samples and return errors.
+        Only the exact singularity exponent 0.5 is used. 
+
+        Args:
+            u_jump_n (np.ndarray): A chosen set of normal displacement jumps for two tips.
+            r_n (np.ndarray): Distances to tip for the chosen set for two tips.
+
+        Returns:
+            Tuple[float, np.ndarray]:
+                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
+                ``rel_error_per_tip``: Relative absolute error array from two tips.
+        """
+        SIFValue = ComputeSifValue(self.model)
+        if self.singularity_order != 0.5:
+            raise ValueError(f"The singularity exponent should be 0.5.")
+
+        KIs = SIFValue.KI_from_multipoints(u_jump_n, r_n, self.singularity_order)
         print("KI at tips:", KIs)
 
         KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()

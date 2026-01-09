@@ -77,14 +77,14 @@ class ComputeSifValue(FractureDisplacementJump):
     ) -> np.ndarray: 
         """
         Compute KI from given displacement jumps, distances to the fracture tip, 
-        and singularity orders at a single point. 
+        and singularity orders with two given points. 
 
         Args:
             u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): First set (farther) of normal displacement jumps.
-            r_n_two (np.ndarray): Distances to tip for the first set.
-            singularity_orders (np.ndarray): singularity orders for two tips
+            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
+            r_n_two (np.ndarray): Distances to tip for the second set.
+            singularity_orders (np.ndarray): singularity exponents for two tips
 
         Returns:
             np.ndarray:
@@ -104,6 +104,38 @@ class ComputeSifValue(FractureDisplacementJump):
         )
 
         KIs = KIs_n_one + r_n_one / (r_n_two - r_n_one) * (KIs_n_one - KIs_n_two)
+
+        return KIs
+    
+    def KI_from_multipoints(
+            self, 
+            u_jump_n: np.ndarray, 
+            r_n: np.ndarray, 
+            singularity_orders: np.ndarray
+    ) -> np.ndarray: 
+        """
+        Compute KI from given displacement jumps, distances to the fracture tip, 
+        and singularity orders with given multiple points. 
+
+        Args:
+            u_jump_n (np.ndarray): A chosen set of normal displacement jumps.
+            r_n (np.ndarray): Distances to tip for the chosen set.
+            singularity_orders (np.ndarray): singularity exponents for two tips, i.e., 0.5
+
+        Returns:
+            np.ndarray:
+                ``KIs``: KI value array for two tips.
+
+        """
+        KIs_n = (
+            self.E / (8.0 * (1 - self.poi**2.0))
+            * np.power(2.0 * np.pi / r_n, singularity_orders)
+            * u_jump_n
+        )
+        num_tips = 2
+        KIs = np.full(num_tips, np.nan)
+        for i in [0, 1]:
+            _, KIs[i] = self._fitted_SIF(KIs_n[:, i], r_n[:, i])
 
         return KIs
     
@@ -160,3 +192,17 @@ class ComputeSifValue(FractureDisplacementJump):
         KI_exact =  pres0 * np.sqrt(np.pi * frac_half_length)
 
         return KI_exact
+
+    def _fitted_SIF(self, SIFs_per_tip, r_per_tip):
+        """
+        Calculate the linearly fitted SIF based on the multiple points
+
+        Returns: 
+            float:
+                ``slopes``: the fitted slope for the linear function.
+                ``intercepts``: the fitted intercept for the linear function, i.e., the final SIF.
+
+        """
+        slopes, intercepts = np.polyfit(r_per_tip, SIFs_per_tip, 1)
+
+        return slopes, intercepts

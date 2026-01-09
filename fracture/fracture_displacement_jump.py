@@ -86,26 +86,10 @@ class FractureDisplacementJump:
         Raises:
             ValueError: If sampling mode is missing/unknown or required keys are absent.
         """
-        # sampling_cfg = self.params.get("sampling", {})
-        # step_mode = sampling_cfg.get("mode", None)
-
-        # if step_mode is None:
-        #     raise ValueError("Sampling mode should be defined: 'refinement' or 'fixed'. ")    
-
-        # if step_mode == "refinement":
-        #     refinement_level = sampling_cfg.get("level", None)
-        #     if refinement_level is None:
-        #         raise ValueError("mode='refinement': keywords 'level' should be defined.")
-        #     n_steps = 2 * refinement_level
-        # elif step_mode == "fixed": 
-        #     n_steps_fixed = sampling_cfg.get("steps", None)
-        #     if n_steps_fixed is None:
-        #         raise ValueError("mode='fixed': 'steps' should be defined. ")
-        #     n_steps = n_steps_fixed
-        # else: 
-        #     raise ValueError(f"Unknown step_mode='{step_mode}'")
+        cells_tip_one = n_steps
+        cells_tip_two = self.tip_cells - n_steps      
+        current_frac_cells = np.where(self.tip_cells == 0, cells_tip_one, cells_tip_two)
         
-        current_frac_cells = np.where(self.tip_cells == 0, n_steps, self.tip_cells - n_steps)
         return current_frac_cells
     
     def extract_sampling_normal_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
