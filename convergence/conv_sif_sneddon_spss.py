@@ -218,17 +218,3 @@ plt.savefig(
 plt.close(fig1)
 
 
-# test the two-point option
-h = 0.1
-params["meshing_arguments"] = {"cell_size": h}
-model = ManuSneddonModel2d(params=params)
-pp.run_time_dependent_model(model)
-compSIF = ComputeSifErrorConvergence(model)
-# Here we use sampling pairs for SIF and this can allow computed singularity to be used
-sampling_pair = [0, 2]
-# Use the default singularity exponent 0.5
-compSIF.singularity_order = compSIF.exact_singularity()  
-rel_l2_error_ave, rel_error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
-print("Relative L2 error:", rel_l2_error_ave)
-print("Relative error per tip:", rel_error_per_tip)
-
