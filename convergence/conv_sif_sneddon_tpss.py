@@ -101,7 +101,7 @@ mpl.rcParams.update({
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))   
 
-# Plot the convergence curve for singularity exponents
+# Plot the convergence curve for sif
 errors_ave = np.array(error_ave_set)
 errors_per_tip = np.array(error_per_tip_set)
 num_frac_cells = np.array(num_frac_cells_set)

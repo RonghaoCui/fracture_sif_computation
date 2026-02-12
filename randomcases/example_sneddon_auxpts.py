@@ -1,3 +1,7 @@
+"""
+An example for Sneddon problem with auxiliary points. 
+
+"""
 from __future__ import annotations
 
 # import os, sys
@@ -15,7 +19,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 
 import os
-save_dir = "figures/aux_results"
+save_dir = "figures/aux_grids"
 os.makedirs(save_dir, exist_ok=True)
 
 class ManuSneddonModel2dWithAuxPoints(AuxiliaryPointsMixin, ManuSneddonModel2d):
