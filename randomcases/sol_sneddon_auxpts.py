@@ -9,13 +9,10 @@ import porepy as pp
 from gmshrandom.auxiliary_points_in_mesh import AuxiliaryPointsMixin
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 
-
-
 import math
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
-from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import os
 save_dir = "figures/aux_results"
@@ -44,6 +41,7 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.1,
 }
 
+# Parameters for auxiliary point generation
 params.update({
     "aux_point_count": 32,        # the even number is preferrable
     "aux_point_min_dist": 1.0*params["meshing_arguments"]["cell_size"],  
@@ -56,7 +54,7 @@ pp.run_time_dependent_model(model)
 aux_pts = model._aux_points_xy
 print("number of points:", aux_pts.shape)
 
-# Plot grids
+# Plot grids only
 mpl.rcParams.update({
     "font.family": "serif",     
     "font.size": 8,             
@@ -91,12 +89,10 @@ plt.close()
 
 # plot grids and auxiliary points together
 FIG_NUM = 777   
-fig = plt.figure(FIG_NUM, figsize=(6,5), clear=True)     
-
+fig2 = plt.figure(FIG_NUM, figsize=(3.5,3.5), clear=True) 
 pp.plot_grid(
     model.mdg,
     rgb=[1, 1, 1],
-    fig_size=(3.5,3.5), # inches
     plot_2d=True,
     linewidth=0.3,
     alpha=1.0,
@@ -105,13 +101,8 @@ pp.plot_grid(
     if_plot=False,    
 )
 
-ax = fig.axes[0]             
-
-aux_pts = getattr(model, "_aux_points_xy", None)
-if aux_pts is None:
-    aux_pts = np.asarray(params["auxiliary_points"], dtype=float)
-
-ax.scatter(
+ax2 = fig2.axes[0]   
+ax2.scatter(
     aux_pts[:, 0], aux_pts[:, 1],
     s=10, marker='o',
     facecolors='r', edgecolors='r', 

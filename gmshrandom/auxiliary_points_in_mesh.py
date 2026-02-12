@@ -14,10 +14,11 @@ import gc
 
 class AuxiliaryPointsMixin:
     """
-    A mixin for adding auxiliary points (nodes) into the mesh to make simplex grids have some randomness 
-    in the 2D matrix. 
+    A mixin for adding auxiliary points (nodes) into the mesh to make simplex grids 
+    have some randomness in the 2D matrix. 
 
-    This mixin overrides the geometry construction by implementing a custom `create_mdg()` method. 
+    This mixin overrides the geometry construction by implementing a custom method 
+    for :meth:`create_mdg()` . 
     """
     def create_fracture_network(self) -> None:
         """Set the fracture network from the fractures and domain."""
@@ -25,10 +26,8 @@ class AuxiliaryPointsMixin:
 
     def create_mdg(self) -> None:
         """
-        Get the mdg with auxiliary points. Necessary properties (pts, mesh_size) in GmshData are modified for auxiliary points. 
-
-        Returns: 
-            mdg: mixed-dimensional geometry. 
+        Get the mdg with auxiliary points. Necessary properties (pts, mesh_size) in GmshData 
+        are modified for auxiliary points. 
         """
         frac_net = self.fracture_network_2d
         cell_size = self.params["meshing_arguments"]["cell_size"]
@@ -65,7 +64,12 @@ class AuxiliaryPointsMixin:
         writer = GmshWriter(gmsh_repr)
         print("\n Gmsh writing finished. ")
 
-        added_point_tags = [writer._point_tags[idx] for idx in range(start_idx, start_idx + aux_pts.shape[1])]
+        added_point_tags = [
+            writer._point_tags[idx] 
+            for idx in range(
+                start_idx, start_idx + aux_pts.shape[1]
+            )
+        ]
 
         gmsh.model.mesh.embed(0, added_point_tags, 2, writer._domain_tag)
         gmsh.model.geo.synchronize() 
@@ -89,9 +93,10 @@ class AuxiliaryPointsMixin:
 
     def _random_auxiliary_points(self) -> list[tuple[float, float]]:
         """
-        Generate auxiliary points in two predefined rectangular domains located above and below the horizontal fracture. 
-        The total number of auxiliary points is given by ``self.params["aux_point_count"]``. The domain for auxiliary 
-        points are defined with a margin (whose length is the given cell size) along domain boundaries and fracture. 
+        Generate auxiliary points in two predefined rectangular domains located above and 
+        below the horizontal fracture. The total number of auxiliary points is given by 
+        ``self.params["aux_point_count"]``. The domain for auxiliary points are defined with a 
+        margin (whose length is the given cell size) along domain boundaries and fracture. 
 
         Returns: 
             pts: the list of coordinates (x,y) of auxiliary points.      
@@ -130,9 +135,9 @@ class AuxiliaryPointsMixin:
             rng: int
     )  -> list[tuple[float, float]]:
         """
-        Random generation of auxiliary points in a rectangular domain with a constraint 
-        of the distance between two points lager than min_dist. The randomness is controlled 
-        by given seeds. 
+        Random generation of auxiliary points in a rectangular domain with a constraint of 
+        the distance between two points larger than ``min_dist``. The randomness is controlled 
+        by a given random number generator. 
 
         Parameters: 
             n: the number of generated points.
