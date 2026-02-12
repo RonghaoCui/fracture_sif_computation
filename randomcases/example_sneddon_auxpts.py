@@ -96,7 +96,7 @@ pp.plot_grid(
     plot_2d=True,
     linewidth=0.3,
     alpha=1.0,
-    title="Grid with auxiliary points: so",
+    title=None,
     fig_num=FIG_NUM,   
     if_plot=False,    
 )
