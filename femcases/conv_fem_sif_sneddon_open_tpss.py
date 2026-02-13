@@ -8,13 +8,11 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from femcases import FEMSneddonModel2d
-from femcases import FEMComputeSifErrorConvergence
+from fems import FEMSneddonModel2d
+from fems import FEMComputeSifErrorConvergence
 
 import math
 import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
-import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
@@ -162,12 +160,16 @@ for i, h in enumerate(cell_sizes):
 logformat = ScalarFormatter(useMathText=True)
 logformat.set_powerlimits((0, 0))   
 
-# Plot the convergence curve for singularity exponents
+# Plot the convergence curve 
 errors_ave = np.array(error_ave_set)
 errors_per_tip = np.array(error_per_tip_set)
 num_sqrt_dofs = np.array(num_dofs_set)
-first_order_line = errors_ave[0] * (num_sqrt_dofs[0] / num_sqrt_dofs)
-half_order_line = errors_ave[0] * (num_sqrt_dofs[0] / num_sqrt_dofs) ** 0.5
+
+# Reference line
+num_dofs_line = np.array([10, 30, 50, 70, 90, 100, 300, 500, 1000])
+initial_value_line = 4e-3
+first_order_line = initial_value_line * (num_dofs_line[0] / num_dofs_line)
+half_order_line = initial_value_line  * (num_dofs_line[0] / num_dofs_line) ** 0.5
 
 fig5, ax5 = plt.subplots(figsize=(3.5, 3.0))   # inches
 ax5.loglog(
@@ -201,7 +203,7 @@ ax5.loglog(
 )
 
 ax5.plot(
-    num_sqrt_dofs,
+    num_dofs_line,
     first_order_line,
     '--',
     color='k',
@@ -210,7 +212,7 @@ ax5.plot(
 )
 
 ax5.plot(
-    num_sqrt_dofs,
+    num_dofs_line,
     half_order_line,
     '--',
     color='tab:grey',

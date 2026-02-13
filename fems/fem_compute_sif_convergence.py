@@ -3,22 +3,12 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
-import mixedmode_fracture_analysis as mmfa
-
-import math
-import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
-import matplotlib as mpl
-from matplotlib.ticker import ScalarFormatter
-from matplotlib.ticker import LogLocator, LogFormatterMathtext
-
 class FEMComputeSifErrorConvergence:
     """
     FEM analogue of MPSA's SIF error convergence analysis in PorePy.
     """
 
-    def __init__(self, model: "FEMSneddonModel2d"):
+    def __init__(self, model):
         self.model = model
         self.tip_face_centers = model.tip_face_centers
         self.E = self.model.E

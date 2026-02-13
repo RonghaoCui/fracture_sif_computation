@@ -8,14 +8,13 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from femcases import FEMSneddonModel2d
+from fems import FEMSneddonModel2d
 
 import math
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
-from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
 save_dir = "figures/fem_results"
 os.makedirs(save_dir, exist_ok=True)

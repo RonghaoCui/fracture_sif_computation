@@ -12,7 +12,7 @@ import porepy as pp
 import numpy as np
 
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
-import mixedmode_fracture_analysis as mmfa
+from fems import mmfa
 
 
 # Directly use boundary element methods in Sneddon problem
