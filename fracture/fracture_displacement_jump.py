@@ -109,7 +109,7 @@ class FractureDisplacementJump:
         u_jump = self.normal_displacement_jump()[current_frac_cells]
         return u_jump, r_cell_to_tip
     
-    def extract_sampling_tangential_jump(self) -> tuple[np.ndarray, np.ndarray]:
+    def extract_sampling_tangential_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Sample tangential displacement jumps and distances at selected fracture cells of two tips.
 
@@ -119,7 +119,7 @@ class FractureDisplacementJump:
                 - ``r_cell_to_tip``: distances from sampled cell centers to tip face centers.
         """
         sd_frac = self.sd_frac
-        current_frac_cells = self.sampling_frac_cell()
+        current_frac_cells = self.sampling_frac_cell(n_steps)
         r_cell_to_tip = np.linalg.norm(
             self.tip_face_centers - sd_frac.cell_centers[:, current_frac_cells], axis=0
         )

@@ -31,7 +31,6 @@ class ComputeSifValue(FractureDisplacementJump):
         Args:
             model: A solved PorePy model instance
         """
-        # Calculate SIF KI with given parameters in the model
         super().__init__(model)
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
@@ -79,7 +78,7 @@ class ComputeSifValue(FractureDisplacementJump):
         Compute KI from given displacement jumps, distances to the fracture tip, 
         and singularity orders with two given points. 
 
-        Args:
+        Parametres:
             u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
             u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
@@ -106,6 +105,46 @@ class ComputeSifValue(FractureDisplacementJump):
         KIs = KIs_n_one + r_n_one / (r_n_two - r_n_one) * (KIs_n_one - KIs_n_two)
 
         return KIs
+    
+    def KII_from_two_points(
+            self, 
+            u_jump_t_one: np.ndarray, 
+            r_t_one: np.ndarray, 
+            u_jump_t_two: np.ndarray, 
+            r_t_two: np.ndarray,
+            singularity_orders: np.ndarray
+    ) -> np.ndarray: 
+        """
+        Compute KII from given displacement jumps, distances to the fracture tip, 
+        and singularity orders with two given points. 
+
+        Parametres:
+            u_jump_t_one (np.ndarray): First set (farther) of normal displacement jumps.
+            r_t_one (np.ndarray): Distances to tip for the first set.
+            u_jump_t_two (np.ndarray): Second set (closer) of normal displacement jumps.
+            r_t_two (np.ndarray): Distances to tip for the second set.
+            singularity_orders (np.ndarray): singularity exponents for two tips
+
+        Returns:
+            np.ndarray:
+                ``KIIs``: KII value array for two tips.
+
+        """
+        KIIs_t_one = (
+            self.E / (8.0 * (1 - self.poi**2.0))
+            * np.power(2.0 * np.pi / r_t_one, singularity_orders)
+            * u_jump_t_one
+        )
+
+        KIIs_t_two = (
+            self.E / (8.0 * (1 - self.poi**2.0))
+            * np.power(2.0 * np.pi / r_t_two, singularity_orders)
+            * u_jump_t_two
+        )
+
+        KIIs = KIIs_t_one + r_t_one / (r_t_two - r_t_one) * (KIIs_t_one - KIIs_t_two)
+
+        return KIIs
     
     def KI_from_multipoints(
             self, 
@@ -192,6 +231,20 @@ class ComputeSifValue(FractureDisplacementJump):
         KI_exact =  pres0 * np.sqrt(np.pi * frac_half_length)
 
         return KI_exact
+    
+    def calculate_exact_SIF_KII_westargaard(self) -> float: 
+        """
+        Calculate the analytical solution of SIF KII for Westergaard's problem
+
+        Returns: 
+            KII_exact: an analytical KII value.
+
+        """
+        tau_inf0 = self.params["tau_inf"]
+        frac_half_length = self.params["a"]
+        KII_exact =  tau_inf0 * np.sqrt(np.pi * frac_half_length)
+
+        return KII_exact
 
     def _fitted_SIF(self, SIFs_per_tip, r_per_tip):
         """

@@ -151,31 +151,31 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
     
     def estimated_singularity(
         self, 
-        u_jump_n_one: np.ndarray, 
-        r_n_one: np.ndarray, 
-        u_jump_n_two: np.ndarray, 
-        r_n_two: np.ndarray
+        u_jump_one: np.ndarray, 
+        r_one: np.ndarray, 
+        u_jump_two: np.ndarray, 
+        r_two: np.ndarray
     ) -> np.ndarray:
         """
         Compute singularity orders from two (u, r) samples and return values of both fracture tips.
 
-        Args:
-            u_jump_n_one (np.ndarray): First set  (farther) of normal displacement jumps.
-            r_n_one (np.ndarray): Distances to tip for the first set.
-            u_jump_n_two (np.ndarray): Second set (closer) of normal displacement jumps.
-            r_n_two (np.ndarray): Distances to tip for the second set.
+        Parameters:
+            u_jump_one (np.ndarray): First set  (farther) of normal displacement jumps.
+            r_one (np.ndarray): Distances to tip for the first set.
+            u_jump_two (np.ndarray): Second set (closer) of normal displacement jumps.
+            r_two (np.ndarray): Distances to tip for the second set.
 
         Returns:
             np.ndarray:
                 ``singularity_orders``: computed singularity orders for two tips.
         """
         # Get log10
-        log_u_jump_n_one = np.log10(np.abs(u_jump_n_one))
-        log_u_jump_n_two   = np.log10(np.abs(u_jump_n_two))
-        log_r_n_one   = np.log10(r_n_one)
-        log_r_n_two   = np.log10(r_n_two)
+        log_u_jump_one = np.log10(np.abs(u_jump_one))
+        log_u_jump_two   = np.log10(np.abs(u_jump_two))
+        log_r_one   = np.log10(r_one)
+        log_r_two   = np.log10(r_two)
 
-        singularity_orders = (log_u_jump_n_one - log_u_jump_n_two) / (log_r_n_one - log_r_n_two)
+        singularity_orders = (log_u_jump_one - log_u_jump_two) / (log_r_one - log_r_two)
 
         return singularity_orders
     

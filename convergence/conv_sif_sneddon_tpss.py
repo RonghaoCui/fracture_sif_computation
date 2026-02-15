@@ -1,4 +1,8 @@
+"""
+Convergence analysis for Westergaard's problem in the shear mode
+using the two-point method. 
 
+"""
 
 from __future__ import annotations
 
@@ -63,6 +67,7 @@ pairs_in_cellsizes = [
 error_ave_set = []
 error_per_tip_set = []
 num_frac_cells_set = []
+num_dofs_set = []
 for i, h in enumerate(cell_sizes):
     print(f"Running for mesh size h = {h}")
     params["meshing_arguments"] = {"cell_size": h}
@@ -82,6 +87,19 @@ for i, h in enumerate(cell_sizes):
     num_frac_cells = compSIF.get_number_of_fracture_cells()
     print("Number of fracture cells:", num_frac_cells)
     num_frac_cells_set.append(num_frac_cells)
+
+    num_dofs = 0
+    for g in model.mdg.subdomains(dim=2):
+        print("Number of matrix cells:", g.num_cells)
+        num_dofs += g.num_cells
+
+    for g in model.mdg.interfaces():
+        print("Number of interface cells:", g.num_cells)
+        num_dofs += g.num_cells
+
+    num_dofs = np.sqrt(num_dofs)
+    print("Square root of the number of degrees of freedom:", num_dofs)
+    num_dofs_set.append(num_dofs)
 
 # Set the plot format
 mpl.rcParams.update({
@@ -104,13 +122,13 @@ formatter.set_powerlimits((0, 0))
 # Plot the convergence curve for sif
 errors_ave = np.array(error_ave_set)
 errors_per_tip = np.array(error_per_tip_set)
-num_frac_cells = np.array(num_frac_cells_set)
-first_order_line = errors_ave[0] * (num_frac_cells[0] / num_frac_cells)
-half_order_line = errors_ave[0] * (num_frac_cells[0] / num_frac_cells) ** 0.5
+num_dofs = np.array(num_dofs_set)
+first_order_line = errors_ave[0] * (num_dofs[0] / num_dofs)
+half_order_line = errors_ave[0] * (num_dofs[0] / num_dofs) ** 0.5
 
 fig1, ax1 = plt.subplots(figsize=(3.5, 3.0))   # inches
 ax1.loglog(
-    num_frac_cells,
+    num_dofs,
     errors_per_tip[:, 0],
     'o-',
     color='tab:blue',
@@ -120,7 +138,7 @@ ax1.loglog(
 )
 
 ax1.loglog(
-    num_frac_cells,
+    num_dofs,
     errors_per_tip[:, 1],
     'o-',
     color='tab:orange',
@@ -130,7 +148,7 @@ ax1.loglog(
 )
 
 ax1.loglog(
-    num_frac_cells,
+    num_dofs,
     errors_ave,
     'o-',
     color='tab:pink',
@@ -140,7 +158,7 @@ ax1.loglog(
 )
 
 ax1.plot(
-    num_frac_cells,
+    num_dofs,
     first_order_line,
     '--',
     color='k',
@@ -149,7 +167,7 @@ ax1.plot(
 )
 
 ax1.plot(
-    num_frac_cells,
+    num_dofs,
     half_order_line,
     '--',
     color='tab:grey',
@@ -157,13 +175,13 @@ ax1.plot(
     label="Reference slope=-0.5"
 )
 
-ax1.set_xlabel("Number of fracture cells")
+ax1.set_xlabel(r"$\sqrt{\mathrm{DOF}}$")
 ax1.set_ylabel("Relative error")
 
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
 ax1.yaxis.set_major_formatter(formatter)
-ax1.set_xlim(5.5, 220)
+ax1.set_xlim(10, 700)
 ax1.set_ylim(0.0002, 1.0)
 ax1.xaxis.set_major_locator(LogLocator(base=10))
 ax1.xaxis.set_major_formatter(LogFormatterMathtext())
@@ -183,3 +201,4 @@ plt.savefig(
     pil_kwargs={"compression": "tiff_lzw"}
 )
 plt.close(fig1)
+
