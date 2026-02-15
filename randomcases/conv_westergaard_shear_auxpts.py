@@ -134,7 +134,7 @@ for si, seed in enumerate(seeds):
     
         sampling_pair = pairs_in_cellsizes[i]
         compSIF.singularity_order = compSIF.exact_singularity()  
-        error_ave, error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
+        error_ave, error_per_tip = compSIF.two_points_single_scale_tangential(sampling_pair)
 
         error_ave_set.append(error_ave)
         error_per_tip_set.append(error_per_tip)
@@ -263,7 +263,7 @@ ax.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "conv_sif_so_random_tpss.tiff"),
+    os.path.join(save_dir, "conv_sif_ws_random_tpss.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
