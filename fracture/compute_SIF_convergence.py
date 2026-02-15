@@ -98,10 +98,10 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
         u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
 
-        print("Displacement jump n value 1: ", u_jump_n_one)
-        print("Displacement jump n value 2: ", u_jump_n_two)
-        print("Displacement jump n r 1: ", r_n_one)
-        print("Displacement jump n r 2: ", r_n_two)
+        # print("Displacement jump n value 1: ", u_jump_n_one)
+        # print("Displacement jump n value 2: ", u_jump_n_two)
+        # print("Displacement jump n r 1: ", r_n_one)
+        # print("Displacement jump n r 2: ", r_n_two)
         
         return self.TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
     
@@ -130,10 +130,10 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         u_jump_t_one, r_t_one = self.extract_sampling_tangential_jump(sampling_pair[1])
         u_jump_t_two, r_t_two = self.extract_sampling_tangential_jump(sampling_pair[0])
 
-        print("Displacement jump t value 1: ", u_jump_t_one)
-        print("Displacement jump t value 2: ", u_jump_t_two)
-        print("Displacement jump t r 1: ", r_t_one)
-        print("Displacement jump t r 2: ", r_t_two)
+        # print("Displacement jump t value 1: ", u_jump_t_one)
+        # print("Displacement jump t value 2: ", u_jump_t_two)
+        # print("Displacement jump t r 1: ", r_t_one)
+        # print("Displacement jump t r 2: ", r_t_two)
         
         return self.TwoPoints_SIF_KII_errors(u_jump_t_one, r_t_one,u_jump_t_two, r_t_two)
     
@@ -334,7 +334,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             singularity_orders = self.singularity_order
 
         KIs = SIFValue.KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
-        print("KI at tips:", KIs)
+        # print("KI at tips:", KIs)
 
         KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
 
@@ -370,7 +370,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             singularity_orders = self.singularity_order
 
         KIIs = SIFValue.KII_from_two_points(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two, singularity_orders)
-        print("KII at tips:", KIIs)
+        # print("KII at tips:", KIIs)
 
         KII_exact =  SIFValue.calculate_exact_SIF_KII_westargaard()
 

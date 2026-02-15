@@ -140,4 +140,17 @@ class FractureDisplacementJump:
 
         return num_frac_cells
     
+    def generate_sampling_pairs(self):
+        num_frac_cells = self.sd_frac.num_cells
+        k_min = 0
+        k_max = num_frac_cells // 2 - 1
+
+        pairs_in_cellsizes = []
+        
+        for k in range(k_min, k_max+1, 1):
+            pairs_in_cellsizes.append([k, k + 1])
+
+        return pairs_in_cellsizes
+
+        
     
