@@ -151,6 +151,49 @@ class FractureDisplacementJump:
             pairs_in_cellsizes.append([k, k + 1])
 
         return pairs_in_cellsizes
+    
+    def sampling_pairs_by_exponent(self):
+
+        sd_frac = self.sd_frac
+        tip = self.tip_face_centers[:, 0]
+        r_cell_to_tip = np.linalg.norm(
+            tip[:, None] - sd_frac.cell_centers, axis=0
+        )
+        radial_dis = self.radial_dis_by_exponent()
+        k_selected = np.where(r_cell_to_tip >= radial_dis)[0]
+        sampling_pair = [k_selected[0], k_selected[0] + 1]
+
+        return sampling_pair
+    
+    def radial_dis_by_exponent(self):
+
+        constant_c = self.params["constant_c"]
+        exponent_alpha = self.params["exponent_alpha"]
+        h = self.params["meshing_arguments"]["cell_size"]
+        a = self.params["a"]
+        radial_dis = constant_c * (a ** (1 - exponent_alpha)) * (h  ** exponent_alpha)
+
+        return radial_dis
+    
+    # def sampling_pair_from_coarsest(self, coarsest_h=0.1):
+    #     constant_c = self.params["constant_c"]
+    #     exponent_alpha = self.params["exponent_alpha"]
+    #     a = self.params["a"]
+
+    #     r0 = constant_c * (a ** (1 - exponent_alpha)) * (coarsest_h ** exponent_alpha)
+
+    #     sd = self.sd_frac
+    #     tip = self.tip_face_centers[:, 0]
+    #     dist = np.linalg.norm(sd.cell_centers - tip[:, None], axis=0)
+
+    #     k0 = int(np.argmin(np.abs(dist - r0)))
+    #     k0 = min(k0, sd.num_cells // 2 - 1)
+
+    #     if k0 + 1 >= sd.num_cells:
+    #         raise RuntimeError("C is too large for this grid")
+        
+    #     return [k0, k0 + 1]
+
 
         
     
