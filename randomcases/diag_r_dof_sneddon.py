@@ -135,6 +135,16 @@ for i, h in enumerate(cell_sizes):
     num_dofs = np.sqrt(num_dofs)
 
     compSIF = ComputeSifErrorConvergence(model)
+
+    # Number of fracture cells
+    # num_frac_cells = compSIF.get_number_of_fracture_cells() 
+    # print("Number of fracture cells:", num_frac_cells)
+    # Normalized cell size
+    norm_cellsize = (
+        model.params["meshing_arguments"]["cell_size"]
+        / model.params["a"]
+    )
+
     pairs_in_cellsizes = compSIF.generate_sampling_pairs()
 
     error_acc = {tuple(pair): [] for pair in pairs_in_cellsizes}
@@ -157,7 +167,7 @@ for i, h in enumerate(cell_sizes):
             error_ave, error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
             _, r_n = compSIF.extract_sampling_normal_jump(sampling_pair[0])
 
-            r_mean = np.mean(r_n)
+            r_mean = np.mean(r_n) / model.params["a"]
 
             error_acc[tuple(sampling_pair)].append(error_ave)
             error_std_acc[tuple(sampling_pair)].extend(error_per_tip)
@@ -172,22 +182,24 @@ for i, h in enumerate(cell_sizes):
             "h": h,
             "r": np.mean(r_acc[pair_key]),
             "sqrt_dof": num_dofs,
+            "norm_h": norm_cellsize,
             "error": errs_mean.mean(),
             "error_std": errs_std.std(ddof=0),
         })
 
 diag_data = pd.DataFrame(diag_results)
+diag_data.to_csv("diag_data_so.csv", index=False)
+# diag_data = pd.read_csv("diag_data_so.csv")
 
-R_all   = diag_data["r"].values
-DOF_all = diag_data["sqrt_dof"].values
-ERR_all = diag_data["error"].values
-ERR_std_all = diag_data["error_std"].values
+# R_all   = diag_data["r"].values
+# DOF_all = diag_data["sqrt_dof"].values
+# ERR_all = diag_data["error"].values
+# ERR_std_all = diag_data["error_std"].values
 
 # print("R_all =", R_all)
 # print("DOF_all =", DOF_all)
 # print("ERR_all =", ERR_all)
 
-# plot
 mpl.rcParams.update({
     "font.family": "serif",     
     "font.size": 8,             
@@ -203,18 +215,20 @@ mpl.rcParams.update({
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))            # Scientific form
 
+# Plot mean
 df_mean = (
     diag_data
-    .groupby(["sqrt_dof", "r"], as_index=False)
+    .groupby(["norm_h", "r"], as_index=False)
     .agg(mean_error=("error", "mean"))
 )
+
 vmin = df_mean["mean_error"].min()
 vmax = df_mean["mean_error"].max()
 
-fig, ax = plt.subplots(figsize=(4.0, 3.0))
-sc = ax.scatter(
+fig1, ax1 = plt.subplots(figsize=(4.0, 3.0))
+sc = ax1.scatter(
     df_mean["r"],
-    df_mean["sqrt_dof"],
+    df_mean["norm_h"],
     c=df_mean["mean_error"],
     s=28,
     cmap="plasma",     
@@ -222,22 +236,24 @@ sc = ax.scatter(
     norm=LogNorm(vmin=vmin, vmax=vmax),
 )
 
-ax.yaxis.set_major_formatter(formatter)
-ax.set_yscale("log")
-ax.set_xlabel(r"$r$")
-ax.set_ylabel(r"$\sqrt{\mathrm{DOF}}$")
-ax.set_xlim(0.95 * df_mean["r"].min(), 1.05 * df_mean["r"].max())
-ax.set_ylim(0.9  * df_mean["sqrt_dof"].min(),
-            1.1  * df_mean["sqrt_dof"].max())
+ax1.yaxis.set_major_formatter(formatter)
+ax1.set_yscale("log")
+ax1.set_xlabel(r"$r/a$")
+# ax1.set_ylabel(r"$\sqrt{\mathrm{DOF}}$")
+ax1.set_ylabel(r"$h/a$")
+# ax1.set_xlim(0.95 * df_mean["r"].min(), 1.05 * df_mean["r"].max())
+ax1.set_xlim(-0.05, 1.05)
+ax1.set_ylim(0.9  * df_mean["norm_h"].min(),
+             1.1  * df_mean["norm_h"].max())
 
 # colorbar
-cbar = plt.colorbar(sc, ax=ax)
+cbar = plt.colorbar(sc, ax=ax1)
 cbar.set_label("Mean of relative error")
 
-ax.yaxis.set_major_locator(LogLocator(base=10))
-ax.yaxis.set_major_formatter(LogFormatterMathtext())
-ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
-ax.grid(True, which="both", linestyle="--", alpha=0.5)
+ax1.yaxis.set_major_locator(LogLocator(base=10))
+ax1.yaxis.set_major_formatter(LogFormatterMathtext())
+ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
     os.path.join(save_dir, "diag_r_dof_so_scatter_mean.tiff"),
@@ -246,12 +262,12 @@ plt.savefig(
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
+plt.close(fig1)
 
 # Plot std
 df_std = (
     diag_data
-    .groupby(["sqrt_dof", "r"], as_index=False)
+    .groupby(["norm_h", "r"], as_index=False)
     .agg(std_error=("error_std", "mean"))
 )
 
@@ -262,7 +278,7 @@ fig2, ax2 = plt.subplots(figsize=(4.0, 3.0))
 
 sc2 = ax2.scatter(
     df_std["r"],
-    df_std["sqrt_dof"],
+    df_std["norm_h"],
     c=df_std["std_error"],
     s=28,
     cmap="plasma", 
@@ -271,12 +287,14 @@ sc2 = ax2.scatter(
 )
 
 ax2.set_yscale("log")
-ax2.set_xlabel(r"$r$")
-ax2.set_ylabel(r"$\sqrt{\mathrm{DOF}}$")
-ax2.set_xlim(0.95 * df_std["r"].min(), 1.05 * df_std["r"].max())
+ax2.set_xlabel(r"$r/a$")
+# ax2.set_ylabel(r"$\sqrt{\mathrm{DOF}}$")
+ax2.set_ylabel(r"$h/a$")
+# ax2.set_xlim(0.95 * df_std["r"].min(), 1.05 * df_std["r"].max())
+ax2.set_xlim(-0.05, 1.05)
 ax2.set_ylim(
-    0.9 * df_std["sqrt_dof"].min(),
-    1.1 * df_std["sqrt_dof"].max()
+    0.9 * df_std["norm_h"].min(),
+    1.1 * df_std["norm_h"].max()
 )
 
 cbar = plt.colorbar(sc2, ax=ax2)
@@ -294,107 +312,74 @@ plt.savefig(
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
+plt.close(fig2)
 
-# bins
-# unique_dof = np.unique(DOF_all)
+# Get the minimum mean error with correponding sqrt_dof and r
+idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
+df_best = df_mean.loc[idx].reset_index(drop=True)
 
-# dof_bins = np.zeros(len(unique_dof) + 1)
-# dof_bins[1:-1] = 0.5 * (unique_dof[:-1] + unique_dof[1:])
-# dof_bins[0] = unique_dof[0] * 0.95
-# dof_bins[-1] = unique_dof[-1] * 1.05
+# Get the fitting line for the optimal sqrt_dof and r
+x = np.log10(df_best["norm_h"].to_numpy())
+y = np.log10(df_best["r"].to_numpy())
 
-# r_bins = np.linspace(R_all.min(), R_all.max(), 20)
+alpha, logC = np.polyfit(x, y, 1)
+C = 10 ** logC
 
-# stat_mean, r_edges, dof_edges, _ = binned_statistic_2d(
-#     R_all, DOF_all, ERR_all,
-#     statistic="mean",
-#     bins=[r_bins, dof_bins]
-# )
+print("The alpha value:", alpha)
+print("The C value", C)
 
-# # plot
-# mpl.rcParams.update({
-#     "font.family": "serif",     
-#     "font.size": 8,             
-#     "axes.labelsize": 8,       
-#     "axes.titlesize": 8, 
-#     "legend.fontsize": 7,
-#     "xtick.labelsize": 8,
-#     "ytick.labelsize": 8,
-#     "lines.linewidth": 1.0, 
-#     "lines.markersize": 2.0, 
-#     "mathtext.fontset": "dejavusans", 
-# })
-# formatter = ScalarFormatter(useMathText=True)
-# formatter.set_powerlimits((0, 0))            # Scientific form
+norm_h_fit = np.linspace(0.0, 1.0, 100,)
+r_fit = C * norm_h_fit ** alpha
 
-# fig, ax = plt.subplots(figsize=(4.0, 3.0))
-# pcm = ax.pcolormesh(
-#     r_edges,
-#     dof_edges,
-#     stat_mean.T,
-#     shading="auto",
-#     cmap="plasma"
-# )
+# Plot the curves of sqrt_dof and r with the minimum error
+fig3, ax3 = plt.subplots(figsize=(3.5, 3.0))
+ax3.loglog(
+    df_best["norm_h"],
+    df_best["r"],
+    'o',
+    color='tab:blue',
+    linewidth=2,
+    markersize=4, 
+    label="Data"
+)
 
-# ax.set_xlim(0.95 * R_all.min(), 1.05 * R_all.max())
-# ax.set_ylim(0.95 * DOF_all.min(), 1.05 * DOF_all.max())
+ax3.loglog(
+    norm_h_fit,
+    r_fit,
+    '--',
+    color='tab:orange',
+    linewidth=2,
+    label="Fitting"
+)
 
-# # ax.set_xscale("log")
-# ax.set_yscale("log")
+ax3.set_xlabel(r"$r/a$")
+ax3.set_ylabel(r"$h/a$")
 
-# ax.set_xlabel(r"$r$")
-# ax.set_ylabel(r"$\sqrt{\mathrm{DOF}}$")
+formatter = ScalarFormatter(useMathText=True)
+formatter.set_powerlimits((0, 0))
+ax3.yaxis.set_major_formatter(formatter)
+# ax3.set_xlim(10, 700)
+# ax3.set_ylim(0.0002, 1.0)
+ax3.set_xlim(0.01, 1.0)
+ax3.set_ylim(0.1, 1.0)
+ax3.xaxis.set_major_locator(LogLocator(base=10))
+ax3.xaxis.set_major_formatter(LogFormatterMathtext())
+ax3.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 
-# cbar = plt.colorbar(pcm, ax=ax)
-# cbar.set_label("Mean relative SIF error")
+ax3.yaxis.set_major_locator(LogLocator(base=10))
+ax3.yaxis.set_major_formatter(LogFormatterMathtext())
+ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+ax3.grid(True, which="both", linestyle="--", alpha=0.5)
+ax3.legend(loc="lower left")
+plt.tight_layout()
+plt.savefig(
+    os.path.join(save_dir, "conv_r_dof_opt_so.tiff"),
+    format="tiff",
+    dpi=300,
+    bbox_inches="tight",
+    pil_kwargs={"compression": "tiff_lzw"}
+)
+plt.close(fig3)
 
-# fig, ax = plt.subplots(figsize=(4.0, 3.5))
-
-# for dof in np.unique(DOF_all):
-#     mask = DOF_all == dof
-#     r_vals = R_all[mask]
-#     err_vals = ERR_all[mask]
-
-#     if len(r_vals) < 3:
-#         continue
-
-#     r_bins = np.linspace(r_vals.min(), r_vals.max(), 20)
-
-#     stat, edges, _ = binned_statistic(
-#         r_vals,
-#         err_vals,
-#         statistic="mean",
-#         bins=r_bins
-#     )
-
-#     y0 = dof_bins[j]
-#     y1 = dof_bins[j + 1]
-
-#     ax.pcolormesh(
-#         r_edges,
-#         [y0, y1],          
-#         stat[np.newaxis, :],
-#         cmap="plasma",
-#         norm=norm,
-#         shading="auto"
-#     )
-
-# ax.set_xlabel(r"$r$")
-# ax.set_ylabel("Mean relative SIF error")
-# ax.set_yscale("log")
-
-# ax.legend(frameon=False, fontsize=7)
-
-# ax.grid(True, which="both", linestyle="--", alpha=0.4)
-# plt.tight_layout()
-# plt.savefig(
-#     os.path.join(save_dir, "diag_r_dof_sneddon_bin.tiff"),
-#     format="tiff",
-#     dpi=300,
-#     bbox_inches="tight",
-#     pil_kwargs={"compression": "tiff_lzw"}
-# )
-# plt.show()
 
 

@@ -121,7 +121,7 @@ plt.savefig(
 )
 plt.show()
 
-#  Define mesh sizes to convergence analysis
+# Define mesh sizes to convergence analysis
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 # num_auxiliary_points = [8, 32, 128, 512, 2048, 8192]
 # seeds = [1234, 2029, 31415, 27182, 42424]

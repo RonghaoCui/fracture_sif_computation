@@ -90,13 +90,22 @@ seeds = [1234, 2029, 31415, 27182, 42424]
 # seeds = [1234]
 
 # exponent = 0.25
+# pairs_in_cellsizes = [
+#     [2, 3],
+#     [4, 5],
+#     [7, 8],
+#     [11, 12],
+#     [20, 21],
+#     [33, 34]
+# ]
+
 pairs_in_cellsizes = [
+    [1, 2],
     [2, 3],
     [4, 5],
-    [7, 8],
-    [11, 12],
-    [20, 21],
-    [33, 34]
+    [6, 7],
+    [10, 11],
+    [17, 18]
 ]
 
 all_err_ave = []        # list of (n_h,) arrays
@@ -260,12 +269,13 @@ ax.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "conv_sif_so_random_tpss.tiff"),
+    # os.path.join(save_dir, "conv_sif_so_random_tpss.tiff"),
+    os.path.join(save_dir, "conv_sif_so_with_coeff.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
+plt.close(fig)
 
 
