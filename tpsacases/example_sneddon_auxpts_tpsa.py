@@ -1,5 +1,6 @@
 """
-An example for Sneddon problem with auxiliary points. 
+An example for Sneddon problem with auxiliary points 
+by TPSA. 
 
 """
 from __future__ import annotations

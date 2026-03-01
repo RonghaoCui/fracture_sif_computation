@@ -141,7 +141,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         self, sampled_cell: int, num_more_cells: int
     ) -> tuple[float, np.ndarray]:
         """
-        The two-point option with a single-scale sampling fracture cell.
+        The multipoint option with a single-scale sampling fracture cell.
 
         Args:
             steps_pair (tuple[int, int]): 

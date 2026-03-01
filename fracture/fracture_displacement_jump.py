@@ -92,6 +92,18 @@ class FractureDisplacementJump:
         
         return current_frac_cells
     
+    def sampling_multi_frac_cells(self, n_steps: int) -> np.ndarray:
+        """Compute multiple fracture cell indices
+
+        """
+        num_frac = self.get_number_of_fracture_cells()
+        n_steps = np.asarray(n_steps, dtype=int).ravel()
+        cells_tip_one = n_steps
+        cells_tip_two = num_frac - n_steps - 1  
+        current_frac_cells = np.vstack([cells_tip_one, cells_tip_two], dtype=int)
+        
+        return current_frac_cells
+    
     def extract_sampling_normal_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Sample normal displacement jumps and distances at selected fracture cells of two tips.
@@ -152,6 +164,28 @@ class FractureDisplacementJump:
 
         return pairs_in_cellsizes
     
+    # def generate_sampling_three(self):
+    #     num_frac_cells = self.sd_frac.num_cells
+    #     k_min = 1
+    #     k_max = num_frac_cells // 2 - 1
+    #     three_in_cellsizes = []
+    #     for k in range(k_min-1, k_max+1, 1):
+    #         three_in_cellsizes.append([k - 1, k, k + 1])
+
+    #     return three_in_cellsizes
+    
+    def generate_samples_on_half_fracture(self):
+        num_frac_cells = self.sd_frac.num_cells
+        k_min = 0
+        k_max = num_frac_cells // 2 - 1
+
+        sampling_points = []
+        
+        for k in range(k_min, k_max+1, 1):
+            sampling_points.append([k])
+
+        return sampling_points
+    
     def sampling_pairs_by_exponent(self):
 
         sd_frac = self.sd_frac
@@ -175,24 +209,28 @@ class FractureDisplacementJump:
 
         return radial_dis
     
-    # def sampling_pair_from_coarsest(self, coarsest_h=0.1):
-    #     constant_c = self.params["constant_c"]
-    #     exponent_alpha = self.params["exponent_alpha"]
-    #     a = self.params["a"]
+    def extract_multi_points_normal_jump(self, sampling_points: list) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Sample normal displacement jumps and distances at selected fracture cells of two tips.
 
-    #     r0 = constant_c * (a ** (1 - exponent_alpha)) * (coarsest_h ** exponent_alpha)
+        """
+        sampling_points = np.array(sampling_points, dtype=int)
+        sd_frac = self.sd_frac
+        current_frac_cells = self.sampling_multi_frac_cells(sampling_points)
+        print("current_frac_cells:", current_frac_cells)
+        print("self.tip_face_centers:", self.tip_face_centers)
+        tip_one, tip_two = self.tip_face_centers.T
+        cells_left = current_frac_cells[0]
+        cells_right = current_frac_cells[1]
+        coords_left = sd_frac.cell_centers[:, cells_left]
+        coords_right = sd_frac.cell_centers[:, cells_right]
 
-    #     sd = self.sd_frac
-    #     tip = self.tip_face_centers[:, 0]
-    #     dist = np.linalg.norm(sd.cell_centers - tip[:, None], axis=0)
+        r_left = np.linalg.norm(tip_one[:, None] - coords_left, axis=0)
+        r_right = np.linalg.norm(tip_two[:, None] - coords_right, axis=0)
 
-    #     k0 = int(np.argmin(np.abs(dist - r0)))
-    #     k0 = min(k0, sd.num_cells // 2 - 1)
-
-    #     if k0 + 1 >= sd.num_cells:
-    #         raise RuntimeError("C is too large for this grid")
-        
-    #     return [k0, k0 + 1]
+        r_cell_to_tip = np.vstack([r_left, r_right])
+        u_jump = self.normal_displacement_jump()[current_frac_cells]
+        return u_jump, r_cell_to_tip
 
 
         
