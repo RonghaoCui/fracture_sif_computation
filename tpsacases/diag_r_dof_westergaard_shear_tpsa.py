@@ -27,8 +27,11 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.colors import LogNorm
 
 import os
-save_dir = "figures/tpsa_results/diagram"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/tpsa_results/diagram"
+os.makedirs(save_fig, exist_ok=True)
+
+save_csv = "data/tpsa/diagram"
+os.makedirs(save_csv, exist_ok=True)
 
 class TpsaWestergaardShearMode2dWithAuxPts(
     pp.momentum_balance.TpsaMomentumBalanceMixin,
@@ -195,8 +198,8 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv("diag_data_ws_tpsa.csv", index=False)
-# diag_data = pd.read_csv("diag_data_ws.csv")
+diag_data.to_csv(os.path.join(save_csv, "diag_data_ws_tpsa.csv"), index=False)
+diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_ws_tpsa.csv"))
 
 # R_all   = diag_data["r"].values
 # DOF_all = diag_data["sqrt_dof"].values
@@ -262,7 +265,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "diag_r_dof_ws_mean_tpsa.tiff"),
+    os.path.join(save_fig, "diag_r_dof_ws_mean_tpsa.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -313,7 +316,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "diag_r_dof_ws_std_tpsa.tiff"),
+    os.path.join(save_fig, "diag_r_dof_ws_std_tpsa.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -379,7 +382,7 @@ ax3.grid(True, which="both", linestyle="--", alpha=0.5)
 ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "conv_r_dof_opt_ws_tpsa.tiff"),
+    os.path.join(save_fig, "conv_r_dof_opt_ws_tpsa.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
