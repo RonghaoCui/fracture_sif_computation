@@ -109,10 +109,10 @@ print("number of points:", aux_pts.shape)
 #     [33, 34]
 # ]
 
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
-num_auxiliary_points = [8, 32, 128, 512, 2048, 8192]
-# cell_sizes = [0.1, 0.05]
-# num_auxiliary_points = [8, 32]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# num_auxiliary_points = [8, 32, 128, 512, 2048, 8192]
+cell_sizes = [0.0125]
+num_auxiliary_points = [512]
 seeds = [1234, 2029, 31415, 27182, 42424]
 
 diag_results = []
@@ -192,7 +192,7 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv("diag_data_so_tpsa.csv", index=False)
+diag_data.to_csv("diag_data_so_tpsa2.csv", index=False)
 # diag_data = pd.read_csv("diag_data_so.csv")
 
 # R_all   = diag_data["r"].values
@@ -260,7 +260,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "diag_r_dof_so_mean_tpsa.tiff"),
+    os.path.join(save_dir, "diag_r_dof_so_mean_tpsa2.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -311,7 +311,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "diag_r_dof_so_std_tpsa.tiff"),
+    os.path.join(save_dir, "diag_r_dof_so_std_tpsa2.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -319,71 +319,71 @@ plt.savefig(
 plt.close(fig2)
 
 # Get the minimum mean error with correponding sqrt_dof and r
-idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
-df_best = df_mean.loc[idx].reset_index(drop=True)
+# idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
+# df_best = df_mean.loc[idx].reset_index(drop=True)
 
-# Get the fitting line for the optimal sqrt_dof and r
-x = np.log10(df_best["norm_h"].to_numpy())
-y = np.log10(df_best["r"].to_numpy())
+# # Get the fitting line for the optimal sqrt_dof and r
+# x = np.log10(df_best["norm_h"].to_numpy())
+# y = np.log10(df_best["r"].to_numpy())
 
-alpha, logC = np.polyfit(x, y, 1)
-C = 10 ** logC
+# alpha, logC = np.polyfit(x, y, 1)
+# C = 10 ** logC
 
-print("The alpha value:", alpha)
-print("The C value", C)
+# print("The alpha value:", alpha)
+# print("The C value", C)
 
-norm_h_fit = np.linspace(0.0, 1.0, 100,)
-r_fit = C * norm_h_fit ** alpha
+# norm_h_fit = np.linspace(0.0, 1.0, 100,)
+# r_fit = C * norm_h_fit ** alpha
 
-# Plot the curves of sqrt_dof and r with the minimum error
-fig3, ax3 = plt.subplots(figsize=(3.5, 3.0))
-ax3.loglog(
-    df_best["norm_h"],
-    df_best["r"],
-    'o',
-    color='tab:blue',
-    linewidth=2,
-    markersize=4, 
-    label="Data"
-)
+# # Plot the curves of sqrt_dof and r with the minimum error
+# fig3, ax3 = plt.subplots(figsize=(3.5, 3.0))
+# ax3.loglog(
+#     df_best["norm_h"],
+#     df_best["r"],
+#     'o',
+#     color='tab:blue',
+#     linewidth=2,
+#     markersize=4, 
+#     label="Data"
+# )
 
-ax3.loglog(
-    norm_h_fit,
-    r_fit,
-    '--',
-    color='tab:orange',
-    linewidth=2,
-    label="Fitting"
-)
+# ax3.loglog(
+#     norm_h_fit,
+#     r_fit,
+#     '--',
+#     color='tab:orange',
+#     linewidth=2,
+#     label="Fitting"
+# )
 
-ax3.set_xlabel(r"$r/a$")
-ax3.set_ylabel(r"$h/a$")
+# ax3.set_xlabel(r"$r/a$")
+# ax3.set_ylabel(r"$h/a$")
 
-formatter = ScalarFormatter(useMathText=True)
-formatter.set_powerlimits((0, 0))
-ax3.yaxis.set_major_formatter(formatter)
-# ax3.set_xlim(10, 700)
-# ax3.set_ylim(0.0002, 1.0)
-ax3.set_xlim(0.01, 1.0)
-ax3.set_ylim(0.1, 1.0)
-ax3.xaxis.set_major_locator(LogLocator(base=10))
-ax3.xaxis.set_major_formatter(LogFormatterMathtext())
-ax3.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+# formatter = ScalarFormatter(useMathText=True)
+# formatter.set_powerlimits((0, 0))
+# ax3.yaxis.set_major_formatter(formatter)
+# # ax3.set_xlim(10, 700)
+# # ax3.set_ylim(0.0002, 1.0)
+# ax3.set_xlim(0.01, 1.0)
+# ax3.set_ylim(0.1, 1.0)
+# ax3.xaxis.set_major_locator(LogLocator(base=10))
+# ax3.xaxis.set_major_formatter(LogFormatterMathtext())
+# ax3.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 
-ax3.yaxis.set_major_locator(LogLocator(base=10))
-ax3.yaxis.set_major_formatter(LogFormatterMathtext())
-ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
-ax3.grid(True, which="both", linestyle="--", alpha=0.5)
-ax3.legend(loc="lower left")
-plt.tight_layout()
-plt.savefig(
-    os.path.join(save_dir, "conv_r_dof_opt_so_tpsa.tiff"),
-    format="tiff",
-    dpi=300,
-    bbox_inches="tight",
-    pil_kwargs={"compression": "tiff_lzw"}
-)
-plt.close(fig3)
+# ax3.yaxis.set_major_locator(LogLocator(base=10))
+# ax3.yaxis.set_major_formatter(LogFormatterMathtext())
+# ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
+# ax3.grid(True, which="both", linestyle="--", alpha=0.5)
+# ax3.legend(loc="lower left")
+# plt.tight_layout()
+# plt.savefig(
+#     os.path.join(save_dir, "conv_r_dof_opt_so_tpsa2.tiff"),
+#     format="tiff",
+#     dpi=300,
+#     bbox_inches="tight",
+#     pil_kwargs={"compression": "tiff_lzw"}
+# )
+# plt.close(fig3)
 
 
 
