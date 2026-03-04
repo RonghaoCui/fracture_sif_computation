@@ -137,8 +137,8 @@ class ExactDirichletBCSneddon:
 
         return ux, uy
 
-# Class for the FEM model in Sneddon's problem
-class SneddonFEMQPE2dSolver:
+# Class for the FEM model with qpe in Sneddon's problem
+class SneddonFemQpe2dSolver:
     """
     Sneddon model by the finite element method with quarter-point elements.
     
@@ -415,12 +415,12 @@ class SneddonFEMQPE2dSolver:
 
         return upper_frac_nodes, lower_frac_nodes
 
-class FEMSneddonModel2d(
+class FemQpeSneddonModel2d(
     ExactDirichletBCSneddon, 
-    SneddonFEMQPE2dSolver,
+    SneddonFemQpe2dSolver,
 ): 
     def __init__(self, params: dict):
         ExactDirichletBCSneddon.__init__(self, params)
-        SneddonFEMQPE2dSolver.__init__(self, params)
+        SneddonFemQpe2dSolver.__init__(self, params)
 
         

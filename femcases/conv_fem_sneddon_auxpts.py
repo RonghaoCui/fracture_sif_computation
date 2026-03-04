@@ -21,7 +21,7 @@ from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import os
-save_dir = "figures/aux_sif"
+save_dir = "figures/fem_results/conv"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -83,12 +83,19 @@ seeds = [1234, 2029, 31415, 27182, 42424]
 # seeds = [1234]
 
 # exponent = 0.25
+# pairs_in_cellsizes = [
+#     [5, 7],
+#     [7, 9],
+#     [11, 13],
+#     [17, 19],
+#     [27, 29]
+# ]
 pairs_in_cellsizes = [
-    [5, 7],
-    [7, 9],
-    [11, 13],
-    [17, 19],
-    [27, 29]
+    [3, 4],
+    [6, 7],
+    [9, 10],
+    [15, 16],
+    [23, 24]
 ]
 
 all_err_ave = []        # list of (n_h,) arrays
@@ -242,4 +249,5 @@ plt.savefig(
 )
 plt.close(fig)
 
-
+print("\n sqrt of dofs: ", mean_dofs)
+print("\n mean_err_ave: ", mean_err_ave)

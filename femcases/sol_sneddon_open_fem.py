@@ -8,7 +8,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from fems import FEMSneddonModel2d
+from fems import FemQpeSneddonModel2d
 
 import math
 import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-fem_model = FEMSneddonModel2d(params)
+fem_model = FemQpeSneddonModel2d(params)
 fem_model.model_setup_and_sol()
 
 mpl.rcParams.update({

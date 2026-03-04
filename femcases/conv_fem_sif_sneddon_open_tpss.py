@@ -8,7 +8,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from fems import FEMSneddonModel2d
+from fems import FemQpeSneddonModel2d
 from fems import FEMComputeSifErrorConvergence
 
 import math
@@ -38,7 +38,7 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-fem_model = FEMSneddonModel2d(params)
+fem_model = FemQpeSneddonModel2d(params)
 fem_model.model_setup_and_sol()
 
 # Only for the horizontal fracture
@@ -127,11 +127,11 @@ cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 #     [41, 43]
 # ]
 pairs_in_cellsizes = [
-    [5, 7],
-    [7, 9],
-    [11, 13],
-    [17, 19],
-    [27, 29]
+    [3, 4],
+    [6, 7],
+    [9, 10],
+    [15, 16],
+    [23, 24]
 ]
 error_ave_set = []
 error_per_tip_set = []
@@ -139,7 +139,7 @@ num_dofs_set = []
 for i, h in enumerate(cell_sizes):
     print(f"Running for mesh size h = {h}")
     params["meshing_arguments"] = {"cell_size": h}
-    fem_model = FEMSneddonModel2d(params)
+    fem_model = FemQpeSneddonModel2d(params)
     fem_model.model_setup_and_sol()
     computeSIF = FEMComputeSifErrorConvergence(fem_model)
 
@@ -247,3 +247,6 @@ plt.savefig(
 )
 plt.show()
 plt.close(fig5)
+
+print("\n sqrt of dofs: ", num_sqrt_dofs)
+print("\n mean_err_ave: ", errors_ave)

@@ -179,6 +179,7 @@ class WestergaardShearFEMQPE2dSolver:
         model.prepare_simulation()
         self.grid2d = model.mdg.subdomains(dim=2)[0]
         sd_frac = model.mdg.subdomains(dim=1)[0]
+        self.num_frac_cells = sd_frac.num_cells
         tip_faces = sd_frac.tags["tip_faces"].nonzero()[0]
         self.tip_face_centers = sd_frac.face_centers[:2, tip_faces].T   # only [x, y] and shape = (n_tips, 2)
         self.nodes_mdg = None

@@ -281,4 +281,6 @@ plt.savefig(
 )
 plt.close(fig)
 
+print("\n sqrt of dofs: ", mean_dofs)
+print("\n mean_err_ave: ", mean_err_ave)
 
