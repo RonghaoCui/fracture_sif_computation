@@ -1,12 +1,7 @@
 
 from __future__ import annotations
 
-import porepy as pp
 import numpy as np
-
-import math
-import matplotlib.pyplot as plt
-import scipy.sparse as sps
 
 from .fracture_displacement_jump import FractureDisplacementJump
 
@@ -58,9 +53,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
               ``{"mode": "fixed", "steps": k}`` option.
             steps_pair[1] is farther from the fracture tip than steps_pair[0]
         """
-        # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[1])}
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
-        # self.params["sampling"] = {"mode": "fixed", "steps": int(steps_pair[0])}
         u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
 
         print("Displacement jump n value 1: ", u_jump_n_one)
@@ -71,7 +64,9 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         return self.calculate_singularity_convergence(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
     
     def two_scale_option_normal(
-        self, jumpmodel_fine: FractureDisplacementJump, sampling_pair: list
+        self, 
+        jumpmodel_fine: FractureDisplacementJump, 
+        sampling_pair: list
     ) -> tuple[float, np.ndarray]:
         """
         The two-scale option using coarse and fine models at the given sampling locations.
@@ -181,8 +176,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
     
     def exact_singularity(self) -> float:
         """
-            Set an exact analytical singularity order as the reference value
-            (default is 0.5).
+        Set an exact analytical singularity order as the reference value (default is 0.5).
         """
         exact_singularity_order = 0.5
 

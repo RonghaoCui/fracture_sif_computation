@@ -3,12 +3,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-import porepy as pp
 import numpy as np
-
-import math
-import matplotlib.pyplot as plt
-import scipy.sparse as sps
 
 from .fracture_displacement_jump import FractureDisplacementJump
 from .compute_singularity_convergence import ComputeSingularityErrorForModel
@@ -258,7 +253,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         print("Displacement jump n r 1: ", r_n_one)
         print("Displacement jump n r 2: ", r_n_two)
 
-        SIFValue = ComputeSifValue(self.model)
+        SIFValue = ComputeSifValue(self.params)
         if self.singularity_order == 0.5:
             KIs = SIFValue.KI_from_two_scales(jumpmodel_fine)
         else:
@@ -291,7 +286,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
-        SIFValue = ComputeSifValue(self.model)
+        SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
             singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
         else: 
@@ -327,7 +322,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
-        SIFValue = ComputeSifValue(self.model)
+        SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
             singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
         else: 
@@ -363,7 +358,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
-        SIFValue = ComputeSifValue(self.model)
+        SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
             singularity_orders = self.estimated_singularity(u_jump_t_one, r_t_one,u_jump_t_two, r_t_two)
         else: 
@@ -394,7 +389,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
                 ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
                 ``rel_error_per_tip``: Relative absolute error array from two tips.
         """
-        SIFValue = ComputeSifValue(self.model)
+        SIFValue = ComputeSifValue(self.params)
         if self.singularity_order != 0.5:
             raise ValueError(f"The singularity exponent should be 0.5.")
 

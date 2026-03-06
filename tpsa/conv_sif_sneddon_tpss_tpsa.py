@@ -59,7 +59,7 @@ sampling_points = compSIF.generate_samples_on_half_fracture()
 u_jump_half_frac, r_cell_to_tip = compSIF.extract_multi_points_normal_jump(sampling_points)
 # print("u_jump_half_frac:", u_jump_half_frac)
 # print("r_cell_to_tip:", r_cell_to_tip)
-SIFValue = ComputeSifValue(model)
+SIFValue = ComputeSifValue(model.params)
 KIs_half_frac = SIFValue.KI_from_one_point(u_jump_half_frac, r_cell_to_tip, 0.5)
 # print("KIs_half_frac:", KIs_half_frac)
 
