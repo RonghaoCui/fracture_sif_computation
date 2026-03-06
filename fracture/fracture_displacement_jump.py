@@ -14,7 +14,7 @@ import numpy as np
 class FractureDisplacementJump: 
     """
     This class depends on a PorePy model that has already built a mixed-dimensional
-    grid (``mdg``) and solved for displacements. It includes methods to extract 
+    grid and solved for displacements. It includes methods to extract 
     normal/tangential displacement jumps on the fracture and to sample them at cells 
     a specified number of steps away from each tip.
 
@@ -36,7 +36,11 @@ class FractureDisplacementJump:
             coordinates of the fracture tip face centers.
     """
 
-    def __init__(self, model: object) -> None:
+    def __init__(
+        self, 
+        model: object | None = None,
+        cache: dict | None = None,
+    ) -> None:
         """
         Initialize from a solved model.
 
@@ -50,6 +54,14 @@ class FractureDisplacementJump:
             All variables from the model are initialized here to provide a consistent interface 
             for other classes inheriting from this class. 
         """
+        if model is not None:
+            self._initialize_from_model(model)
+        elif cache is not None:
+            self._initialize_from_cache(cache)
+        else:
+            raise ValueError("Either a model or a cache must be provided.")
+        
+    def _initialize_from_model(self, model: object) -> None:
         self.model = model
 
         self.params = model.params
@@ -62,28 +74,40 @@ class FractureDisplacementJump:
         self.tip_faces = self.sd_frac.tags["tip_faces"].nonzero()[0]                 
         _, self.tip_cells = self.sd_frac.signs_and_cells_of_boundary_faces(self.tip_faces)  
         self.tip_face_centers = self.sd_frac.face_centers[:, self.tip_faces] 
+
+        u_jump = self.model.displacement_jump([self.sd_frac])                     
+        normal_op = self.model.normal_component([self.sd_frac]) 
+        tangential_op = self.model.tangential_component([self.sd_frac]) 
+
+        self.u_jump_normal = (normal_op @ u_jump).value(self.equation_system)
+        self.u_jump_tangential = (tangential_op @ u_jump).value(self.equation_system)
+    
+    def _initialize_from_cache(self, cache: dict) -> None:
+        self.params = cache["params"]
+
+        self.frac_cell_centers = cache["frac_cell_centers"]
+        self.frac_num_cells = self.frac_cell_centers.shape[1]
+        self.tip_cells = np.array([0, self.frac_num_cells - 1])
+        self.tip_face_centers = cache["tip_face_centers"]
+
+        self.u_jump_normal = cache["u_jump_normal"]
+        self.u_jump_tangential = cache["u_jump_tangential"]
     
     def normal_displacement_jump(self) -> np.ndarray:
         """
-        Return the normal component of the displacement jump on the fracture.
+        Returns:
+            the normal component of the displacement jump on the fracture.
 
         """
-        sd_frac = self.sd_frac
-        u_jump = self.model.displacement_jump([sd_frac])                     
-        normal_op = self.model.normal_component([sd_frac]) 
-        u_jump_whole_frac = (normal_op @ u_jump).value(self.equation_system)
-        return u_jump_whole_frac
+        return self.u_jump_normal
     
     def tangential_displacement_jump(self) -> np.ndarray:
         """
-        Return the tangential component of the displacement jump on the fracture.
+        Returns:
+            the tangential component of the displacement jump on the fracture.
 
         """
-        sd_frac = self.sd_frac
-        u_jump = self.model.displacement_jump([sd_frac])                     
-        tangential_op = self.model.tangential_component([sd_frac]) 
-        u_jump_whole_frac = (tangential_op @ u_jump).value(self.equation_system)
-        return u_jump_whole_frac
+        return self.u_jump_tangential
 
     def sampling_frac_cell(self, n_steps: int) -> np.ndarray:
         """Compute fracture cell indices to sample 
@@ -91,7 +115,7 @@ class FractureDisplacementJump:
         For each tip, the selected cell index is computed for both tips.
 
         Returns:
-            np.ndarray: Integer indices of the fracture cells to sample (shape (n_tips,)).
+            current_frac_cells: Integer indices of the fracture cells to sample (shape (n_tips,)).
         """
         cells_tip_one = n_steps
         cells_tip_two = self.tip_cells - n_steps      

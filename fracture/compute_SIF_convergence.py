@@ -26,7 +26,9 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         singularity_order (float): values manually provided by :class: `ComputeSifValue`
     """
     def __init__(
-        self, model: object
+        self, 
+        model: object | None = None,
+        cache: dict | None = None,
     ) -> None:
         """
         Initialize the SIF convergence computation class.
@@ -36,7 +38,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             A PorePy-based model that contains the mixed-dimensional grid (mdg),
             displacement results, projection operators, and a ``params`` dictionary
         """
-        super().__init__(model)
+        super().__init__(model=model, cache=cache)
         self.singularity_order: Optional[float] = None
 
     def single_point_single_scale_normal(

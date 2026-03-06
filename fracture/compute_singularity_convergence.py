@@ -16,7 +16,11 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
     numerically computed exponent and the analytical reference value.
 
     """
-    def __init__(self, model: object) -> None:
+    def __init__(
+        self, 
+        model: object | None = None,
+        cache: dict | None = None,
+    ) -> None:
         """
         Initialize the singularity error computation class.
 
@@ -25,7 +29,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
             A PorePy-based model that contains the mixed-dimensional grid (mdg),
             displacement results, projection operators, and a ``params`` dictionary
         """
-        super().__init__(model)
+        super().__init__(model=model, cache=cache)
 
     def single_scale_option_normal(
         self, sampling_pair: list
