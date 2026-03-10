@@ -25,7 +25,7 @@ import os
 save_fig = "figures/femnoqpe/cache/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/femnoqpe/diagram"
+save_csv = "data/femnoqpe/cache_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
 save_model = "data/femnoqpe/cache_models/ws"
