@@ -20,7 +20,7 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/fem_results/sol"
+save_dir = "figures/femqpe/model/sol"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
