@@ -1,13 +1,39 @@
 # Fracture Tip Convergence Analysis 
 
 ## Introduction: 
-Evaluate the near-tip singularity order (exponent) and Stress Intensity Factor (SIF) for Sneddon’s problem through sampling displacement jump along the fracture, with single-scale and two-scale options. 
+This repository provides the tool for extracting stress intensity factors (SIFs) for both **mode I (opening)** and **mode II (shear)** fracture problems using various numerical discretization methods through displacement correlation methods. Models are mainly implementd based on the PorePy framework. 
 
-Currently, this script is only developed for a single straight fracture.
+The current implementation is only developed for the problems with a single horizontal and central fracture in the domain.
 
-## Feature: 
-- **Single-scale option**: Estimate the singularity order near fracture tips using two sets of sampling locations within the same model.
-- **Two-scale option**: Estimate the singularity order through sampling locations across a coarse and a fine mesh of the same problem.
-- **Sampling modes**:
-  - `{"mode": "fixed", "steps": k}` — sample at the *k*-th cell away from the fracture tip.
-  - `{"mode": "refinement", "level": L}` — sample based on refinement level *L* (internally converted to a step count).
+## Features
+
+### Benchmark problems
+Two classical benchmark problems for the frature are included: 
+
+- **Sneddon's problem**: Mode I (opening fracture) 
+- **Westergaard's problem**: Mode II (shear fracture) 
+
+### Numerical discretization options
+
+The following discretization methods are supported: 
+
+- **MPSA**: multi-point stress approximation
+- **TPSA**: two-point stress approximation (TPSA)
+- **QFEM**: standard quadratic finite element method
+- **QFEM-QPE**: QFEM with quarter-point elements
+
+### Model-based workflow
+
+- SIF extraction based on the solved model
+
+### Cache-based workflow
+
+- SIF extraction by loading proviously computed model results
+- This workflow is useful for simulations when solving models is computationally expensive. 
+
+### Single-scale analysis
+- Estimate SIFs near fracture tips using two sets of sampling locations within the same model.
+
+### Two-scale analysis
+- Estimate SIFs through sampling locations across a coarse and a fine mesh of the same problem.
+
