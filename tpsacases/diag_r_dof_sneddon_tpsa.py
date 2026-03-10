@@ -30,7 +30,7 @@ import os
 save_fig = "figures/tpsa/model/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/tpsa/diagram"
+save_csv = "data/tpsa/model_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
 class TpsaSneddonModel2dWithAuxPoints(
