@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/fem_results"
+save_dir = "figures/femnoqpe/model/conv"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
