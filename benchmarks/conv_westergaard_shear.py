@@ -16,7 +16,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/benchmarks_conv"
+save_dir = "figures/benchmarks/conv"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3

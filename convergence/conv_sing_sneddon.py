@@ -40,7 +40,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/conv_sing"
+save_dir = "figures/convergence/singularity"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
