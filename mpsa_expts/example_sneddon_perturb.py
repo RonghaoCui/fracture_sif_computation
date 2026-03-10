@@ -46,8 +46,8 @@ params = {
 
 # Parameters for grid perturbation
 params.update({
-    "perturb_amplitude": 0.10,
-    "perturb_exponent": 1.5,
+    "perturb_amplitude": 0.25,
+    "perturb_exponent": 1.0,
     "perturb_seed": 1234,
 })
 

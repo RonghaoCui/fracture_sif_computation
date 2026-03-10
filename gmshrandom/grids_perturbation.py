@@ -17,26 +17,6 @@ class GridsPerturbationMixin(pp.PorePyModel):
     This mixin overrides the geometry construction by implementing a custom method 
     for :meth:`set_geometry()` . 
     """
-    @staticmethod
-    def _get_sparse(grid, name):
-        """
-        Retrieve the sparse matrix from a PorePy grid. 
-
-        Parameters:
-        grid: pp.Grid
-            The grid from which to retrieve the sparse matrix.
-        name: str
-            The name of the sparse matrix attribute to retrieve.
-
-        Returns:
-        scipy.sparse matrix
-            The requested sparse matrix.
-        """    
-        obj = getattr(grid, name, None)
-        if obj is None:
-            raise RuntimeError(f"{name} not found on grid")
-        return obj() if callable(obj) else obj
-
     def set_geometry(self):
 
         super().set_geometry()
@@ -47,7 +27,7 @@ class GridsPerturbationMixin(pp.PorePyModel):
         sd_new = sd_old.copy()
 
         # Get boundary nodes
-        face_nodes = self._get_sparse(sd_new, "face_nodes")
+        face_nodes = sd_new.face_nodes
 
         boundary_faces = np.where(sd_new.tags["domain_boundary_faces"])[0]
         boundary_nodes = np.unique(face_nodes[:, boundary_faces].indices)
