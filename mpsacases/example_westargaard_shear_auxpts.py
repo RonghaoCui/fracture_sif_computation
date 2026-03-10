@@ -19,7 +19,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 
 import os
-save_dir = "figures/aux_grids"
+save_dir = "figures/mpsa/model/aux_grids"
 os.makedirs(save_dir, exist_ok=True)
 
 class WestergaardShearMode2dWithAuxPoints(AuxiliaryPointsMixin, WestergaardShearMode2d):

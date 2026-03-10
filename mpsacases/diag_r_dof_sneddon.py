@@ -27,7 +27,7 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.colors import LogNorm
 
 import os
-save_fig = "figures/diagram"
+save_fig = "figures/mpsa/model/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
 save_csv = "data/mpsa/diagram"

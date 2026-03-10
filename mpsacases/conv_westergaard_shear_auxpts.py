@@ -22,7 +22,7 @@ from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import os
-save_dir = "figures/aux_sif"
+save_dir = "figures/mpsa/model/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 class WestergaardShearMode2dWithAuxPoints(AuxiliaryPointsMixin, WestergaardShearMode2d):

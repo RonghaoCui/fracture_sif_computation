@@ -26,7 +26,7 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.colors import LogNorm
 
 import os
-save_dir = "figures/diagram"
+save_dir = "figures/mpsa/model/diagram"
 os.makedirs(save_dir, exist_ok=True)
 
 class WestergaardShearMode2dWithAuxPoints(AuxiliaryPointsMixin, WestergaardShearMode2d):
