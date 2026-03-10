@@ -8,14 +8,51 @@ class FEMComputeSifErrorConvergence:
     FEM analogue of MPSA's SIF error convergence analysis in PorePy.
     """
 
-    def __init__(self, model):
+    def __init__(
+        self, 
+        model: object | None = None,
+        cache: dict | None = None,
+    ) -> None:
+        
+        if model is not None:
+            self._initialize_from_model(model)
+        elif cache is not None:
+            self._initialize_from_cache(cache)
+        else:
+            raise ValueError("Either a model or a cache must be provided.")
+    
+    def _initialize_from_model(self, model: object) -> None:
         self.model = model
-        self.tip_face_centers = model.tip_face_centers
-        self.E = self.model.E
-        self.poi = self.model.poi
+        self.params = model.params
 
-        if model.U is None:
-            raise RuntimeError("Model must be solved before extracting jumps.")
+        solid = self.params["material_constants"]["solid"]
+        self.mu = solid.shear_modulus          # μ
+        self.lam = solid.lame_lambda           # λ
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
+
+        self.tip_face_centers = model.tip_face_centers
+        (
+            self.fracture_node_coords, 
+            self.u_jump_normal, 
+            self.u_jump_tangential
+        ) = self.model.extract_displacement_jump()
+        self.num_frac_nodes = self.fracture_node_coords.shape[0]
+    
+    def _initialize_from_cache(self, cache: dict) -> None:
+        self.params = cache["params"]
+
+        solid = self.params["material_constants"]["solid"]
+        self.mu = solid.shear_modulus          # μ
+        self.lam = solid.lame_lambda           # λ
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
+
+        self.tip_face_centers = cache["tip_face_centers"]
+        self.fracture_node_coords = cache["fracture_node_coords"]
+        self.u_jump_normal = cache["u_jump_normal"]
+        self.u_jump_tangential = cache["u_jump_tangential"]
+        self.num_frac_nodes = self.fracture_node_coords.shape[0]
 
     def FEM_extract_sampling_normal_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -32,12 +69,11 @@ class FEMComputeSifErrorConvergence:
                 the radial distance to the closer fracture tip. 
 
         """
-        x_coords, u_jump_normal, _ = self.model.extract_displacement_jump()    
-        num_frac = len(x_coords)
-        current_frac_cells = self.FEM_sampling_frac_cell(n_steps, num_frac)
+        x_coords = self.fracture_node_coords   
+        current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
         # only [x, y] and shape = (n_tips, 2)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_cells])
-        u_jump = u_jump_normal[current_frac_cells]
+        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_nodes])
+        u_jump = self.u_jump_normal[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
     def FEM_extract_sampling_tangential_jump(self, n_steps: int) -> tuple[np.ndarray, np.ndarray]:
@@ -55,21 +91,19 @@ class FEMComputeSifErrorConvergence:
                 the radial distance to the closer fracture tip. 
 
         """
-        x_coords, _, u_jump_tangential = self.model.extract_displacement_jump()    
-        num_frac = len(x_coords)
-        current_frac_cells = self.FEM_sampling_frac_cell(n_steps, num_frac)
+        x_coords = self.fracture_node_coords   
+        current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
         # only [x, y] and shape = (n_tips, 2)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_cells])
-        u_jump = u_jump_tangential[current_frac_cells]
+        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_nodes])
+        u_jump = self.u_jump_tangential[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
-    def FEM_sampling_frac_cell(self, n_steps: int, num_frac: int) -> np.ndarray:
+    def FEM_sampling_frac_cell(self, n_steps: int) -> np.ndarray:
         """
         Get sampling indices of fracture nodes for both tips of one fracture. 
 
         Parameters: 
-            n_steps: the n-th cell near the tip.
-            num_frac: the number of fracture cells. 
+            n_steps: the n-th cell near the tip. 
 
         Returns: 
             current_frac_cells: shape = (2, )
@@ -80,10 +114,10 @@ class FEMComputeSifErrorConvergence:
 
         """
         cells_tip_one = n_steps
-        cells_tip_two = num_frac - n_steps - 1  
-        current_frac_cells = np.array([cells_tip_one, cells_tip_two], dtype=int)
+        cells_tip_two = self.num_frac_nodes - n_steps - 1  
+        current_frac_nodes = np.array([cells_tip_one, cells_tip_two], dtype=int)
         
-        return current_frac_cells
+        return current_frac_nodes
     
     def FEM_two_points_single_scale_normal(
         self, sampling_pair: list
@@ -141,7 +175,13 @@ class FEMComputeSifErrorConvergence:
             node 1 here is the one which is farther from the fracture tips. 
         """
         singularity_orders = 0.5
-        KIs = self.FEM_KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
+        KIs = self.FEM_KI_from_two_points(
+            u_jump_n_one, 
+            r_n_one, 
+            u_jump_n_two, 
+            r_n_two, 
+            singularity_orders
+        )
         KI_exact = self.FEM_calculate_exact_SIF_KI_sneddon()
 
         return self.FEM_relative_L2_error(KIs, KI_exact)
@@ -166,7 +206,13 @@ class FEMComputeSifErrorConvergence:
             node 1 here is the one which is farther from the fracture tips. 
         """
         singularity_orders = 0.5
-        KIIs = self.FEM_KII_from_two_points(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two, singularity_orders)
+        KIIs = self.FEM_KII_from_two_points(
+            u_jump_t_one, 
+            r_t_one, 
+            u_jump_t_two, 
+            r_t_two, 
+            singularity_orders
+        )
         KII_exact = self.FEM_calculate_exact_SIF_KII_westergaard()
 
         return self.FEM_relative_L2_error(KIIs, KII_exact)
@@ -177,7 +223,7 @@ class FEMComputeSifErrorConvergence:
             r_n_one: np.ndarray, 
             u_jump_n_two: np.ndarray, 
             r_n_two: np.ndarray,
-            singularity_orders: np.ndarray
+            singularity_orders: float,
     ) -> np.ndarray: 
         """
         Calculate SIFs by FEM for tips based on extracted displacement jump. 
@@ -214,7 +260,7 @@ class FEMComputeSifErrorConvergence:
             r_t_one: np.ndarray, 
             u_jump_t_two: np.ndarray, 
             r_t_two: np.ndarray,
-            singularity_orders: np.ndarray
+            singularity_orders: float,
     ) -> np.ndarray: 
         """
         Calculate SIFs by FEM for tips based on extracted displacement jump. 
@@ -253,8 +299,8 @@ class FEMComputeSifErrorConvergence:
             KI_exact: an analytical KI value.
 
         """
-        pres0 = self.model.params["p0"]
-        frac_half_length = self.model.params["a"]
+        pres0 = self.params["p0"]
+        frac_half_length = self.params["a"]
         KI_exact =  pres0 * np.sqrt(np.pi * frac_half_length)
 
         return KI_exact
@@ -267,8 +313,8 @@ class FEMComputeSifErrorConvergence:
             KII_exact: an analytical KII value.
 
         """
-        tau_inf = self.model.params["tau_inf"]
-        frac_half_length = self.model.params["a"]
+        tau_inf = self.params["tau_inf"]
+        frac_half_length = self.params["a"]
         KII_exact =  tau_inf * np.sqrt(np.pi * frac_half_length)
 
         return KII_exact
@@ -319,11 +365,12 @@ class FEMComputeSifErrorConvergence:
         """
         sampling_points = np.array(sampling_points, dtype=int)
         n_steps = sampling_points
-        x_coords, u_jump_normal, _ = self.model.extract_displacement_jump()    
-        num_frac = len(x_coords)
-        current_frac_cells = self.FEM_sampling_multi_frac_cells(n_steps, num_frac)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_cells])
-        u_jump = u_jump_normal[current_frac_cells]
+        x_coords = self.fracture_node_coords
+        current_frac_nodes = self.FEM_sampling_multi_frac_cells(n_steps)
+        r_cell_to_tip = np.abs(
+            self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_nodes]
+        )
+        u_jump = self.u_jump_normal[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
     def FEM_extract_multi_points_tangential(
@@ -348,15 +395,16 @@ class FEMComputeSifErrorConvergence:
         """
         sampling_points = np.array(sampling_points, dtype=int)
         n_steps = sampling_points
-        x_coords, _, u_jump_tangential = self.model.extract_displacement_jump()    
-        num_frac = len(x_coords)
-        current_frac_cells = self.FEM_sampling_multi_frac_cells(n_steps, num_frac)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_cells])
-        u_jump = u_jump_tangential[current_frac_cells]
+        x_coords = self.fracture_node_coords
+        current_frac_nodes = self.FEM_sampling_multi_frac_cells(n_steps)
+        r_cell_to_tip = np.abs(
+            self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_nodes]
+        )
+        u_jump = self.u_jump_tangential[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
     def FEM_sampling_multi_frac_cells(
-        self, n_steps: np.ndarray, num_frac: int
+        self, n_steps: np.ndarray
     ) -> np.ndarray:
         """
         Get sampling indices of fracture nodes for both tips of one fracture. 
@@ -374,10 +422,10 @@ class FEMComputeSifErrorConvergence:
 
         """
         cells_tip_one = n_steps
-        cells_tip_two = num_frac - n_steps - 1  
-        current_frac_cells = np.vstack([cells_tip_one, cells_tip_two], dtype=int)
+        cells_tip_two = self.num_frac_nodes - n_steps - 1  
+        current_frac_nodes = np.vstack([cells_tip_one, cells_tip_two])
         
-        return current_frac_cells
+        return current_frac_nodes
     
     def FEM_multi_points_single_scale_normal(
         self, sampling_points: list
@@ -419,7 +467,7 @@ class FEMComputeSifErrorConvergence:
             self, 
             u_jump_n: np.ndarray, 
             r_n: np.ndarray, 
-            singularity_orders: np.ndarray
+            singularity_orders: float,
     ) -> tuple[np.ndarray, np.ndarray]: 
         """
         Calculate SIFs by FEM for tips based on extracted displacement jump. 
@@ -449,7 +497,7 @@ class FEMComputeSifErrorConvergence:
             self, 
             u_jump_t: np.ndarray, 
             r_t: np.ndarray, 
-            singularity_orders: np.ndarray
+            singularity_orders: float,
     ) -> tuple[np.ndarray, np.ndarray]: 
         """
         Calculate SIFs by FEM for tips based on extracted displacement jump. 
@@ -476,9 +524,10 @@ class FEMComputeSifErrorConvergence:
         return KIIs, KIIs_t
     
     def generate_sampling_pairs(self):
-        num_frac_cells = self.model.num_frac_cells
         k_min = 0
-        k_max = num_frac_cells - 2    # because of quadratic nodes
+
+        # because of quadratic nodes
+        k_max = self.num_frac_nodes // 2 - 1    
 
         pairs_in_cellsizes = []
         
