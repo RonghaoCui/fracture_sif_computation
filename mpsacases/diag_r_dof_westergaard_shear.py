@@ -30,7 +30,7 @@ import os
 save_fig = "figures/mpsa/model/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/mpsa/diagram"
+save_csv = "data/mpsa/model_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
 class WestergaardShearMode2dWithAuxPoints(AuxiliaryPointsMixin, WestergaardShearMode2d):

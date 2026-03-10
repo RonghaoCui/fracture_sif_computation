@@ -25,7 +25,7 @@ import os
 save_fig = "figures/mpsa/cache/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/mpsa/diagram"
+save_csv = "data/mpsa/cache_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
 save_model = "data/mpsa/cache_models/ws"
