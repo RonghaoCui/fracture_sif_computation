@@ -29,7 +29,7 @@ import os
 save_fig = "figures/femnoqpe/model/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/femnoqpe/diagram"
+save_csv = "data/femnoqpe/model_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
 a = 0.3
