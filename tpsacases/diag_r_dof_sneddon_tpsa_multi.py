@@ -27,7 +27,7 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.colors import LogNorm
 
 import os
-save_fig = "figures/tpsa_results/diagram"
+save_fig = "figures/tpsa/model/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
 save_csv = "data/tpsa/diagram"

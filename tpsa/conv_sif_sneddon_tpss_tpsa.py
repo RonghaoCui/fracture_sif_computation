@@ -19,7 +19,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/tpsa_results/conv_sif"
+save_dir = "figures/tpsa/model/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3

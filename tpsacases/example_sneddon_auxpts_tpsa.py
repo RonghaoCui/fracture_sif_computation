@@ -20,7 +20,7 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 
 import os
-save_dir = "figures/tpsa_results/aux_grids"
+save_dir = "figures/tpsa/model/aux_grids"
 os.makedirs(save_dir, exist_ok=True)
 
 class TpsaSneddonModel2dWithAuxPts(
