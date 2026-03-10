@@ -6,7 +6,6 @@ import porepy as pp
 
 from porepy.fracs.fracture_network_2d import FractureNetwork2d
 from porepy.fracs.gmsh_interface import GmshWriter
-# from porepy.fracs.gmsh_interface import Tags as GmshInterfaceTags
 import porepy.fracs.simplex
 import gmsh
 import random
