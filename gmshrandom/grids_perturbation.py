@@ -5,7 +5,7 @@ import porepy as pp
 
 class GridsPerturbationMixin(pp.PorePyModel):
     """
-    A mixin for adding perturbations into the mesh to make simplex grids 
+    A mixin for introducing perturbations into the mesh to make simplex grids 
     have some randomness in the 2D matrix. 
 
     Perturbation is applied based on the following equtions:
@@ -17,7 +17,7 @@ class GridsPerturbationMixin(pp.PorePyModel):
     This mixin overrides the geometry construction by implementing a custom method 
     for :meth:`set_geometry()` . 
     """
-    def set_geometry(self):
+    def set_geometry(self) -> None:
 
         super().set_geometry()
 
@@ -78,3 +78,37 @@ class GridsPerturbationMixin(pp.PorePyModel):
 
         # Update the mdg with the new subdomain
         mdg.replace_subdomains_and_interfaces({sd_old: sd_new})
+
+    def check_acute_triangles(self, sd: pp.Grid) -> tuple[bool, int]:
+
+        nodes = sd.nodes[:2]
+        cell_to_node_mat = sd.cell_nodes()
+        
+        num_nonacute = 0
+
+        for i in range(sd.num_cells):
+            node_indices_in_cell = cell_to_node_mat[:, i].indices
+
+            if len(node_indices_in_cell) != 3:
+                raise ValueError(f"Cell {i} is not a triangle.")
+
+            A = nodes[:, node_indices_in_cell[0]]
+            B = nodes[:, node_indices_in_cell[1]]
+            C = nodes[:, node_indices_in_cell[2]]
+
+            AB = B - A
+            AC = C - A
+            BA = A - B
+            BC = C - B
+            CA = A - C
+            CB = B - C 
+
+            condA = np.dot(AB, AC) > 0
+            condB = np.dot(BA, BC) > 0
+            condC = np.dot(CA, CB) > 0 
+
+            if not (condA and condB and condC):
+                num_nonacute += 1
+        
+        return num_nonacute == 0, num_nonacute
+

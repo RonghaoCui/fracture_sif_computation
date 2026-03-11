@@ -47,12 +47,17 @@ params = {
 # Parameters for grid perturbation
 params.update({
     "perturb_amplitude": 0.25,
-    "perturb_exponent": 1.0,
+    "perturb_exponent": 1.5,
     "perturb_seed": 1234,
 })
 
 model = ManuSneddonModel2dPerturbed(params=params)
 pp.run_time_dependent_model(model)
+
+sd = model.mdg.subdomains(dim=model.nd)[0]
+is_acute, num_obtuse = model.check_acute_triangles(sd)
+print("Are all triangles acute? ", is_acute)
+print("Number of obtuse triangles: ", num_obtuse)
 
 # Plot grids only
 mpl.rcParams.update({
