@@ -104,6 +104,9 @@ class GridsPerturbationMixin(pp.PorePyModel):
         Check whether all triangles in the given grid are acute, and also return
         the number of non-acute triangles if any. 
 
+        A triangle is considered acute if the dot products of the two edge vectors 
+        at each vertex are all positive. 
+
         Parameters:
             sd: the subdomain to check. 
 
