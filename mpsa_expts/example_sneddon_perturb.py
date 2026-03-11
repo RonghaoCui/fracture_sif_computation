@@ -1,5 +1,5 @@
 """
-An example for Sneddon problem with auxiliary points. 
+An example for Sneddon problem with grid perturbation. 
 
 """
 from __future__ import annotations
