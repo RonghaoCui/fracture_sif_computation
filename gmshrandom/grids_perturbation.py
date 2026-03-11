@@ -5,20 +5,40 @@ import porepy as pp
 
 class GridsPerturbationMixin(pp.PorePyModel):
     """
-    A mixin for introducing perturbations into the mesh to make simplex grids 
-    have some randomness in the 2D matrix. 
+    A mixin for introducing random perturbations to simplex grids (triangles) 
+    in the 2D matrix. 
 
     Perturbation is applied based on the following equtions:
-    - delta_x = rho * cell_size ^ beta  * ei
-    - delta_y = rho * cell_size ^ beta  * ei
-    where rho is the perturbation amplitude in [0, 1], beta is the perturbation exponent, 
-    and ei is a bounded random variable in [-1, 1].
+        - delta_x = rho * cell_size ^ beta  * ei
+        - delta_y = rho * cell_size ^ beta  * ei
+        where rho is the perturbation amplitude in [0, 1], beta is the perturbation exponent, 
+        and ei is a bounded random variable in [-1, 1].
 
-    This mixin overrides the geometry construction by implementing a custom method 
-    for :meth:`set_geometry()` . 
+    Notes: 
+        This mixin overrides the geometry construction by implementing a custom method 
+        for :meth:`set_geometry()` . 
+
     """
     def set_geometry(self) -> None:
+        """
+        Construct the model geometry and then perturb the grid nodes randomly. 
+        
+        The perturbation is applied to the interior nodes of grids in the 2D matrix, 
+        while keeping the boundary and fracture interface nodes fixed.
+        
+        The perturbation parameters are defined in the model parameters provided in 
+        ``self.params``, and include: 
+            ``perturb_amplitude``: A value in [0, 1] that controls the maximum relative 
+                    perturbation magnitude.
+            ``perturb_exponent``: A positive value that controls how the perturbation scales 
+                    with the local cell size. 
+            ``perturb_seed``: An integer seed for the random number generator to ensure 
+                    reproducibility of the perturbation.
 
+        Raises: 
+            ValueError: If the perturbation results in any inverted cells 
+                (i.e., cells with non-positive volume).
+        """
         super().set_geometry()
 
         mdg = self.mdg
@@ -80,7 +100,23 @@ class GridsPerturbationMixin(pp.PorePyModel):
         mdg.replace_subdomains_and_interfaces({sd_old: sd_new})
 
     def check_acute_triangles(self, sd: pp.Grid) -> tuple[bool, int]:
+        """
+        Check whether all triangles in the given grid are acute, and also return
+        the number of non-acute triangles if any. 
 
+        Parameters:
+            sd: the subdomain to check. 
+
+        Returns:
+            tuple[bool, int]: 
+                bool: True if all triangles are acute, False otherwise.
+                int: The number of non-acute triangles in the grid.
+
+        Raises: 
+            ValueError: If any cell in the grid is not a triangle 
+                i.e., does not have exactly 3 nodes.
+
+        """
         nodes = sd.nodes[:2]
         cell_to_node_mat = sd.cell_nodes()
         
