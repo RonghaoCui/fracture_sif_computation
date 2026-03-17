@@ -5,10 +5,6 @@ multiple seeds of a random number generator by TPSA.
 """
 from __future__ import annotations
 
-# import os, sys
-# print("cwd =", os.getcwd())
-# print("sys.path[0] =", sys.path[0])
-
 import numpy as np
 import porepy as pp
 from gmshrandom.grids_perturbation import GridsPerturbationMixin
@@ -324,8 +320,8 @@ ax3.loglog(
     label="Fitting"
 )
 
-ax3.set_xlabel(r"$r/a$")
-ax3.set_ylabel(r"$h/a$")
+ax3.set_xlabel(r"$h/a$")
+ax3.set_ylabel(r"$r/a$")
 
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
