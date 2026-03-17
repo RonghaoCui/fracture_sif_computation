@@ -225,6 +225,25 @@ class FractureDisplacementJump:
 
         return radial_dis
     
+    def sampling_pairs_from_power_function(
+            self, 
+            C: float, 
+            alpha: float,
+    ) -> list[int]:
+
+        h = self.params["meshing_arguments"]["cell_size"]
+        a = self.params["a"]
+
+        # The power function
+        r_from_tip = C * (a ** (1 - alpha)) * (h ** alpha)
+
+        # convert distance to cell index
+        idx = int(np.round((r_from_tip - h / 2.0) / h))
+        # ensure index >= 0
+        # idx = max(idx, 0)
+
+        return [idx, idx + 1]
+    
     def extract_multi_points_normal_jump(
         self, 
         sampling_points: list
