@@ -14,6 +14,11 @@ import numpy as np
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 from fems import mmfa
 
+import matplotlib.pyplot as plt
+
+import os
+save_dir = "figures/benchmarks/femqpe/sol"
+os.makedirs(save_dir, exist_ok=True)
 
 # Directly use boundary element methods in Sneddon problem
 class ExactDirichletBCSneddon:
@@ -143,7 +148,7 @@ class SneddonFemQpe2dSolver:
     Sneddon model by the finite element method with quarter-point elements.
     
     """
-    def __init__(self, params: dict) -> None:
+    def __init__(self, params: dict, use_qpe: bool) -> None:
         """
         Initialize elastic constants from the input parameters.
 
@@ -152,6 +157,7 @@ class SneddonFemQpe2dSolver:
 
         """
         self.params = params
+        self.use_qpe = use_qpe
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
@@ -196,14 +202,25 @@ class SneddonFemQpe2dSolver:
         # nodes_mdg: node coordinates: np.array(shape = (n, 2), dtype = float)
         # elements_mdg: nodes from each triangle: np.array(shape = (n, 3), dtype = int)
         # Note: frac_gap is the assumed distance between two fracture faces. It should be very small. 
-        self.nodes_mdg, self.elements_mdg = mmfa.adjustmesh(self.grid2d, self. tip_face_centers, self.frac_gap)
+        self.nodes_mdg, self.elements_mdg = mmfa.adjustmesh(self.grid2d, self.tip_face_centers, self.frac_gap)
         # print("tip_face_centers: ", tip_face_centers)
 
         # nodes_p6: node coordinates, np.array(shape = (n, 2), dtype = float)
         # elements_t6: node connection in cells, np.array(shape = (n, 6), dtype = int)
         # elements_quarter: node connection in cells with fractrue tip nodes, list: shape = (n, 6)
-        self.nodes_p6, self.elements_t6, self.elements_quarter = mmfa.t3tot6(self.nodes_mdg, self.elements_mdg, tips=self.tip_face_centers, QPE=True)
+        self.nodes_p6, self.elements_t6, self.elements_quarter = mmfa.t3tot6(
+            self.nodes_mdg, 
+            self.elements_mdg, 
+            tips=self.tip_face_centers, 
+            QPE=self.use_qpe
+        )
+        # x = self.nodes_p6[:, 0]
+        # y = self.nodes_p6[:, 1]
 
+        # print("min |y - 0.5|:", np.min(np.abs(y - 0.5)))
+        # print("number of nodes near fracture:",
+        #     np.sum(np.abs(y - 0.5) < self.frac_gap))
+        
         dirdof, dirval = self.Dirichlet_bc_domain()
 
         NeuDof, NeuVal = self.Neumann_bc_fracture()
@@ -220,6 +237,9 @@ class SneddonFemQpe2dSolver:
             [self.lam,               self.lam + 2.0*self.mu, 0.0],
             [0.0,                    0.0,                    self.mu],
         ], dtype=float)
+
+        if not self.use_qpe:
+            self.elements_quarter = []   # No quarter-point elements (QPE) if not using QPE.
 
         # Assemble the left hand side
         K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)  
@@ -302,24 +322,29 @@ class SneddonFemQpe2dSolver:
         Returns: 
             NeuDof: three node indices of edges correponding to traction.             
             NeuVal: values of traction corresponding to edges. 
-
+        
+        Notes:
+            Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh. 
         """
         all_boundaries_t3 = self.boundary_edges_from_t3()
         midnodes_edges = self.get_midnodes_from_edges()
         # Get the edge nodes of fracture surfaces by a preset tolerence
-        xL, xR = self.tip_face_centers[0, 0], self.tip_face_centers[1, 0]   # horizontal fracture by default
+        # Horizontal fracture by default
+        # Tip 1 does not mean the left tip! 
+        x_tip = self.tip_face_centers[:, 0]
+        x_tip_min = np.min(x_tip)
+        x_tip_max = np.max(x_tip)
+
         fracture_edges = []
         for (n0, n1) in all_boundaries_t3:
             x0, y0 = self.nodes_p6[n0]
             x1, y1 = self.nodes_p6[n1]
             xm, ym = 0.5*(x0+x1), 0.5*(y0+y1)
 
-            if (xL - self.tol) <= xm <= (xR + self.tol) and abs(ym - self.length/2.0) < 5.0*self.frac_gap:
+            if (x_tip_min - self.tol) <= xm <= (x_tip_max + self.tol) and abs(ym - self.length/2.0) < 5.0*self.frac_gap:
                 fracture_edges.append((n0, n1))
 
         fracture_edges = np.array(fracture_edges, dtype=int)
-
-        # print("fracture nodes:", fracture_edges)
 
         # Get Neumann boundary conditions
         # Formats of Neumann boundary conditions in mmfa.loadsegment: 
@@ -348,8 +373,6 @@ class SneddonFemQpe2dSolver:
 
         NeuDof = np.array(NeuDof, dtype=int)
         NeuVal = np.array(NeuVal, dtype=float)
-        # print("Neumann dof on fracture nodes:", NeuDof)
-        # print("Neumann value on fracture nodes:", NeuVal)
 
         return NeuDof, NeuVal
     
@@ -399,16 +422,20 @@ class SneddonFemQpe2dSolver:
         Returns: 
             upper_frac_nodes: node indices on the upper fracture surface
             lower_frac_nodes: node indices on the lower fracture surface
- 
+        
+        Notes:
+            Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh.    
         """
-        xL, xR = self.tip_face_centers[0, 0], self.tip_face_centers[1, 0]
-        yL, yR = self.tip_face_centers[0, 1], self.tip_face_centers[1, 1]
-        y_frac = (yL + yR) / 2.0   # horizontal fracture by default
+        x_tip = self.tip_face_centers[:, 0]
+        y_tip = self.tip_face_centers[:, 1]
+        x_tip_min = np.min(x_tip)
+        x_tip_max = np.max(x_tip)   
+        y_frac = (y_tip[0] + y_tip[1]) / 2.0   # horizontal fracture by default
         x = self.nodes_p6[:, 0]
         y = self.nodes_p6[:, 1]
 
         # Using the preset tolerance and fracture gap with super small values can work here
-        nodes_frac = (x >= xL - self.tol) & (x <= xR + self.tol) & (np.abs(y - y_frac) < 5*self.frac_gap)
+        nodes_frac = (x >= x_tip_min - self.tol) & (x <= x_tip_max + self.tol) & (np.abs(y - y_frac) < 5.0*self.frac_gap)
     
         upper_frac_nodes = np.where(nodes_frac & (y > y_frac))[0]
         lower_frac_nodes = np.where(nodes_frac & (y < y_frac))[0]
@@ -419,8 +446,11 @@ class FemQpeSneddonModel2d(
     ExactDirichletBCSneddon, 
     SneddonFemQpe2dSolver,
 ): 
-    def __init__(self, params: dict):
+    """
+    Mixer class for the FEM model with or without QPE in Sneddon's problem. 
+    """
+    def __init__(self, params: dict, use_qpe: bool) -> None:
         ExactDirichletBCSneddon.__init__(self, params)
-        SneddonFemQpe2dSolver.__init__(self, params)
+        SneddonFemQpe2dSolver.__init__(self, params, use_qpe)
 
         

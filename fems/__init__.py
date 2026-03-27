@@ -2,10 +2,10 @@ from . import mixedmode_fracture_analysis as mmfa
 from .sneddon_opening_fem import FemQpeSneddonModel2d
 from .sneddon_opening_fem_noqpe import FemNoQpeSneddonModel2d
 from .westergaard_shear_fem import FEMWestergaardShearMode2d
-from .sneddon_opening_fem_auxpts import FEMSneddonModel2dWithAuxPoints
-from .sneddon_opening_fem_auxpts_noqpe import FemNoQpeSneddonModel2dWithAuxPoints
-from .westergaard_shear_fem_auxpts import FemQpeWestergaardShearMode2dWithAuxPts
-from .westergaard_shear_fem_auxpts_noqpe import FemNoQpeWestergaardShearMode2dWithAuxPts
+# from .sneddon_opening_fem_auxpts import FEMSneddonModel2dWithAuxPoints
+# from .sneddon_opening_fem_auxpts_noqpe import FemNoQpeSneddonModel2dWithAuxPoints
+# from .westergaard_shear_fem_auxpts import FemQpeWestergaardShearMode2dWithAuxPts
+# from .westergaard_shear_fem_auxpts_noqpe import FemNoQpeWestergaardShearMode2dWithAuxPts
 from .sneddon_opening_fem_pert import FEMSneddonModel2dPert
 from .westergaard_shear_fem_pert import FemQpeWestergaardShearMode2dPert
 from .sneddon_opening_fem_pert_noqpe import FemNoQpeSneddonModel2dPert
@@ -17,10 +17,10 @@ __all__ = [
     "FemQpeSneddonModel2d",
     "FemNoQpeSneddonModel2d",
     "FEMWestergaardShearMode2d",
-    "FEMSneddonModel2dWithAuxPoints",
-    "FemNoQpeSneddonModel2dWithAuxPoints",
-    "FemQpeWestergaardShearMode2dWithAuxPts", 
-    "FemNoQpeWestergaardShearMode2dWithAuxPts", 
+    # "FEMSneddonModel2dWithAuxPoints",
+    # "FemNoQpeSneddonModel2dWithAuxPoints",
+    # "FemQpeWestergaardShearMode2dWithAuxPts", 
+    # "FemNoQpeWestergaardShearMode2dWithAuxPts", 
     "FEMSneddonModel2dPert",
     "FemQpeWestergaardShearMode2dPert",
     "FemNoQpeSneddonModel2dPert",

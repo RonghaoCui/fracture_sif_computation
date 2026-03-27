@@ -1,6 +1,6 @@
 """
-Solve the model for Sneddon's problem by a quadratic finite element method (FEM) with quarter-point elements (QPEs).
-Calculate displacement solutions of Sneddon's problem by FEM with QPEs.
+Solve the model for Sneddon's problem by a quadratic finite element method (FEM).
+Quarter-point elements (QPEs) can be activeted based on the `use_qpe` flag.
 
 """
 from __future__ import annotations
@@ -16,7 +16,8 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/femqpe/model/sol"
+save_dir = "figures/benchmarks/femqpe/sol"
+# save_dir = "figures/benchmarks/femnoqpe/sol"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -31,14 +32,16 @@ params = {
     "domain_size": 1.0,
     "p0": 1e-4,
     "poi": poi,
-    "meshing_arguments": {"cell_size": 0.05},
+    "meshing_arguments": {"cell_size": 0.10},
     "grid_type": "simplex",
     "theta_rad": math.radians(90 - 0),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-fem_model = FemQpeSneddonModel2d(params)
+use_qpe = True
+# use_qpe = False
+fem_model = FemQpeSneddonModel2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 mpl.rcParams.update({
@@ -83,7 +86,7 @@ fig1.savefig(
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
+# plt.show()
 plt.close(fig1)
 
 # Only for the horizontal fracture
