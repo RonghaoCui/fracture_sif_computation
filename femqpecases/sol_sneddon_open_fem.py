@@ -32,7 +32,7 @@ params = {
     "domain_size": 1.0,
     "p0": 1e-4,
     "poi": poi,
-    "meshing_arguments": {"cell_size": 0.10},
+    "meshing_arguments": {"cell_size": 0.0125},
     "grid_type": "simplex",
     "theta_rad": math.radians(90 - 0),
     "num_bem_segments": 1000,
@@ -92,13 +92,14 @@ plt.close(fig1)
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
 
-# print("x_coords: ", x_coords.shape)
+# print("x_coords: ", x_coords)
 # print("u_jump_normal: ", u_jump_normal.shape)
 # print("u_jump_tangential: ", u_jump_tangential.shape)
 
 # Get analytical solutions
-eta_exact = np.abs(x_coords - fem_model.length/2.0)
+eta_exact = np.abs(x_coords - fem_model.a)
 u_open_analytical = fem_model.analytical_displacements(eta_exact)
+# print("u_open_analytical: ", u_open_analytical)
 u_open_numerical = u_jump_normal
 u_slip_numerical = u_jump_tangential
 
@@ -124,9 +125,9 @@ ax2.yaxis.set_major_formatter(formatter)
 ax2.set_xlabel("Distance from fracture tip 1")
 ax2.set_ylabel("Normal displacement jump")
 ax2.set_title("Normal displacement jump")
-ax2.set_xlim(0.19, 0.81)
+ax2.set_xlim(-0.01, 0.61)
 ax2.set_ylim(1.0e-5, 5.0e-5)
-ax2.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax2.set_xticks(np.arange(0.0, 0.60, 0.1))
 ax2.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)

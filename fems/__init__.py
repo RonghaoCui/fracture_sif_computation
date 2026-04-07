@@ -1,6 +1,7 @@
 from . import mixedmode_fracture_analysis as mmfa
+from .porepy_mesh_into_fem import FemMeshFromPorePy
 from .sneddon_opening_fem import FemQpeSneddonModel2d
-from .sneddon_opening_fem_noqpe import FemNoQpeSneddonModel2d
+# from .sneddon_opening_fem_noqpe import FemNoQpeSneddonModel2d
 from .westergaard_shear_fem import FEMWestergaardShearMode2d
 # from .sneddon_opening_fem_auxpts import FEMSneddonModel2dWithAuxPoints
 # from .sneddon_opening_fem_auxpts_noqpe import FemNoQpeSneddonModel2dWithAuxPoints
@@ -14,8 +15,9 @@ from .fem_compute_sif_convergence import FEMComputeSifErrorConvergence
 
 __all__ = [
     "mmfa",
+    "FemMeshFromPorePy",
     "FemQpeSneddonModel2d",
-    "FemNoQpeSneddonModel2d",
+    # "FemNoQpeSneddonModel2d",
     "FEMWestergaardShearMode2d",
     # "FEMSneddonModel2dWithAuxPoints",
     # "FemNoQpeSneddonModel2dWithAuxPoints",

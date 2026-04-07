@@ -13,6 +13,7 @@ import numpy as np
 
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 from fems import mmfa
+from fems import FemMeshFromPorePy
 
 import matplotlib.pyplot as plt
 
@@ -21,9 +22,10 @@ save_dir = "figures/benchmarks/femqpe/sol"
 os.makedirs(save_dir, exist_ok=True)
 
 # Directly use boundary element methods in Sneddon problem
-class ExactDirichletBCSneddon:
+class FemExactDirichletBCSneddon:
     """Class representing the analytical solution for the pressurized fracture
-    problem."""
+    problem.
+    """
 
     def __init__(self, params: dict) -> None:
         self.params = params
@@ -62,6 +64,10 @@ class ExactDirichletBCSneddon:
     def transform(self, xc: np.ndarray, x: np.ndarray) -> np.ndarray:
         """
         Transform coordinates to local BEM system.
+
+        Notes:
+            The local BEM system is defined by local normal and tangential vectors 
+            of the fracture.
         """
         alpha = np.pi / 2.0 - self.theta_rad
         x_bar = np.zeros_like(x)
@@ -183,6 +189,10 @@ class SneddonFemQpe2dSolver:
         self.elements_t6 = None
         self.elements_quarter = None
         self.U = None
+        self.upper_frac_edges = None
+        self.lower_frac_edges = None
+        self.upper_frac_nodes = None
+        self.lower_frac_nodes = None
 
     def model_setup_and_sol(self) -> np.ndarray:
         """
@@ -202,8 +212,15 @@ class SneddonFemQpe2dSolver:
         # nodes_mdg: node coordinates: np.array(shape = (n, 2), dtype = float)
         # elements_mdg: nodes from each triangle: np.array(shape = (n, 3), dtype = int)
         # Note: frac_gap is the assumed distance between two fracture faces. It should be very small. 
-        self.nodes_mdg, self.elements_mdg = mmfa.adjustmesh(self.grid2d, self.tip_face_centers, self.frac_gap)
-        # print("tip_face_centers: ", tip_face_centers)
+        # self.nodes_mdg, self.elements_mdg = mmfa.adjustmesh(self.grid2d, self.tip_face_centers, self.frac_gap)
+        self.nodes_mdg, self.elements_mdg, self.upper_frac_edges, self.lower_frac_edges = (
+            FemMeshFromPorePy.split_fracture_nodes(
+                self.grid2d, 
+                self.tip_face_centers, 
+                self.frac_gap,
+                self.theta_rad
+            )
+        )
 
         # nodes_p6: node coordinates, np.array(shape = (n, 2), dtype = float)
         # elements_t6: node connection in cells, np.array(shape = (n, 6), dtype = int)
@@ -223,7 +240,12 @@ class SneddonFemQpe2dSolver:
         
         dirdof, dirval = self.Dirichlet_bc_domain()
 
-        NeuDof, NeuVal = self.Neumann_bc_fracture()
+        NeuDof, NeuVal, self.upper_frac_nodes, self.lower_frac_nodes = self.Neumann_bc_fracture()
+
+        self.upper_frac_nodes, self.lower_frac_nodes = self.remove_tip_nodes(
+            self.upper_frac_nodes, 
+            self.lower_frac_nodes
+        )
 
         # Assemble matrices for the linear system: Ku=F
         # Assemble the right hand side
@@ -262,18 +284,47 @@ class SneddonFemQpe2dSolver:
 
         """
         # Only for the horizontal fracture
-        upper_frac_nodes, lower_frac_nodes = self.fracture_surface_nodes()
+        # upper_frac_nodes, lower_frac_nodes = self.fracture_surface_nodes()
+        upper_frac_nodes = self.upper_frac_nodes
+        lower_frac_nodes = self.lower_frac_nodes
+        # upper_frac_nodes = upper_frac_nodes[np.argsort(self.nodes_p6[upper_frac_nodes, 0])]
+        # lower_frac_nodes = lower_frac_nodes[np.argsort(self.nodes_p6[lower_frac_nodes, 0])]
 
-        upper_frac_nodes = upper_frac_nodes[np.argsort(self.nodes_p6[upper_frac_nodes, 0])]
-        lower_frac_nodes = lower_frac_nodes[np.argsort(self.nodes_p6[lower_frac_nodes, 0])]
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
+        mid_pts = self.nodes_p6[upper_frac_nodes]
+        # center = 0.5 * (self.tip_face_centers[0] + self.tip_face_centers[1])
+        # s_coords = (mid_pts - center) @ t
+        s_tip = self.tip_face_centers @ t
+        tip0 = self.tip_face_centers[np.argmin(s_tip)]
+
+        s_coords = (mid_pts - tip0) @ t
+
+        idx = np.argsort(s_coords)
+        upper_frac_nodes = upper_frac_nodes[idx]
+        lower_frac_nodes = lower_frac_nodes[idx]
+        s_coords = s_coords[idx]
+
+        print("tip_face_centers:\n", self.tip_face_centers)
+        print("t =", t)
+        print("s_tip =", s_tip)
+        print("chosen tip0 =", tip0)
+        
         uy = self.U[1::2, 0]  
         ux = self.U[0::2, 0]
-        u_jump_normal = uy[upper_frac_nodes] - uy[lower_frac_nodes]
-        u_jump_tangential = ux[upper_frac_nodes] - ux[lower_frac_nodes]
-        x_coords = 0.5*(self.nodes_p6[upper_frac_nodes, 0] + self.nodes_p6[lower_frac_nodes, 0])
+        u_upper = np.column_stack([ux[upper_frac_nodes], uy[upper_frac_nodes]])
+        u_lower = np.column_stack([ux[lower_frac_nodes], uy[lower_frac_nodes]])
+        jump = u_upper - u_lower
 
-        return x_coords, u_jump_normal, u_jump_tangential
+        u_jump_tangential = jump @ t
+        u_jump_normal = jump @ n
+
+        # u_jump_normal = uy[upper_frac_nodes] - uy[lower_frac_nodes]
+        # u_jump_tangential = ux[upper_frac_nodes] - ux[lower_frac_nodes]
+        # x_coords = 0.5*(self.nodes_p6[upper_frac_nodes, 0] + self.nodes_p6[lower_frac_nodes, 0])
+
+        return s_coords, u_jump_normal, u_jump_tangential
 
     def Dirichlet_bc_domain(self) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -314,7 +365,7 @@ class SneddonFemQpe2dSolver:
             dirval[i] = ux if component == 0 else uy
         
         return dirdof, dirval
-    
+
     def Neumann_bc_fracture(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Set up types and values of Neumann boundary conditions for internal boundaries (fracture surfaces).
@@ -326,76 +377,54 @@ class SneddonFemQpe2dSolver:
         Notes:
             Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh. 
         """
-        all_boundaries_t3 = self.boundary_edges_from_t3()
+        upper_fracture_edges = self.upper_frac_edges
+        lower_fracture_edges = self.lower_frac_edges
         midnodes_edges = self.get_midnodes_from_edges()
-        # Get the edge nodes of fracture surfaces by a preset tolerence
-        # Horizontal fracture by default
-        # Tip 1 does not mean the left tip! 
-        x_tip = self.tip_face_centers[:, 0]
-        x_tip_min = np.min(x_tip)
-        x_tip_max = np.max(x_tip)
 
-        fracture_edges = []
-        for (n0, n1) in all_boundaries_t3:
-            x0, y0 = self.nodes_p6[n0]
-            x1, y1 = self.nodes_p6[n1]
-            xm, ym = 0.5*(x0+x1), 0.5*(y0+y1)
-
-            if (x_tip_min - self.tol) <= xm <= (x_tip_max + self.tol) and abs(ym - self.length/2.0) < 5.0*self.frac_gap:
-                fracture_edges.append((n0, n1))
-
-        fracture_edges = np.array(fracture_edges, dtype=int)
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
         # Get Neumann boundary conditions
         # Formats of Neumann boundary conditions in mmfa.loadsegment: 
         #     NeuDof: [n0, nmid, n1] in one edge with three nodes in T6
         #     NeuVal: [tx, ty] for one edge
+        # Here we find three nodes of each boundary edge on fracture surfaces 
+        # and give traction values for the edge, instead of nodes.    
         NeuDof = []
         NeuVal = []
-        # Here we find three nodes of each boundary edge on fracture surfaces 
-        # and give traction values for the edge, instead of nodes. 
-        for (n0, n1) in fracture_edges:
+        NeuDof_upper = []
+        NeuDof_lower = []
+
+        for (n0, n1) in upper_fracture_edges:
             key = tuple(sorted((int(n0), int(n1))))
             if key not in midnodes_edges:
                 continue
             m01 = midnodes_edges[key]
-
-            ym = 0.5*(self.nodes_p6[n0,1] + self.nodes_p6[n1,1])
-            if ym > self.length/2.0:
-                # upper fracture surface
-                tr = np.array([0.0, +self.p0], dtype=float)
-            else:
-                # lower fracture surface
-                tr = np.array([0.0, -self.p0], dtype=float)
+            # tr = np.array([0.0, +self.p0], dtype=float)
+            tr_upper = +self.p0 * n
 
             NeuDof.append([n0, m01, n1])
-            NeuVal.append(tr)
+            NeuDof_upper.append([n0, m01, n1])
+            NeuVal.append(tr_upper)
+        
+        for (n0, n1) in lower_fracture_edges:
+            key = tuple(sorted((int(n0), int(n1))))
+            if key not in midnodes_edges:
+                continue
+            m01 = midnodes_edges[key]
+            # tr = np.array([0.0, -self.p0], dtype=float)
+            tr_lower = -self.p0 * n
 
+            NeuDof.append([n0, m01, n1])
+            NeuDof_lower.append([n0, m01, n1])
+            NeuVal.append(tr_lower)
+      
         NeuDof = np.array(NeuDof, dtype=int)
         NeuVal = np.array(NeuVal, dtype=float)
+        upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
+        lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
 
-        return NeuDof, NeuVal
-    
-    # Prepare the set-up of the pressure (Neumann boundary conditions) 
-    def boundary_edges_from_t3(self) -> np.ndarray:
-        """
-        Find the boundary edges in the T3 mesh. 
-
-        Returns: 
-            Array of shape (num_boundary_edges, 2) containing the node indices
-            of all boundary edges. Edges are identified by the occurence count of an egde in
-            a mesh. Each row represents one edge, given by the indices of its two end nodes.
-
-        """
-        # elements_mdg: Array of shape=(num_cells, 3) containing the node indices of T3. 
-        # Each row corresponds to one triangle.
-        e01 = self.elements_mdg[:, [0, 1]]
-        e12 = self.elements_mdg[:, [1, 2]]
-        e20 = self.elements_mdg[:, [2, 0]]
-        edges = np.vstack([e01, e12, e20])
-        edges = np.sort(edges, axis=1)
-        uniq, counts = np.unique(edges, axis=0, return_counts=True)
-        return uniq[counts == 1]
+        return NeuDof, NeuVal, upper_frac_nodes, lower_frac_nodes
 
     def get_midnodes_from_edges(self) -> dict[tuple[int, int], int]:
         """
@@ -415,42 +444,60 @@ class SneddonFemQpe2dSolver:
             mp[tuple(sorted((v0, v2)))] = m02
         return mp
     
-    def fracture_surface_nodes(self) -> tuple[np.ndarray, np.ndarray]:
-        """
-        Get node indices of upper and lower fracture surfaces (one horizontal central fracture by default). 
+    # def fracture_surface_nodes(self) -> tuple[np.ndarray, np.ndarray]:
+    #     """
+    #     Get node indices of upper and lower fracture surfaces (one horizontal central fracture by default). 
 
-        Returns: 
-            upper_frac_nodes: node indices on the upper fracture surface
-            lower_frac_nodes: node indices on the lower fracture surface
+    #     Returns: 
+    #         upper_frac_nodes: node indices on the upper fracture surface
+    #         lower_frac_nodes: node indices on the lower fracture surface
         
-        Notes:
-            Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh.    
-        """
-        x_tip = self.tip_face_centers[:, 0]
-        y_tip = self.tip_face_centers[:, 1]
-        x_tip_min = np.min(x_tip)
-        x_tip_max = np.max(x_tip)   
-        y_frac = (y_tip[0] + y_tip[1]) / 2.0   # horizontal fracture by default
-        x = self.nodes_p6[:, 0]
-        y = self.nodes_p6[:, 1]
+    #     Notes:
+    #         Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh.    
+    #     """
+    #     x_tip = self.tip_face_centers[:, 0]
+    #     y_tip = self.tip_face_centers[:, 1]
+    #     x_tip_min = np.min(x_tip)
+    #     x_tip_max = np.max(x_tip)   
+    #     y_frac = (y_tip[0] + y_tip[1]) / 2.0   # horizontal fracture by default
+    #     x = self.nodes_p6[:, 0]
+    #     y = self.nodes_p6[:, 1]
 
-        # Using the preset tolerance and fracture gap with super small values can work here
-        nodes_frac = (x >= x_tip_min - self.tol) & (x <= x_tip_max + self.tol) & (np.abs(y - y_frac) < 5.0*self.frac_gap)
+    #     # Using the preset tolerance and fracture gap with super small values can work here
+    #     nodes_frac = (x >= x_tip_min - self.tol) & (x <= x_tip_max + self.tol) & (np.abs(y - y_frac) < 5.0*self.frac_gap)
     
-        upper_frac_nodes = np.where(nodes_frac & (y > y_frac))[0]
-        lower_frac_nodes = np.where(nodes_frac & (y < y_frac))[0]
+    #     upper_frac_nodes = np.where(nodes_frac & (y > y_frac))[0]
+    #     lower_frac_nodes = np.where(nodes_frac & (y < y_frac))[0]
+
+    #     return upper_frac_nodes, lower_frac_nodes
+    
+    def remove_tip_nodes(
+            self, 
+            upper_frac_nodes: np.ndarray, 
+            lower_frac_nodes: np.ndarray
+        ) -> tuple[np.ndarray, np.ndarray]:
+
+        upper_pts = self.nodes_p6[upper_frac_nodes, :2]
+
+        mask = np.ones(len(upper_frac_nodes), dtype=bool)
+        for tip in self.tip_face_centers:
+            dist = np.linalg.norm(upper_pts - tip[None, :], axis=1)
+            mask &= dist > self.tol
+
+        upper_frac_nodes = upper_frac_nodes[mask]
+        lower_frac_nodes = lower_frac_nodes[mask]
 
         return upper_frac_nodes, lower_frac_nodes
-
+    
 class FemQpeSneddonModel2d(
-    ExactDirichletBCSneddon, 
+    FemExactDirichletBCSneddon, 
     SneddonFemQpe2dSolver,
 ): 
     """
     Mixer class for the FEM model with or without QPE in Sneddon's problem. 
     """
     def __init__(self, params: dict, use_qpe: bool) -> None:
-        ExactDirichletBCSneddon.__init__(self, params)
+        FemExactDirichletBCSneddon.__init__(self, params)
         SneddonFemQpe2dSolver.__init__(self, params, use_qpe)
 
         

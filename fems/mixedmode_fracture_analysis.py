@@ -457,9 +457,8 @@ def adjustmesh(g, tips, gap):
                 
             if p0[tips_on_bou[1],1] == np.min(p0[:,1]) or p0[tips_on_bou[1],1] == np.max(p0[:,1]):
                 p[tips_on_bou[1],1] = p0[tips_on_bou[1],1] 
-        
-            
     return p, t
+
 def fracture_infor(fracture):
     '''
     generating information from fracture's coordinates
