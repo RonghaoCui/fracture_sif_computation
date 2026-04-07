@@ -274,6 +274,10 @@ class SneddonFemQpe2dSolver:
         """
         Extract the displacement jump between the conforming fracture surfaces.
 
+        Here we extract 1D coordinates of fracture surface nodes in the local BEM system, 
+        following an order from small to large values. This is different from methods in MPSA. 
+        The coordinates of Tip 1 and Tip 2 are 0.0 and 2a, respectively.  
+
         Returns: 
             x_coords: shape = (n, )
                 x coordinates of fracture surface nodes from small to large values.            
@@ -306,10 +310,10 @@ class SneddonFemQpe2dSolver:
         lower_frac_nodes = lower_frac_nodes[idx]
         s_coords = s_coords[idx]
 
-        print("tip_face_centers:\n", self.tip_face_centers)
-        print("t =", t)
-        print("s_tip =", s_tip)
-        print("chosen tip0 =", tip0)
+        # print("tip_face_centers:\n", self.tip_face_centers)
+        # print("t =", t)
+        # print("s_tip =", s_tip)
+        # print("chosen tip0 =", tip0)
         
         uy = self.U[1::2, 0]  
         ux = self.U[0::2, 0]

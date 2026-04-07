@@ -32,9 +32,9 @@ params = {
     "domain_size": 1.0,
     "p0": 1e-4,
     "poi": poi,
-    "meshing_arguments": {"cell_size": 0.0125},
+    "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
@@ -92,7 +92,7 @@ plt.close(fig1)
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
 
-# print("x_coords: ", x_coords)
+print("x_coords: ", x_coords)
 # print("u_jump_normal: ", u_jump_normal.shape)
 # print("u_jump_tangential: ", u_jump_tangential.shape)
 

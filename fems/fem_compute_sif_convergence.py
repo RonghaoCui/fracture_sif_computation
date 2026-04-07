@@ -31,7 +31,24 @@ class FEMComputeSifErrorConvergence:
         self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
 
+        # The tangential vector here is obtained by theta_rad, instead of coordinates from two tips.
+        # We assume that they should be the same. 
+        self.theta_rad = self.params["theta_rad"]        
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+
         self.tip_face_centers = model.tip_face_centers
+        s_tip = self.tip_face_centers @ t
+        tip0 = self.tip_face_centers[np.argmin(s_tip)]
+
+        # Convert coordinates of tip face centers to the local system along the fracture 
+        # as 1D coordinates, with tip0 as the origin. 
+        # The coordinates of Tip 1 and Tip 2 are 0.0 and 2a, respectively.
+        self.tip_face_centers = (self.tip_face_centers - tip0)@t
+        # print("tip_face_centers: ", self.tip_face_centers)
+        
+        # Make sure tip_face_centers are in ascending order. 
+        self.tip_face_centers = np.sort(self.tip_face_centers)
+
         (
             self.fracture_node_coords, 
             self.u_jump_normal, 
@@ -71,8 +88,8 @@ class FEMComputeSifErrorConvergence:
         """
         x_coords = self.fracture_node_coords   
         current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
-        # only [x, y] and shape = (n_tips, 2)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_nodes])
+        # only [x,] and shape = (n_tips,)
+        r_cell_to_tip = np.abs(self.tip_face_centers - x_coords[current_frac_nodes])
         u_jump = self.u_jump_normal[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
@@ -367,9 +384,11 @@ class FEMComputeSifErrorConvergence:
         n_steps = sampling_points
         x_coords = self.fracture_node_coords
         current_frac_nodes = self.FEM_sampling_multi_frac_cells(n_steps)
-        r_cell_to_tip = np.abs(
-            self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_nodes]
-        )
+        x_sample = x_coords[current_frac_nodes]
+        r_cell_to_tip = np.vstack([
+            x_sample[0,:] - self.tip_face_centers[0],
+            self.tip_face_centers[1] - x_sample[1,:]
+        ])
         u_jump = self.u_jump_normal[current_frac_nodes]
         return u_jump, r_cell_to_tip
     

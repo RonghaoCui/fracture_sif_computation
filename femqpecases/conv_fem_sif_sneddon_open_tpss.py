@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/femqpe/model/conv"
+save_dir = "figures/convergence/sif/femqpe"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -38,13 +38,15 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-fem_model = FemQpeSneddonModel2d(params)
+use_qpe = True
+# use_qpe = False
+fem_model = FemQpeSneddonModel2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
 
-computeSIF = FEMComputeSifErrorConvergence(fem_model)
+computeSIF = FEMComputeSifErrorConvergence(model=fem_model)
 sampling_pair = [2, 3]
 rel_l2_error_ave, rel_error_per_tip = computeSIF.FEM_two_points_single_scale_normal(sampling_pair)
 print("Relative L2 error 1:", rel_l2_error_ave)
@@ -60,8 +62,7 @@ rel_l2_error_ave, rel_error_per_tip = computeSIF.FEM_multi_points_single_scale_n
 print("Relative L2 error 2:", rel_l2_error_ave)
 print("Relative error per tip 2:", rel_error_per_tip)
 
-xL = fem_model.length/2.0 - fem_model.a
-count_r = np.sum((x_coords - xL) <= fem_model.a) 
+count_r = np.sum(x_coords <= fem_model.a) 
 interval_r = np.arange(count_r)
 interval_r = interval_r.tolist()
 u_jump_n, r_n = computeSIF.FEM_extract_multi_points_normal(interval_r)
@@ -112,20 +113,6 @@ plt.close(fig4)
 
 #  Define mesh sizes to test 
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-# pairs_in_cellsizes = [
-#     [2, 3],
-#     [4, 5],
-#     [7, 8],
-#     [11, 12],
-#     [20, 21]
-# ]
-# pairs_in_cellsizes = [
-#     [5, 7],
-#     [9, 11],
-#     [15, 17],
-#     [23, 25],
-#     [41, 43]
-# ]
 pairs_in_cellsizes = [
     [3, 4],
     [6, 7],
@@ -139,9 +126,9 @@ num_dofs_set = []
 for i, h in enumerate(cell_sizes):
     print(f"Running for mesh size h = {h}")
     params["meshing_arguments"] = {"cell_size": h}
-    fem_model = FemQpeSneddonModel2d(params)
+    fem_model = FemQpeSneddonModel2d(params, use_qpe)
     fem_model.model_setup_and_sol()
-    computeSIF = FEMComputeSifErrorConvergence(fem_model)
+    computeSIF = FEMComputeSifErrorConvergence(model=fem_model)
 
     sampling_pair = pairs_in_cellsizes[i]
      
