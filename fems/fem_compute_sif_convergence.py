@@ -111,7 +111,7 @@ class FEMComputeSifErrorConvergence:
         x_coords = self.fracture_node_coords   
         current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
         # only [x, y] and shape = (n_tips, 2)
-        r_cell_to_tip = np.abs(self.tip_face_centers[:,0] - x_coords[current_frac_nodes])
+        r_cell_to_tip = np.abs(self.tip_face_centers - x_coords[current_frac_nodes])
         u_jump = self.u_jump_tangential[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
@@ -416,9 +416,11 @@ class FEMComputeSifErrorConvergence:
         n_steps = sampling_points
         x_coords = self.fracture_node_coords
         current_frac_nodes = self.FEM_sampling_multi_frac_cells(n_steps)
-        r_cell_to_tip = np.abs(
-            self.tip_face_centers[:,0].reshape(2, 1) - x_coords[current_frac_nodes]
-        )
+        x_sample = x_coords[current_frac_nodes]
+        r_cell_to_tip = np.vstack([
+            x_sample[0,:] - self.tip_face_centers[0],
+            self.tip_face_centers[1] - x_sample[1,:]
+        ])
         u_jump = self.u_jump_tangential[current_frac_nodes]
         return u_jump, r_cell_to_tip
     
