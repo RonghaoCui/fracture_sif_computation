@@ -1,6 +1,9 @@
 """
-Model for Sneddon's problem by a quadratic finite element method with quarter-point elements
+Model for Sneddon's problem by a quadratic finite element method with/without quarter-point elements
 using Sneddon's analytical solution for normal displacement jump.
+
+This model considers a single central fracture in a 2D domain with pressurized fracture surfaces. 
+The fracture orientation can be from 0 to 90 degrees.
 
 FEM code resource:
     - [1] Dang et al., International Journal of Rock Mechanics and Mining Sciences, 160 (2022): 105248.
@@ -148,10 +151,10 @@ class FemExactDirichletBCSneddon:
 
         return ux, uy
 
-# Class for the FEM model with qpe in Sneddon's problem
-class SneddonFemQpe2dSolver:
+# Class for the FEM model with/without qpe in Sneddon's problem
+class SneddonFem2dSolver:
     """
-    Sneddon model by the finite element method with quarter-point elements.
+    Sneddon model by the finite element method with/without quarter-point elements.
     
     """
     def __init__(self, params: dict, use_qpe: bool) -> None:
@@ -231,12 +234,6 @@ class SneddonFemQpe2dSolver:
             tips=self.tip_face_centers, 
             QPE=self.use_qpe
         )
-        # x = self.nodes_p6[:, 0]
-        # y = self.nodes_p6[:, 1]
-
-        # print("min |y - 0.5|:", np.min(np.abs(y - 0.5)))
-        # print("number of nodes near fracture:",
-        #     np.sum(np.abs(y - 0.5) < self.frac_gap))
         
         dirdof, dirval = self.Dirichlet_bc_domain()
 
@@ -287,19 +284,14 @@ class SneddonFemQpe2dSolver:
                 tangential displacement jump along the fracture.
 
         """
-        # Only for the horizontal fracture
-        # upper_frac_nodes, lower_frac_nodes = self.fracture_surface_nodes()
+        # Fracture orientation is considered in the order of upper and lower fracture nodes.
         upper_frac_nodes = self.upper_frac_nodes
         lower_frac_nodes = self.lower_frac_nodes
-        # upper_frac_nodes = upper_frac_nodes[np.argsort(self.nodes_p6[upper_frac_nodes, 0])]
-        # lower_frac_nodes = lower_frac_nodes[np.argsort(self.nodes_p6[lower_frac_nodes, 0])]
 
         t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
         n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
         mid_pts = self.nodes_p6[upper_frac_nodes]
-        # center = 0.5 * (self.tip_face_centers[0] + self.tip_face_centers[1])
-        # s_coords = (mid_pts - center) @ t
         s_tip = self.tip_face_centers @ t
         tip0 = self.tip_face_centers[np.argmin(s_tip)]
 
@@ -323,10 +315,6 @@ class SneddonFemQpe2dSolver:
 
         u_jump_tangential = jump @ t
         u_jump_normal = jump @ n
-
-        # u_jump_normal = uy[upper_frac_nodes] - uy[lower_frac_nodes]
-        # u_jump_tangential = ux[upper_frac_nodes] - ux[lower_frac_nodes]
-        # x_coords = 0.5*(self.nodes_p6[upper_frac_nodes, 0] + self.nodes_p6[lower_frac_nodes, 0])
 
         return s_coords, u_jump_normal, u_jump_tangential
 
@@ -448,33 +436,6 @@ class SneddonFemQpe2dSolver:
             mp[tuple(sorted((v0, v2)))] = m02
         return mp
     
-    # def fracture_surface_nodes(self) -> tuple[np.ndarray, np.ndarray]:
-    #     """
-    #     Get node indices of upper and lower fracture surfaces (one horizontal central fracture by default). 
-
-    #     Returns: 
-    #         upper_frac_nodes: node indices on the upper fracture surface
-    #         lower_frac_nodes: node indices on the lower fracture surface
-        
-    #     Notes:
-    #         Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh.    
-    #     """
-    #     x_tip = self.tip_face_centers[:, 0]
-    #     y_tip = self.tip_face_centers[:, 1]
-    #     x_tip_min = np.min(x_tip)
-    #     x_tip_max = np.max(x_tip)   
-    #     y_frac = (y_tip[0] + y_tip[1]) / 2.0   # horizontal fracture by default
-    #     x = self.nodes_p6[:, 0]
-    #     y = self.nodes_p6[:, 1]
-
-    #     # Using the preset tolerance and fracture gap with super small values can work here
-    #     nodes_frac = (x >= x_tip_min - self.tol) & (x <= x_tip_max + self.tol) & (np.abs(y - y_frac) < 5.0*self.frac_gap)
-    
-    #     upper_frac_nodes = np.where(nodes_frac & (y > y_frac))[0]
-    #     lower_frac_nodes = np.where(nodes_frac & (y < y_frac))[0]
-
-    #     return upper_frac_nodes, lower_frac_nodes
-    
     def remove_tip_nodes(
             self, 
             upper_frac_nodes: np.ndarray, 
@@ -493,15 +454,15 @@ class SneddonFemQpe2dSolver:
 
         return upper_frac_nodes, lower_frac_nodes
     
-class FemQpeSneddonModel2d(
+class FemSneddonModel2d(
     FemExactDirichletBCSneddon, 
-    SneddonFemQpe2dSolver,
+    SneddonFem2dSolver,
 ): 
     """
     Mixer class for the FEM model with or without QPE in Sneddon's problem. 
     """
     def __init__(self, params: dict, use_qpe: bool) -> None:
         FemExactDirichletBCSneddon.__init__(self, params)
-        SneddonFemQpe2dSolver.__init__(self, params, use_qpe)
+        SneddonFem2dSolver.__init__(self, params, use_qpe)
 
         

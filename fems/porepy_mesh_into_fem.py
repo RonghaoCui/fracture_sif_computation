@@ -87,8 +87,8 @@ class FemMeshFromPorePy:
                 if n not in node_side:
                     node_side[n] = side
 
-        for n, side in node_side.items():
-            nodes_coords[n] = nodes_coords[n] + side * n_vec * frac_gap / 2
+        # for n, side in node_side.items():
+        #     nodes_coords[n] = nodes_coords[n] + side * n_vec * frac_gap / 2
 
         upper_frac_edges = np.array(upper_frac_edges, dtype=int)
         lower_frac_edges = np.array(lower_frac_edges, dtype=int)
