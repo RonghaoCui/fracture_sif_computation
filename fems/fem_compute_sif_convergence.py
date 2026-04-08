@@ -65,6 +65,8 @@ class FEMComputeSifErrorConvergence:
         self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
 
+        # The following parameters are directly from the cache, which should be processed
+        # in above model initialization by considering the local system along the fracture.
         self.tip_face_centers = cache["tip_face_centers"]
         self.fracture_node_coords = cache["fracture_node_coords"]
         self.u_jump_normal = cache["u_jump_normal"]
