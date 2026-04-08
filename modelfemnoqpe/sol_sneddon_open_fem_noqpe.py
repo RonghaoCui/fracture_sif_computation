@@ -8,7 +8,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from fems import FemNoQpeSneddonModel2d
+from fems import FemSneddonModel2d
 
 import math
 import matplotlib.pyplot as plt
@@ -16,7 +16,7 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/femnoqpe/model/sol"
+save_dir = "figures/benchmarks/femnoqpe/sol"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -38,7 +38,9 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-fem_model = FemNoQpeSneddonModel2d(params)
+# use_qpe = True
+use_qpe = False
+fem_model = FemSneddonModel2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 mpl.rcParams.update({
@@ -94,7 +96,7 @@ x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump
 # print("u_jump_tangential: ", u_jump_tangential.shape)
 
 # Get analytical solutions
-eta_exact = np.abs(x_coords - fem_model.length/2.0)
+eta_exact = np.abs(x_coords - fem_model.a)
 u_open_analytical = fem_model.analytical_displacements(eta_exact)
 u_open_numerical = u_jump_normal
 u_slip_numerical = u_jump_tangential
@@ -121,9 +123,9 @@ ax2.yaxis.set_major_formatter(formatter)
 ax2.set_xlabel("Distance from fracture tip 1")
 ax2.set_ylabel("Normal displacement jump")
 ax2.set_title("Normal displacement jump")
-ax2.set_xlim(0.19, 0.81)
+ax2.set_xlim(0.0, 0.60)
 ax2.set_ylim(1.0e-5, 5.0e-5)
-ax2.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax2.set_xticks(np.arange(0.0, 0.61, 0.1))
 ax2.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)
@@ -186,5 +188,33 @@ fig3.savefig(
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
+# plt.show()
 plt.close(fig3)
+
+fig4, ax4 = plt.subplots(figsize=(3.5, 3.0))   # inches
+# solution
+tri_fine = mtri.Triangulation(fem_model.nodes_p6[:,0], fem_model.nodes_p6[:,1], triangles)
+sol_fine = ax4.tripcolor(tri_fine, ux, shading="gouraud", cmap="jet")
+fig4.colorbar(sol_fine, label="ux", shrink=0.8, aspect=20, pad=0.08)
+# grids
+tri_coarse = mtri.Triangulation(fem_model.nodes_mdg[:,0], fem_model.nodes_mdg[:,1], fem_model.elements_mdg)  
+ax4.triplot(tri_coarse, color="k", linewidth=0.3)
+ax4.set_aspect("equal")
+ax4.xaxis.set_major_formatter(formatter)
+ax4.yaxis.set_major_formatter(formatter)
+ax4.set_xlabel("$x$")
+ax4.set_ylabel("$y$")
+ax4.set_title("FEM displacement solution ux")
+ax4.set_xlim(0.0, 1.0)
+ax4.set_ylim(0.0, 1.0)
+fig4.tight_layout()
+fig4.savefig(
+    os.path.join(save_dir, "FEM_ux_sol_so_noqpe.tiff"), 
+    format="tiff", 
+    dpi=300, 
+    bbox_inches="tight", 
+    pil_kwargs={"compression": "tiff_lzw"}
+)
+# plt.show()
+plt.close(fig4)
+
