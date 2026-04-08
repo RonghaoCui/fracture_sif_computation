@@ -3,6 +3,7 @@ from .porepy_mesh_into_fem import FemMeshFromPorePy
 from .sneddon_opening_fem import FemSneddonModel2d
 # from .sneddon_opening_fem_noqpe import FemNoQpeSneddonModel2d
 from .westergaard_shear_fem import FemWestergaardShearMode2d
+from .westergaard_open_fem import FemWestergaardOpenMode2d
 # from .sneddon_opening_fem_auxpts import FEMSneddonModel2dWithAuxPoints
 # from .sneddon_opening_fem_auxpts_noqpe import FemNoQpeSneddonModel2dWithAuxPoints
 # from .westergaard_shear_fem_auxpts import FemQpeWestergaardShearMode2dWithAuxPts
@@ -19,6 +20,7 @@ __all__ = [
     "FemSneddonModel2d",
     # "FemNoQpeSneddonModel2d",
     "FemWestergaardShearMode2d",
+    "FemWestergaardOpenMode2d",
     # "FEMSneddonModel2dWithAuxPoints",
     # "FemNoQpeSneddonModel2dWithAuxPoints",
     # "FemQpeWestergaardShearMode2dWithAuxPts", 

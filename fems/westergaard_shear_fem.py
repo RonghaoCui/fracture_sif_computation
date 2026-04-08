@@ -1,5 +1,5 @@
 """
-Model for Westergaard's problem by a quadratic finite element method with/without quarter-point 
+Model for Westergaard's problem in the shear mode by a quadratic finite element method with/without quarter-point 
 elements using Westergaard's analytical solution for tangential displacement jump.
 
 FEM code resource:
@@ -150,7 +150,6 @@ class FemExactDirichletBCWestergaardShear:
         r_n = r @ n   # Local normal coordinate
 
         eps_coeff = self.tau_inf / (2.0 * self.mu)
-        cx, cy = center[:2]
         u_inf = eps_coeff * (r_n * t + r_t * n)
         ux_inf, uy_inf = u_inf
 
@@ -162,7 +161,7 @@ class FemExactDirichletBCWestergaardShear:
 # Class for the FEM model in Westergaard's problem in a shear mode
 class WestergaardShearFem2dSolver:
     """
-    Westergaard's model by the finite element method with/without quarter-point elements.
+    Westergaard's model in the shear mode by the finite element method with/without quarter-point elements.
     
     """
     def __init__(self, params: dict, use_qpe: bool) -> None:
