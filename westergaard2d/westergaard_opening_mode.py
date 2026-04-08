@@ -81,18 +81,22 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         u_a = -self.analytical_normal_opening(eta)
         u_frac = self.displacement_bc_values_from_bem(sd, h / 2, box_faces, bem_centers, u_a)
 
+        # # Rotate far-field shear displacements to global coordinates
+        # t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        # n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
+
+        x = sd.face_centers[0, box_faces]
+        y = sd.face_centers[1, box_faces]
+
         eps_xx = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
         eps_yy = eps_xx
         u_inf = np.zeros((sd.dim, sd.num_faces))
-        x = sd.face_centers[0, box_faces]
-        y = sd.face_centers[1, box_faces]
+
         cx, cy = center[:2]
         u_inf[0, box_faces] = eps_xx * (x - cx)
         u_inf[1, box_faces] = eps_yy * (y - cy)
 
         return u_inf + u_frac
-        # return u_frac
-        # return u_inf
     
     def exact_sol_normal_fracture(self, mdg: pp.MixedDimensionalGrid) -> np.ndarray:
         """

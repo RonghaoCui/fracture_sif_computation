@@ -60,7 +60,7 @@ pp.plot_grid(
     plot_2d=True,           
     linewidth=0.3,
     alpha=0.5,
-    title="Grid before fracture propagation: so"
+    title="Grid: so"
 )
 plt.tight_layout()
 plt.savefig(

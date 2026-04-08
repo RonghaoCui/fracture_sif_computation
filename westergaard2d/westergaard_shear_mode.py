@@ -24,9 +24,6 @@ from tests.functional.setups.manu_sneddon_2d import (
     ManuSneddonDataSaving,
 )
 
-import math
-import matplotlib.pyplot as plt
-
 class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
     """
     Class representing Westergaard's analytical solution in the shear mode 
@@ -80,17 +77,26 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         v_a = -self.analytical_tangential_slip(eta)
         u_frac = self.displacement_bc_values_from_bem(sd, h / 2, box_faces, bem_centers, v_a)
 
-        eps_xy = self.tau_inf / (2.0 * self.shear_modulus)
-        u_inf = np.zeros((sd.dim, sd.num_faces))
+        # Rotate far-field shear displacements to global coordinates
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
+
         x = sd.face_centers[0, box_faces]
         y = sd.face_centers[1, box_faces]
-        cx, cy = center[:2]
-        u_inf[0, box_faces] = eps_xy * (y - cy)
-        u_inf[1, box_faces] = eps_xy * (x - cx)
+
+        dx = x - center[0]
+        dy = y - center[1]
+        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate
+        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate
+
+        eps_coeff = self.tau_inf / (2.0 * self.shear_modulus)
+        u_inf = np.zeros((sd.dim, sd.num_faces))
+
+        # cx, cy = center[:2]
+        u_inf[0, box_faces] = eps_coeff * (r_n * t[0] + r_t * n[0])
+        u_inf[1, box_faces] = eps_coeff * (r_n * t[1] + r_t * n[1])
 
         return u_inf + u_frac
-        # return u_frac
-        # return u_inf
     
     def exact_sol_tangential_fracture(self, mdg: pp.MixedDimensionalGrid) -> np.ndarray:
         """
@@ -298,7 +304,7 @@ class WestergaardShearMode2d(
     WestergaardShearModeConstitutiveLaws,
     pp.MomentumBalance,
 ):
-    """Complete Westergaard shear model."""
+    """Complete Westergaard shear model by MPSA in PorePy."""
 
     def __init__(self, params=None):
         super().__init__(params)

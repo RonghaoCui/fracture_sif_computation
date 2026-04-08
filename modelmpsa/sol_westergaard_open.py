@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/sol"
+save_dir = "figures/benchmarks/mpsa/sol2"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -26,7 +26,7 @@ params = {
     "domain_size": 1.0,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "poi": poi,
     "error_exclusion_zone_fracture_tips": 0.0,
@@ -64,7 +64,7 @@ pp.plot_grid(
     plot_2d=True,           
     linewidth=0.3,
     alpha=0.5,
-    title="Grid before fracture propagation: wo"
+    title="Grid: wo"
 )
 plt.tight_layout()
 plt.savefig(
@@ -138,7 +138,18 @@ plt.close()
 # For displacement along the fracture
 # Get the 1D fracture grid (assumes only one fracture)
 fracture_grid = model.mdg.subdomains(dim=1)[0]
-x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
+# x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
+theta = params["theta_rad"]
+t_vec_frac = np.array([np.sin(theta), np.cos(theta)])  # Tangential vector along the fracture
+coords = fracture_grid.cell_centers[:2, :]
+tip_faces = fracture_grid.tags["tip_faces"].nonzero()[0]
+tip_centers = fracture_grid.face_centers[:2, tip_faces]
+
+s_tip = t_vec_frac @ tip_centers
+tip0 = tip_centers[:, np.argmin(s_tip)]
+
+rel_coords = coords - tip0[:, None]
+x_plot = t_vec_frac @ rel_coords
 
 # Get numerical normal/tangential displacement jump
 u_jump = model.displacement_jump([fracture_grid])
@@ -148,7 +159,6 @@ u_open_numerical = (normal_op @ u_jump).value(model.equation_system)
 tangent_op = model.tangential_component([fracture_grid])
 u_slip_numerical = (tangent_op @ u_jump).value(model.equation_system)
 u_open_analytical = model.exact_sol.exact_sol_normal_fracture(model.mdg)
-x_plot = x_coords
 
 # Plot the profile of normal displacement jump along the fracture
 fig4, ax4 = plt.subplots(figsize=(3.5, 3.0))   # inches
@@ -172,9 +182,9 @@ ax4.yaxis.set_major_formatter(formatter)
 ax4.set_xlabel("Distance from fracture tip 1 ($x$)")
 ax4.set_ylabel("Normal displacement jump ($y$)")
 ax4.set_title("Normal displacement jump: wo")
-ax4.set_xlim(0.19, 0.81)
+ax4.set_xlim(0.00, 0.60)
 ax4.set_ylim(1.0e-5, 5.0e-5)
-ax4.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax4.set_xticks(np.arange(0.00, 0.61, 0.1))
 ax4.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
@@ -202,9 +212,9 @@ ax5.yaxis.set_major_formatter(formatter)
 ax5.set_xlabel("Distance from fracture tip 1 ($x$)")
 ax5.set_ylabel("Tangential displacement jump ($y$)")
 ax5.set_title("Tangential displacement jump: wo")
-ax5.set_xlim(0.19, 0.81)
+ax5.set_xlim(0.00, 0.60)
 ax5.set_ylim(-2.0e-7, 3.0e-7)
-ax5.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax5.set_xticks(np.arange(0.00, 0.61, 0.1))
 ax5.set_yticks(np.arange(-2.0e-7, 3.01e-7, 1.0e-7))
 ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
