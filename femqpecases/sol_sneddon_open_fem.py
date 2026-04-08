@@ -8,7 +8,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from fems import FemQpeSneddonModel2d
+from fems import FemSneddonModel2d
 
 import math
 import matplotlib.pyplot as plt
@@ -17,7 +17,6 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
 save_dir = "figures/benchmarks/femqpe/sol"
-# save_dir = "figures/benchmarks/femnoqpe/sol"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -41,7 +40,7 @@ params = {
 
 use_qpe = True
 # use_qpe = False
-fem_model = FemQpeSneddonModel2d(params, use_qpe)
+fem_model = FemSneddonModel2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 mpl.rcParams.update({
@@ -92,7 +91,7 @@ plt.close(fig1)
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
 
-print("x_coords: ", x_coords)
+# print("x_coords: ", x_coords)
 # print("u_jump_normal: ", u_jump_normal.shape)
 # print("u_jump_tangential: ", u_jump_tangential.shape)
 
@@ -125,9 +124,9 @@ ax2.yaxis.set_major_formatter(formatter)
 ax2.set_xlabel("Distance from fracture tip 1")
 ax2.set_ylabel("Normal displacement jump")
 ax2.set_title("Normal displacement jump")
-ax2.set_xlim(-0.01, 0.61)
+ax2.set_xlim(0.00, 0.60)
 ax2.set_ylim(1.0e-5, 5.0e-5)
-ax2.set_xticks(np.arange(0.0, 0.60, 0.1))
+ax2.set_xticks(np.arange(0.0, 0.601, 0.1))
 ax2.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)
