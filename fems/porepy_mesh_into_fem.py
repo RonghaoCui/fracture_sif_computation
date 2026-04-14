@@ -113,7 +113,6 @@ class FemMeshFromPorePy:
         return nodes_coords, elements, upper_frac_edges, lower_frac_edges
 
     def stiffness(p6, t6, material, qpe):
-
         # Flatten qpe and convert to a set for fast membership test
         CQPE = []
         for qi in qpe:
@@ -123,7 +122,6 @@ class FemMeshFromPorePy:
 
         poi3, wei3 = mmfa.gausspoint(7, 'T3')
         poi4, wei4 = mmfa.gausspoint(7, 'Q4')
-
         ne = t6.shape[0]
         sdof = p6.shape[0] * 2
         edof = 12
@@ -132,7 +130,6 @@ class FemMeshFromPorePy:
         rows = []
         cols = []
         data = []
-
         for e in range(ne):
             if len(material) == 3:
                 D = material
@@ -141,7 +138,6 @@ class FemMeshFromPorePy:
 
             # Use a local copy to avoid modifying input t6 in-place
             tri = t6[e, :].copy()
-
             X = p6[tri, 0]
             Y = p6[tri, 1]
 
@@ -162,7 +158,6 @@ class FemMeshFromPorePy:
             ], dtype=np.int32)
 
             Ke = np.zeros((edof, edof), dtype=float)
-
             if e not in CQPE:
                 xis = poi3[:, 0]
                 eta = poi3[:, 1]
@@ -170,7 +165,6 @@ class FemMeshFromPorePy:
 
                 for i in range(poi3.shape[0]):
                     B = np.zeros((3, edof), dtype=float)
-
                     B[0, 0::2] = dNdx[i, :]
                     B[1, 1::2] = dNdy[i, :]
                     B[2, 0::2] = dNdy[i, :]
@@ -184,11 +178,10 @@ class FemMeshFromPorePy:
                 N, dNdx, dNdy, detJac = mmfa.Q8element(X, Y, xis, eta)
 
                 for i in range(poi4.shape[0]):
-                    B = np.zeros((3, edof), dtype=float)
-
                     dx0 = dNdx[i, 0] + dNdx[i, 6] + dNdx[i, 7]
                     dy0 = dNdy[i, 0] + dNdy[i, 6] + dNdy[i, 7]
 
+                    B = np.zeros((3, edof), dtype=float)
                     B[0, 0::2] = [dx0, dNdx[i, 1], dNdx[i, 2], dNdx[i, 3], dNdx[i, 4], dNdx[i, 5]]
                     B[1, 1::2] = [dy0, dNdy[i, 1], dNdy[i, 2], dNdy[i, 3], dNdy[i, 4], dNdy[i, 5]]
                     B[2, 0::2] = [dy0, dNdy[i, 1], dNdy[i, 2], dNdy[i, 3], dNdy[i, 4], dNdy[i, 5]]
@@ -226,4 +219,28 @@ class FemMeshFromPorePy:
         # Solve
         U = spla.spsolve(K, F)
 
+        return U[:sdof].reshape(-1, 1)
+    
+    def linearsolverII(K, F, udof, uval, sdof):
+        # Dense RHS vector
+        F = np.asarray(F, dtype=float).reshape(-1)
+
+        # Convert to CSC for efficient column slicing
+        K = K.tocsc() 
+
+        # RHS correction: move known Dirichlet contribution to RHS
+        F = F - K[:, udof] @ uval
+         
+        # Modify matrix
+        K = K.tolil()  # Convert to LIL for efficient row modification
+        K[udof, :] = 0.0
+        K[:, udof] = 0.0
+        K[udof, udof] = 1.0
+        F[udof] = uval
+
+        # Convert to CSR for solving
+        K = K.tocsr()
+        # Solve
+        U = spla.spsolve(K, F)
+        
         return U[:sdof].reshape(-1, 1)

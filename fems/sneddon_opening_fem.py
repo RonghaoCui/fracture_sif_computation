@@ -266,7 +266,7 @@ class SneddonFem2dSolver:
         print("Pass stiffness\n")
 
         # self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
-        self.U = FemMeshFromPorePy.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])
+        self.U = FemMeshFromPorePy.linearsolverII(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])
         print("Pass linearsolver\n")
 
         return self.U
