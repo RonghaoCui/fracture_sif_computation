@@ -224,7 +224,7 @@ class SneddonFem2dSolver:
                 self.theta_rad
             )
         )
-
+        print("Pass split_fracture_nodes\n")
         # nodes_p6: node coordinates, np.array(shape = (n, 2), dtype = float)
         # elements_t6: node connection in cells, np.array(shape = (n, 6), dtype = int)
         # elements_quarter: node connection in cells with fractrue tip nodes, list: shape = (n, 6)
@@ -234,7 +234,7 @@ class SneddonFem2dSolver:
             tips=self.tip_face_centers, 
             QPE=self.use_qpe
         )
-        
+        print("Pass t3tot6\n")
         dirdof, dirval = self.Dirichlet_bc_domain()
 
         NeuDof, NeuVal, self.upper_frac_nodes, self.lower_frac_nodes = self.Neumann_bc_fracture()
@@ -243,12 +243,12 @@ class SneddonFem2dSolver:
             self.upper_frac_nodes, 
             self.lower_frac_nodes
         )
-
+        print("Pass remove_tip_nodes\n")
         # Assemble matrices for the linear system: Ku=F
         # Assemble the right hand side
         # Get traction forces for nodes based on Neumann traction on edges
         F = mmfa.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
-
+        print("Pass loadsegment\n")
         # Plane strain: constitutive law in 2D
         # σ​=2·μe​+λ·​trace(e)·I: e=[exx, eyy, exy].T
         D = np.array([
@@ -261,9 +261,13 @@ class SneddonFem2dSolver:
             self.elements_quarter = []   # No quarter-point elements (QPE) if not using QPE.
 
         # Assemble the left hand side
-        K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)  
+        # K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
+        K = FemMeshFromPorePy.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
+        print("Pass stiffness\n")
 
-        self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
+        # self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
+        self.U = FemMeshFromPorePy.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])
+        print("Pass linearsolver\n")
 
         return self.U
     
