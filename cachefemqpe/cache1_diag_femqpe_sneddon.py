@@ -20,19 +20,24 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/perturb/femnoqpe/cache/diagram"
+save_fig = "figures/perturb/femqpe/cache/diagramtest"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/perturb/femnoqpe/cache_diagram"
+save_csv = "data/perturb/femqpe/cache_diagramtest"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/perturb/femnoqpe/cache_models/ws"
+save_model = "data/perturb/femqpe/cache_models/sotest"
 os.makedirs(save_model, exist_ok=True)
 
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00725]
+cell_sizes = [0.00625]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
 seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+    1234,
 ]
 # cell_sizes = [0.1, 0.05]
 # seeds = [1234, 2029, 31415, 27182, 42424]
@@ -77,8 +82,8 @@ for i, h in enumerate(cell_sizes):
         pairs_in_cellsizes = computeSIF.generate_sampling_pairs()
                 
         for sampling_pair in pairs_in_cellsizes: 
-            error_ave, error_per_tip = computeSIF.FEM_two_points_single_scale_tangential(sampling_pair)
-            _, r_n = computeSIF.FEM_extract_sampling_tangential_jump(sampling_pair[0])
+            error_ave, error_per_tip = computeSIF.FEM_two_points_single_scale_normal(sampling_pair)
+            _, r_n = computeSIF.FEM_extract_sampling_normal_jump(sampling_pair[0])
 
             r_mean = np.mean(r_n) / cache["params"]["a"]
 
@@ -101,8 +106,8 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv(os.path.join(save_csv, "diag_data_ws_femnoqpe.csv"), index=False)
-diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_ws_femnoqpe.csv"))
+diag_data.to_csv(os.path.join(save_csv, "diag_data_so_femqpe.csv"), index=False)
+diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_so_femqpe.csv"))
 
 mpl.rcParams.update({
     "font.family": "serif",     
@@ -160,7 +165,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_ws_mean.tiff"),
+    os.path.join(save_fig, "diag_femqpe_so_mean.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -211,7 +216,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_ws_std.tiff"),
+    os.path.join(save_fig, "diag_femqpe_so_std.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -277,7 +282,7 @@ ax3.grid(True, which="both", linestyle="--", alpha=0.5)
 ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "conv_femnoqpe_opt_ws.tiff"),
+    os.path.join(save_fig, "conv_femqpe_opt_so.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

@@ -20,25 +20,29 @@ import os
 save_model = "data/perturb/femqpe/cache_models/ws"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/femqpe/cache/conv_sif"
+save_dir = "figures/perturb/femqpe/cache/conv_sif2"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.11, 0.05]
 seeds = [
     1234, 2029, 31415, 27182, 42424, 
     1414, 3201, 16180, 17333, 22002,
 ]
-# seeds = [1234, 2029, 31415, 27182, 42424]
+# seeds = [1234, 2029]
+
+C = 0.86
+alpha = 0.45
 
 # From Fitting parameters: C=0.86, alpha=0.45
-pairs_in_cellsizes = [
-    [2, 3],
-    [4, 5],
-    [6, 7],
-    [9, 10],
-    [13, 14], 
-]
+# pairs_in_cellsizes = [
+#     [2, 3],
+#     [4, 5],
+#     [6, 7],
+#     [9, 10],
+#     [13, 14], 
+# ]
 
 # From Fitting parameters: C=1.0, alpha=0.25
 # pairs_in_cellsizes = [
@@ -69,7 +73,8 @@ for si, seed in enumerate(seeds):
     
         computeSIF = FEMComputeSifErrorConvergence(cache=cache)
     
-        sampling_pair = pairs_in_cellsizes[i]
+        # sampling_pair = pairs_in_cellsizes[i]
+        sampling_pair = computeSIF.sampling_pairs_from_power_function(C, alpha)
         rel_l2_error_ave, rel_error_per_tip = computeSIF.FEM_two_points_single_scale_tangential(sampling_pair)
 
         error_ave_set.append(rel_l2_error_ave)

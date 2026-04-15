@@ -17,29 +17,33 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/perturb/mpsa/cache_models/so"
+save_model = "data/perturb/mpsa/cache_models/so000"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/mpsa/cache/conv_sif"
+save_dir = "figures/perturb/mpsa/cache/conv_sif000"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
 seeds = [
     1234, 2029, 31415, 27182, 42424, 
     1414, 3201, 16180, 17333, 22002,
 ]
+# seeds = [1234, 2029]
 
 # We employ an exponent-type function for point selections
+C = 0.68
+alpha = 0.28
 # From Fitting parameters: C=0.68, alpha=0.30
-pairs_in_cellsizes = [
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [6, 7],
-    [10, 11],
-    [16, 17],
-]
+# pairs_in_cellsizes = [
+#     [1, 2],
+#     [2, 3],
+#     [3, 4],
+#     [6, 7],
+#     [10, 11],
+#     [16, 17],
+# ]
 # # From Fitting parameters: C=0.68, alpha=0.25
 # pairs_in_cellsizes = [
 #     [1, 2],
@@ -108,7 +112,8 @@ for si, seed in enumerate(seeds):
 
         compSIF = ComputeSifErrorConvergence(cache=cache)
     
-        sampling_pair = pairs_in_cellsizes[i]
+        # sampling_pair = pairs_in_cellsizes[i]
+        sampling_pair = compSIF.sampling_pairs_from_power_function(C, alpha)
         compSIF.singularity_order = compSIF.exact_singularity()  
         error_ave, error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
 
@@ -225,7 +230,7 @@ ax.legend(
 plt.tight_layout()
 plt.savefig(
     # os.path.join(save_dir, "conv_sif_so_random_tpss.tiff"),
-    os.path.join(save_dir, "conv_sif_so_with_coeff.tiff"),
+    os.path.join(save_dir, "conv_sif_so_with_coeff2.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

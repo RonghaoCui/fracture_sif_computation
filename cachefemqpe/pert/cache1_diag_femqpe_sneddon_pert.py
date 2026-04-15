@@ -20,19 +20,22 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/perturb/femnoqpe/cache/diagram"
+save_fig = "figures/perturb/femqpe/cache/diagram000"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/perturb/femnoqpe/cache_diagram"
+save_csv = "data/perturb/femqpe/cache_diagram000"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/perturb/femnoqpe/cache_models/so"
+save_model = "data/perturb/femqpe/cache_models/so000"
 os.makedirs(save_model, exist_ok=True)
 
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
 seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+    1234,
 ]
 # cell_sizes = [0.1, 0.05]
 # seeds = [1234, 2029, 31415, 27182, 42424]
@@ -101,8 +104,8 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv(os.path.join(save_csv, "diag_data_so_femnoqpe.csv"), index=False)
-diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_so_femnoqpe.csv"))
+diag_data.to_csv(os.path.join(save_csv, "diag_data_so_femqpe.csv"), index=False)
+diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_so_femqpe.csv"))
 
 mpl.rcParams.update({
     "font.family": "serif",     
@@ -160,7 +163,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_so_mean.tiff"),
+    os.path.join(save_fig, "diag_femqpe_so_mean.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -211,7 +214,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_so_std.tiff"),
+    os.path.join(save_fig, "diag_femqpe_so_std.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -277,7 +280,7 @@ ax3.grid(True, which="both", linestyle="--", alpha=0.5)
 ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "conv_femnoqpe_opt_so.tiff"),
+    os.path.join(save_fig, "conv_femqpe_opt_so.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

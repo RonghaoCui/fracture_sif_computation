@@ -20,20 +20,23 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/perturb/tpsa/cache/diagram"
+save_fig = "figures/perturb/tpsa/cache/diagram135"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/perturb/tpsa/cache_diagram"
+save_csv = "data/perturb/tpsa/cache_diagram135"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/perturb/tpsa/cache_models/so"
+save_model = "data/perturb/tpsa/cache_models/so135"
 os.makedirs(save_model, exist_ok=True)
 
 # Save cache models for different mesh sizes and seeds.
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
 seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+    1234,
 ]
 # cell_sizes = [0.1, 0.05]
 # seeds = [1234, 2029, 31415, 27182, 42424]

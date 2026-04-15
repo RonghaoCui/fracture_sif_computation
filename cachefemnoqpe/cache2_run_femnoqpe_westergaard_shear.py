@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 import porepy as pp
-from fems import FemNoQpeWestergaardShearMode2dPert
+from fems import FemWestergaardShearMode2d
 from fems import FEMComputeSifErrorConvergence
 
 import math
@@ -15,7 +15,7 @@ import math
 import pickle
 import os
 
-save_model = "data/perturb/femnoqpe/cache_models/ws"
+save_model = "data/perturb/femnoqpe/cache_models/ws135"
 os.makedirs(save_model, exist_ok=True)
 
 a = 0.3
@@ -33,30 +33,35 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
 # Parameters for grid perturbation
 params.update({
-    "perturb_amplitude": 0.10,
+    "perturb_amplitude": 0.00,
     "perturb_exponent": 1.5,
     "perturb_seed": 1234,
 })
 
-fem_model = FemNoQpeWestergaardShearMode2dPert(params=params)
+# No perturbation
+use_qpe = False
+fem_model = FemWestergaardShearMode2d(params, use_qpe)
 fem_model.model_setup_and_sol()
-
 
 # Save cache models for different mesh sizes and seeds.
 
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00725]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
 seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+    1234,
 ]
-# cell_sizes = [0.1, 0.05]
+# cell_sizes = [0.11, 0.05]
 # seeds = [1234, 2029, 31415, 27182, 42424]
 # seeds = [1234, 2029]
 
@@ -66,7 +71,8 @@ for i, h in enumerate(cell_sizes):
     params["meshing_arguments"] = {"cell_size": h}
     params["perturb_seed"] = int(seeds[0])
 
-    fem_model = FemNoQpeWestergaardShearMode2dPert(params=params)
+    use_qpe = False
+    fem_model = FemWestergaardShearMode2d(params, use_qpe)
     fem_model.model_setup_and_sol()
 
     model_sol = FEMComputeSifErrorConvergence(model=fem_model)
@@ -76,7 +82,7 @@ for i, h in enumerate(cell_sizes):
         params["perturb_seed"] = int(seed)
 
         # Run model
-        fem_model = FemNoQpeWestergaardShearMode2dPert(params=params)
+        fem_model = FemWestergaardShearMode2d(params, use_qpe)
         fem_model.model_setup_and_sol()
 
         # We save the square root of DOFs in FEM! 

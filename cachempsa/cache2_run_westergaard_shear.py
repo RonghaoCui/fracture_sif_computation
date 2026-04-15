@@ -16,7 +16,7 @@ import math
 import pickle
 import os
 
-save_model = "data/perturb/mpsa/cache_models/ws"
+save_model = "data/perturb/mpsa/cache_models/ws135"
 os.makedirs(save_model, exist_ok=True)
 
 class MpsaWestergaardShearMode2dPert(
@@ -39,7 +39,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
     "tau_inf": 1e-4,    # far_field shear stress
@@ -50,7 +50,7 @@ params = {
 
 # Parameters for grid perturbation
 params.update({
-    "perturb_amplitude": 0.10,
+    "perturb_amplitude": 0.0,
     "perturb_exponent": 1.5,
     "perturb_seed": 1234,
 })
@@ -59,16 +59,17 @@ model = MpsaWestergaardShearMode2dPert(params=params)
 pp.run_time_dependent_model(model)
 
 sd = model.mdg.subdomains(dim=model.nd)[0]
-is_acute, num_obtuse = model.check_acute_triangles(sd)
+is_acute, num_obtuse = model.check_triangles_angles(sd)
 print("Are all triangles acute? ", is_acute)
 print("Number of obtuse triangles: ", num_obtuse)
 
 # Save cache models for different mesh sizes and seeds.
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
-seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
-]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
+seeds = [1234, ]
 # cell_sizes = [0.1, 0.05]
 # num_auxiliary_points = [8, 32]
 # seeds = [1234, 2029, 31415, 27182, 42424]

@@ -1,5 +1,5 @@
 """
-Convergence analysis for Sneddon problem with auxiliary points using 
+Convergence analysis for Sneddon problem with grid perturbation using 
 multiple seeds of a random number generator. 
 
 """
@@ -9,7 +9,8 @@ import numpy as np
 import porepy as pp
 from gmshrandom.grids_perturbation import GridsPerturbationMixin
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
-from porepy.utils.grid_utils import compute_circumcenter_2d
+# from porepy.utils.grid_utils import compute_circumcenter_2d
+from porepy.utils.grid_utils import compute_circumcenters
 from fracture import FractureDisplacementJump
 
 import math
@@ -17,7 +18,7 @@ import math
 import pickle
 import os
 
-save_model = "data/perturb/tpsa/cache_models/so"
+save_model = "data/perturb/tpsa/cache_models/so135"
 os.makedirs(save_model, exist_ok=True)
 
 class TpsaSneddonModel2dPerturbed(
@@ -33,7 +34,7 @@ class TpsaSneddonModel2dPerturbed(
         for sd in self.mdg.subdomains():
             if isinstance(sd, pp.TriangleGrid):
                 # Compute circumcenters and add as cell data
-                cc, replace = compute_circumcenter_2d(sd)
+                cc, shift, changed = compute_circumcenters(sd)
                 sd.cell_centers[:] = cc
 
 a = 0.3
@@ -50,14 +51,14 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
 # Parameters for grid perturbation
 params.update({
-    "perturb_amplitude": 0.10,
+    "perturb_amplitude": 0.00,
     "perturb_exponent": 1.5,
     "perturb_seed": 1234,
 })
@@ -66,15 +67,18 @@ model = TpsaSneddonModel2dPerturbed(params=params)
 pp.run_time_dependent_model(model)
 
 sd = model.mdg.subdomains(dim=model.nd)[0]
-is_acute, num_obtuse = model.check_acute_triangles(sd)
+is_acute, num_obtuse = model.check_triangles_angles(sd)
 print("Are all triangles acute? ", is_acute)
 print("Number of obtuse triangles: ", num_obtuse)
 
 # Save cache models for different mesh sizes and seeds.
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# seeds = [
+#     1234, 2029, 31415, 27182, 42424, 
+#     1414, 3201, 16180, 17333, 22002,
+# ]
 seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+    1234,
 ]
 # cell_sizes = [0.1, 0.05]
 # num_auxiliary_points = [8, 32]

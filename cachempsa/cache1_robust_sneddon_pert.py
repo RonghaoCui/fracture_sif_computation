@@ -17,10 +17,10 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/perturb/mpsa/cache_models/so"
+save_model = "data/perturb/mpsa/cache_models/so3"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/mpsa/cache/conv_sif"
+save_dir = "figures/perturb/mpsa/cache/conv_sif3"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis

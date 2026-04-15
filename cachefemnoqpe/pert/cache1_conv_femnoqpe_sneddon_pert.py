@@ -1,5 +1,5 @@
 """
-Convergence analysis for Westergaard shear problem with grid perturbations using 
+Convergence analysis for Sneddon problem with grid perturbations using 
 multiple seeds of a random number generator. 
 
 """
@@ -17,28 +17,32 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/perturb/femnoqpe/cache_models/ws"
+save_model = "data/perturb/femnoqpe/cache_models/so"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/femnoqpe/cache/conv_sif"
+save_dir = "figures/perturb/femnoqpe/cache/conv_sif2"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.11, 0.05, 0.026, 0.0126, 0.00626]
 seeds = [
     1234, 2029, 31415, 27182, 42424, 
     1414, 3201, 16180, 17333, 22002,
 ]
-# seeds = [1234, 2029, 31415, 27182, 42424]
+# seeds = [1234, 2029]
 
-# From Fitting parameters: C=0.90, alpha=0.20
-pairs_in_cellsizes = [
-    [3, 4],
-    [7, 8],
-    [12, 13],
-    [22, 23],
-    [39, 40]
-]
+C = 0.85
+alpha = 0.23
+
+# From Fitting parameters: C=0.89, alpha=0.24
+# pairs_in_cellsizes = [
+#     [3, 4],
+#     [6, 7],
+#     [11, 12],
+#     [19, 20],
+#     [33, 34],
+# ]
 
 # From Fitting parameters: C=1.0, alpha=0.25
 # pairs_in_cellsizes = [
@@ -69,8 +73,9 @@ for si, seed in enumerate(seeds):
     
         computeSIF = FEMComputeSifErrorConvergence(cache=cache)
     
-        sampling_pair = pairs_in_cellsizes[i]
-        rel_l2_error_ave, rel_error_per_tip = computeSIF.FEM_two_points_single_scale_tangential(sampling_pair)
+        # sampling_pair = pairs_in_cellsizes[i]
+        sampling_pair = computeSIF.sampling_pairs_from_power_function(C, alpha)
+        rel_l2_error_ave, rel_error_per_tip = computeSIF.FEM_two_points_single_scale_normal(sampling_pair)
 
         error_ave_set.append(rel_l2_error_ave)
         error_per_tip_set.append(rel_error_per_tip)
@@ -104,7 +109,7 @@ print("Dofs:", mean_dofs)
 
 # Reference line
 num_dofs_line = np.array([10, 30, 50, 70, 90, 100, 300, 500, 1000])
-initial_value_line = 1e-3
+initial_value_line = 2e-4
 first_order_line = initial_value_line * (num_dofs_line[0] / num_dofs_line)
 half_order_line = initial_value_line  * (num_dofs_line[0] / num_dofs_line) ** 0.5
 
@@ -165,7 +170,7 @@ ax.yaxis.set_major_formatter(formatter)
 # ax.set_xlim(5.5, 220)
 # ax.set_ylim(0.0002, 1.0)
 ax.set_xlim(10, 700)
-ax.set_ylim(0.0002, 1.0)
+ax.set_ylim(0.00002, 1.0)
 ax.xaxis.set_major_locator(LogLocator(base=10))
 ax.xaxis.set_major_formatter(LogFormatterMathtext())
 ax.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
@@ -182,7 +187,7 @@ ax.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "FEM_conv_sif_ws_with_coeff.tiff"),
+    os.path.join(save_dir, "FEM_conv_sif_so_with_coeff.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -193,4 +198,3 @@ plt.close(fig)
 print("\n sqrt of dofs: ", mean_dofs)
 print("\n mean_err_ave: ", mean_err_ave)
 print("\n std_err_ave: ", std_err_ave)
-

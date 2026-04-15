@@ -17,10 +17,10 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/perturb/mpsa/cache_models/ws"
+save_model = "data/perturb/mpsa/cache_models/ws3"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/mpsa/cache/conv_sif"
+save_dir = "figures/perturb/mpsa/cache/conv_sif3"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
@@ -31,15 +31,17 @@ seeds = [
 ]
 
 # We employ an exponent-type function for point selections
+C = 1.04
+alpha = 0.26
 # From Fitting parameters: C=1.04, alpha=0.26
-pairs_in_cellsizes = [
-    [2, 3],
-    [3, 4],
-    [6, 7],
-    [10, 11],
-    [18, 19],
-    [30, 31],
-]
+# pairs_in_cellsizes = [
+#     [2, 3],
+#     [3, 4],
+#     [6, 7],
+#     [10, 11],
+#     [18, 19],
+#     [30, 31],
+# ]
 # From Fitting parameters: C=1.04, alpha=0.21
 # pairs_in_cellsizes = [
 #     [2, 3],
@@ -126,7 +128,8 @@ for si, seed in enumerate(seeds):
 
         compSIF = ComputeSifErrorConvergence(cache=cache)
     
-        sampling_pair = pairs_in_cellsizes[i]
+        # sampling_pair = pairs_in_cellsizes[i]
+        sampling_pair = compSIF.sampling_pairs_from_power_function(C, alpha)
         compSIF.singularity_order = compSIF.exact_singularity()  
         error_ave, error_per_tip = compSIF.two_points_single_scale_tangential(sampling_pair)
 
