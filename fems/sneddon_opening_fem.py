@@ -311,8 +311,8 @@ class SneddonFem2dSolver:
         # print("s_tip =", s_tip)
         # print("chosen tip0 =", tip0)
         
-        uy = self.U[1::2, 0]  
-        ux = self.U[0::2, 0]
+        uy = self.U[1::2]  
+        ux = self.U[0::2]
         u_upper = np.column_stack([ux[upper_frac_nodes], uy[upper_frac_nodes]])
         u_lower = np.column_stack([ux[lower_frac_nodes], uy[lower_frac_nodes]])
         jump = u_upper - u_lower
@@ -350,6 +350,7 @@ class SneddonFem2dSolver:
         ]))
         
         # Dirichlet DOFs (ux, uy)
+        # The shapes of dirdof and dirval are both (n,). 
         dirdof = np.concatenate([2*domain_boundaries, 2*domain_boundaries + 1])
         dirval = np.zeros_like(dirdof, dtype=float)      # All zero
         # Values of Dirichlet boundary nodes directly get from BEM: ExactDirichletBCSneddon

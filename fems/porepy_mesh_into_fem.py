@@ -112,8 +112,37 @@ class FemMeshFromPorePy:
 
         return nodes_coords, elements, upper_frac_edges, lower_frac_edges
 
-    def stiffness(p6, t6, material, qpe):
-        # Flatten qpe and convert to a set for fast membership test
+    def stiffness(
+            p6: np.ndarray, 
+            t6: np.ndarray, 
+            material: np.ndarray, 
+            qpe: list,
+    ) -> sps.csr_matrix:
+        """
+        Assemble the global stiffness matrix for a 2D quadratic finite element mesh
+        with optional quarter-point elements (QPE) for fracture tips. 
+
+        The standard element stiffness matrix is computed as: 
+
+        Ke = ∫_Ωe B^T D B dΩ,
+
+        where B is the strain-displacement matrix, D is the material matrix, and
+        Ωe is the current element domain. Numerical quadrature is used for the
+        integration.
+
+        Assembly is performed by sparse matrix construction using coordinate format (COO). 
+
+        Parameters: 
+            p6: coordinates of the T6 mesh nodes. 
+            t6: node connection of the T6 mesh elements. Each row corresponds 
+                to an element and contains the indices of its 6 nodes.
+            material: the constitutive material matrix. 
+            qpe: a list of quarter-point element (QPE) element indices (cell indices) at different tips. 
+        
+        Returns: 
+            csr_matrix: the assembled global stiffness matrix. 
+        """
+        # Collect all QPE element indices from all tips. 
         CQPE = []
         for qi in qpe:
             if len(qi) > 0:
@@ -122,9 +151,9 @@ class FemMeshFromPorePy:
 
         poi3, wei3 = mmfa.gausspoint(7, 'T3')
         poi4, wei4 = mmfa.gausspoint(7, 'Q4')
-        ne = t6.shape[0]
-        sdof = p6.shape[0] * 2
-        edof = 12
+        ne = t6.shape[0]        # The number of elements. 
+        sdof = p6.shape[0] * 2  # Total DOFs in the system. 
+        edof = 12               # DOFs per element for T6 elements. 
 
         # Sparse assembly triplets
         rows = []
@@ -141,13 +170,14 @@ class FemMeshFromPorePy:
             X = p6[tri, 0]
             Y = p6[tri, 1]
 
-            # Orientation check
+            # Orientation check for node ordering in the element. 
             if (X[1] - X[0]) * (Y[-1] - Y[0]) - (X[-1] - X[0]) * (Y[1] - Y[0]) < 0:
                 indinv = tri[::-1]
                 tri[1:] = indinv[:-1]
                 X = p6[tri, 0]
                 Y = p6[tri, 1]
-
+            
+            # The index mapping from local element DOFs to global DOFs.
             index = np.array([
                 tri[0] * 2, tri[0] * 2 + 1,
                 tri[1] * 2, tri[1] * 2 + 1,
@@ -158,6 +188,7 @@ class FemMeshFromPorePy:
             ], dtype=np.int32)
 
             Ke = np.zeros((edof, edof), dtype=float)
+            # For elements that are not quarter-point elements, use the standard T6 formulation.
             if e not in CQPE:
                 xis = poi3[:, 0]
                 eta = poi3[:, 1]
@@ -171,7 +202,7 @@ class FemMeshFromPorePy:
                     B[2, 1::2] = dNdx[i, :]
 
                     Ke += (B.T @ D @ B) * detJac[i] * wei3[i]
-
+            # For quarter-point elements, use the special formulation for Q8 elements with the quarter-point nodes.
             else:
                 xis = poi4[:, 0]
                 eta = poi4[:, 1]
@@ -200,13 +231,23 @@ class FemMeshFromPorePy:
         K.sum_duplicates()
         return K.tocsr()
 
-    def linearsolver(K, F, udof, uval, sdof):
-        # Ensure sparse format suitable for row modification
-        if not sps.isspmatrix_lil(K):
-            K = K.tolil()
+    def linearsolverI(
+            K: sps.spmatrix, 
+            F: np.ndarray, 
+            udof:np.ndarray, 
+            uval:np.ndarray, 
+            sdof:int
+    ) -> np.ndarray:
+        """
+        Solve the linear system KU=F with specified Dirichlet boundary conditions. 
+        This method only processes the stiffness matrix K to include the Dirichlet 
+        BCs before solving.
 
-        # Dense RHS vector
-        F = np.asarray(F, dtype=float).reshape(-1)
+        Notes: 
+            The matrix K in this method during solving is not symmetric anymore. 
+        """
+        # Dense RHS vector: (n,)
+        F = F.reshape(-1)
 
         # Apply Dirichlet BCs
         K[udof, :] = 0.0
@@ -219,28 +260,44 @@ class FemMeshFromPorePy:
         # Solve
         U = spla.spsolve(K, F)
 
-        return U[:sdof].reshape(-1, 1)
+        return U[:sdof]
     
-    def linearsolverII(K, F, udof, uval, sdof):
-        # Dense RHS vector
-        F = np.asarray(F, dtype=float).reshape(-1)
+    def linearsolverII(
+            K: sps.spmatrix, 
+            F: np.ndarray, 
+            udof:np.ndarray, 
+            uval:np.ndarray, 
+            sdof:int
+    ) -> np.ndarray:
+        """
+        Solve the linear system KU=F with specified Dirichlet boundary conditions. 
+        This method processes the stiffness matrix K and the RHS vector F to 
+        include the Dirichlet BCs before solving.
 
-        # Convert to CSC for efficient column slicing
+        Notes: 
+            The matrix K in this method during solving is symmetric. 
+        """
+        # Dense RHS vector: (n,)
+        F = F.reshape(-1)
+
+        # Convert to CSC (compressed sparse column) for efficient column slicing
         K = K.tocsc() 
 
         # RHS correction: move known Dirichlet contribution to RHS
         F = F - K[:, udof] @ uval
          
         # Modify matrix
-        K = K.tolil()  # Convert to LIL for efficient row modification
+        K = K.tolil()  # Convert to LIL (list of lists) for efficient row modification
         K[udof, :] = 0.0
         K[:, udof] = 0.0
         K[udof, udof] = 1.0
         F[udof] = uval
 
-        # Convert to CSR for solving
+        # Convert to CSR (compressed sparse row) for solving
         K = K.tocsr()
         # Solve
+        # K has to be sparse, and F is dense (recommended). 
+        # The shape of U is (n,).
         U = spla.spsolve(K, F)
         
-        return U[:sdof].reshape(-1, 1)
+        return U[:sdof]
