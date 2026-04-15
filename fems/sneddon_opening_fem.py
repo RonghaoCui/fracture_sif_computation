@@ -5,7 +5,7 @@ using Sneddon's analytical solution for normal displacement jump.
 This model considers a single central fracture in a 2D domain with pressurized fracture surfaces. 
 The fracture orientation can be from 0 to 90 degrees.
 
-FEM code resource:
+FEM code resources:
     - [1] Dang et al., International Journal of Rock Mechanics and Mining Sciences, 160 (2022): 105248.
 
 """

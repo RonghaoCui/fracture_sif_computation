@@ -2,7 +2,7 @@
 Model for Westergaard's problem in the shear mode by a quadratic finite element method with/without quarter-point 
 elements using Westergaard's analytical solution for tangential displacement jump.
 
-FEM code resource:
+FEM code resources:
     - [1] Dang et al., International Journal of Rock Mechanics and Mining Sciences, 160 (2022): 105248.
 
 """
@@ -270,9 +270,13 @@ class WestergaardShearFem2dSolver:
             self.elements_quarter = []   # No quarter-point elements (QPE) if not using QPE.
 
         # Assemble the left hand side
-        K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)  
+        # K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
+        K = FemMeshFromPorePy.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
+        print("Pass stiffness\n")  
 
-        self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
+        # self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
+        self.U = FemMeshFromPorePy.linearsolverII(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])
+        print("Pass linearsolver\n")
 
         return self.U
     
@@ -312,8 +316,8 @@ class WestergaardShearFem2dSolver:
         # print("s_tip =", s_tip)
         # print("chosen tip0 =", tip0)
 
-        uy = self.U[1::2, 0]  
-        ux = self.U[0::2, 0]
+        uy = self.U[1::2]  
+        ux = self.U[0::2]
         u_upper = np.column_stack([ux[upper_frac_nodes], uy[upper_frac_nodes]])
         u_lower = np.column_stack([ux[lower_frac_nodes], uy[lower_frac_nodes]])
         jump = u_upper - u_lower
