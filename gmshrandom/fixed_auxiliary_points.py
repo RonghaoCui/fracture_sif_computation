@@ -31,6 +31,19 @@ class FixedAuxiliaryPointsMixin(AuxiliaryPointsMixin):
             (xR + r, y0 - 0.6 * r),
         ]
 
+        # dx = cell_size * 0.866
+        # dy = cell_size * 0.5
+
+        # pts = [
+        #     # left tip
+        #     (xL - dx, y0 + dy), 
+        #     (xL - dx, y0 - dy),
+            
+        #     # right tip
+        #     (xR + dx, y0 + dy), 
+        #     (xR + dx, y0 - dy),
+        # ]
+
         # pts = [
         #     # left tip
         #     (xL - r, y0), 

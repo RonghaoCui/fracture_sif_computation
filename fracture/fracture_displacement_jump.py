@@ -79,8 +79,13 @@ class FractureDisplacementJump:
         normal_op = self.model.normal_component([self.sd_frac]) 
         tangential_op = self.model.tangential_component([self.sd_frac]) 
 
+        # BUG: when the fracture angle is larger that 90 degree, the tangential jump is negative. 
+        # This is because the tangential vector is defined as [sin(theta), cos(theta)], which points 
+        # to the opposite direction of the fracture when theta > 90 degree. 
+        # To fix this, we can simply add a negative sign to the tangential operator.
         self.u_jump_normal = (normal_op @ u_jump).value(self.equation_system)
         self.u_jump_tangential = (tangential_op @ u_jump).value(self.equation_system)
+        # self.u_jump_tangential = -(tangential_op @ u_jump).value(self.equation_system)
     
     def _initialize_from_cache(self, cache: dict) -> None:
         self.params = cache["params"]

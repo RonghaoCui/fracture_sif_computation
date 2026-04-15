@@ -74,7 +74,7 @@ class GridsPerturbationMixin(pp.PorePyModel):
         # Fracture orientation
         theta = self.params["theta_rad"]
         t = np.array([np.sin(theta), np.cos(theta)], dtype=float)   # tangent to the fracture
-        n = np.array([np.cos(theta), -np.sin(theta)], dtype=float)  # normal to the fracture
+        n = np.array([-np.cos(theta), np.sin(theta)], dtype=float)  # normal to the fracture
 
         # Perturbation in both tangential and normal directions
         xi_t = rng.uniform(-1, 1, size=perturb_nodes.size)
@@ -99,21 +99,21 @@ class GridsPerturbationMixin(pp.PorePyModel):
         # Update the mdg with the new subdomain
         mdg.replace_subdomains_and_interfaces({sd_old: sd_new})
 
-    def check_acute_triangles(self, sd: pp.Grid) -> tuple[bool, int]:
+    def check_triangles_angles(self, sd: pp.Grid) -> tuple[bool, int]:
         """
-        Check whether all triangles in the given grid are acute, and also return
-        the number of non-acute triangles if any. 
-
-        A triangle is considered acute if the dot products of the two edge vectors 
-        at each vertex are all positive. 
+        Check whether all triangles in the given grid are less than 
+        the threshold angle, and also return the number of triangles 
+        larger than the threshold angle if any. 
 
         Parameters:
             sd: the subdomain to check. 
 
         Returns:
             tuple[bool, int]: 
-                bool: True if all triangles are acute, False otherwise.
-                int: The number of non-acute triangles in the grid.
+                bool: True if all triangles are less than the threshold 
+                    angle, False otherwise.
+                int: The number of triangles larger than the threshold 
+                    angle in the grid.
 
         Raises: 
             ValueError: If any cell in the grid is not a triangle 
@@ -122,8 +122,9 @@ class GridsPerturbationMixin(pp.PorePyModel):
         """
         nodes = sd.nodes[:2]
         cell_to_node_mat = sd.cell_nodes()
+        threshold_angle = np.pi * 0.45
         
-        num_nonacute = 0
+        num_abnormal = 0
 
         for i in range(sd.num_cells):
             node_indices_in_cell = cell_to_node_mat[:, i].indices
@@ -142,12 +143,19 @@ class GridsPerturbationMixin(pp.PorePyModel):
             CA = A - C
             CB = B - C 
 
-            condA = np.dot(AB, AC) > 0
-            condB = np.dot(BA, BC) > 0
-            condC = np.dot(CA, CB) > 0 
+            condA = self.calculate_angle(AB, AC) < threshold_angle
+            condB = self.calculate_angle(BA, BC) < threshold_angle
+            condC = self.calculate_angle(CA, CB) < threshold_angle
 
             if not (condA and condB and condC):
-                num_nonacute += 1
+                num_abnormal += 1
         
-        return num_nonacute == 0, num_nonacute
+        return num_abnormal == 0, num_abnormal
 
+    def calculate_angle(self, u, v):
+
+        cos_theta = np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
+        cos_theta = np.clip(cos_theta, -1.0, 1.0)
+        
+        return np.arccos(cos_theta)
+    
