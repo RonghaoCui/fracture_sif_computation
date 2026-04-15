@@ -16,7 +16,7 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/femqpe/sol"
+save_dir = "figures/benchmarks/femqpe/sol2/ws"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -34,7 +34,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 45),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
@@ -80,7 +80,7 @@ ax1.set_ylim(0.0, 1.0)
 # ax1.grid(True, linestyle="--", alpha=0.5)
 fig1.tight_layout()
 fig1.savefig(
-    os.path.join(save_dir, "FEM_mesh_t3_ws.tiff"), 
+    os.path.join(save_dir, "FEM_mesh_t3_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -132,7 +132,7 @@ ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)
 fig2.tight_layout()
 fig2.savefig(
-    os.path.join(save_dir, "FEM_delta_ut_ws.tiff"), 
+    os.path.join(save_dir, "FEM_delta_ut_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -183,7 +183,7 @@ ax3.set_xlim(0.0, 1.0)
 ax3.set_ylim(0.0, 1.0)
 fig3.tight_layout()
 fig3.savefig(
-    os.path.join(save_dir, "FEM_ux_sol_ws.tiff"), 
+    os.path.join(save_dir, "FEM_ux_sol_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -210,7 +210,7 @@ ax4.set_xlim(0.0, 1.0)
 ax4.set_ylim(0.0, 1.0)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "FEM_uy_sol_ws.tiff"), 
+    os.path.join(save_dir, "FEM_uy_sol_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 

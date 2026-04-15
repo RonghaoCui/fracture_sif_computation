@@ -33,7 +33,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }

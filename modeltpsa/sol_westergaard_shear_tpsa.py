@@ -4,13 +4,14 @@ import porepy as pp
 import numpy as np
 
 from westergaard2d import WestergaardShearMode2d
+from porepy.utils.grid_utils import compute_circumcenters
 
 import math
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/tpsa/model/sol"
+save_dir = "figures/benchmarks/tpsa/sol/ws"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -25,7 +26,7 @@ params = {
     "domain_size": 1.0,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "poi": poi,
     "error_exclusion_zone_fracture_tips": 0.0,
@@ -35,11 +36,26 @@ params = {
                         # But "p0" is needed because of model's parental class
 }
 
+# The standard TPSA without any modifications to compute circumcenters.
+# class TpsaWestergaardShearMode2d(
+#     pp.momentum_balance.TpsaMomentumBalanceMixin, 
+#     WestergaardShearMode2d,
+# ): 
+#     pass
+
+# The TPSA with an overridden set_geometry to compute circumcenters.
+# `compute_circumcenters` is the new version computing circumcenters for all triangles.
 class TpsaWestergaardShearMode2d(
     pp.momentum_balance.TpsaMomentumBalanceMixin, 
     WestergaardShearMode2d,
 ): 
-    pass
+    def set_geometry(self):
+        super().set_geometry()
+        for sd in self.mdg.subdomains():
+            if isinstance(sd, pp.TriangleGrid):
+                # Compute circumcenters and add as cell data
+                cc, shift, changed = compute_circumcenters(sd)
+                sd.cell_centers[:] = cc
 
 model = TpsaWestergaardShearMode2d(params=params)
 pp.run_time_dependent_model(model)
@@ -73,7 +89,7 @@ pp.plot_grid(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "Grids_ws_tpsa.tiff"),
+    os.path.join(save_dir, "Grids_ws_tpsa_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -104,7 +120,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "uy_map_ws_tpsa.tiff"),
+    os.path.join(save_dir, "uy_map_ws_tpsa_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -134,7 +150,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "ux_map_ws_tpsa.tiff"),
+    os.path.join(save_dir, "ux_map_ws_tpsa_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -145,7 +161,19 @@ plt.close()
 # For displacement along the fracture
 # Get the 1D fracture grid (assumes only one fracture)
 fracture_grid = model.mdg.subdomains(dim=1)[0]
-x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
+# x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
+
+theta = params["theta_rad"]
+t_vec_frac = np.array([np.sin(theta), np.cos(theta)])  # Tangential vector along the fracture
+coords = fracture_grid.cell_centers[:2, :]
+tip_faces = fracture_grid.tags["tip_faces"].nonzero()[0]
+tip_centers = fracture_grid.face_centers[:2, tip_faces]
+
+s_tip = t_vec_frac @ tip_centers
+tip0 = tip_centers[:, np.argmin(s_tip)]
+
+rel_coords = coords - tip0[:, None]
+x_plot = t_vec_frac @ rel_coords
 
 # Get numerical normal/tangential displacement jump
 u_jump = model.displacement_jump([fracture_grid])
@@ -153,9 +181,9 @@ u_jump_val = u_jump.value(model.equation_system)
 normal_op = model.normal_component([fracture_grid])
 u_open_numerical = (normal_op @ u_jump).value(model.equation_system)
 tangent_op = model.tangential_component([fracture_grid])
-u_slip_numerical = (tangent_op @ u_jump).value(model.equation_system)
+# theta = 135 degree, negative sign is needed to match the results. 
+u_slip_numerical = -(tangent_op @ u_jump).value(model.equation_system)
 u_slip_analytical = model.exact_sol.exact_sol_tangential_fracture(model.mdg)
-x_plot = x_coords
 
 # Plot the profile of tangential displacement jump along the fracture
 fig4, ax4 = plt.subplots(figsize=(3.5, 3.0))   # inches
@@ -179,15 +207,15 @@ ax4.yaxis.set_major_formatter(formatter)
 ax4.set_xlabel("Distance from fracture tip 1 ($x$)")
 ax4.set_ylabel("Tangential displacement jump ($y$)")
 ax4.set_title("Tangential displacement jump: ws")
-ax4.set_xlim(0.19, 0.81)
+ax4.set_xlim(0.0, 0.60)
 ax4.set_ylim(1.0e-5, 5.0e-5)
-ax4.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax4.set_xticks(np.arange(0.0, 0.61, 0.1))
 ax4.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
 ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "ut_ws_tpsa.tiff"), 
+    os.path.join(save_dir, "ut_ws_tpsa_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -209,15 +237,15 @@ ax5.yaxis.set_major_formatter(formatter)
 ax5.set_xlabel("Distance from fracture tip 1 ($x$)")
 ax5.set_ylabel("Normal displacement jump ($y$)")
 ax5.set_title("Normal displacement jump: ws")
-ax5.set_xlim(0.19, 0.81)
+ax5.set_xlim(0.0, 0.60)
 ax5.set_ylim(-1.0e-7, 8.0e-7)
-ax5.set_xticks(np.arange(0.20, 0.8, 0.1))
+ax5.set_xticks(np.arange(0.0, 0.61, 0.1))
 ax5.set_yticks(np.arange(-1.0e-7, 8.01e-7, 1.0e-7))
 ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "un_ws_tpsa.tiff"), 
+    os.path.join(save_dir, "un_ws_tpsa_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 

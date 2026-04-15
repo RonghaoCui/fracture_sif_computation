@@ -22,10 +22,10 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.colors import LogNorm
 
 import os
-save_fig = "figures/perturb/tpsa/model/diagram"
+save_fig = "figures/perturb/tpsa/model/diagram2"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/perturb/tpsa/model_diagram"
+save_csv = "data/perturb/tpsa/model_diagram2"
 os.makedirs(save_csv, exist_ok=True)
 
 class TpsaSneddonModel2dPerturbed(
@@ -58,7 +58,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
@@ -74,7 +74,7 @@ model = TpsaSneddonModel2dPerturbed(params=params)
 pp.run_time_dependent_model(model)
 
 sd = model.mdg.subdomains(dim=model.nd)[0]
-is_acute, num_obtuse = model.check_acute_triangles(sd)
+is_acute, num_obtuse = model.check_triangles_angles(sd)
 print("Are all triangles acute? ", is_acute)
 print("Number of obtuse triangles: ", num_obtuse)
 
@@ -132,7 +132,7 @@ for i, h in enumerate(cell_sizes):
         pp.run_time_dependent_model(model)
 
         sd = model.mdg.subdomains(dim=model.nd)[0]
-        is_acute, num_obtuse = model.check_acute_triangles(sd)
+        is_acute, num_obtuse = model.check_triangles_angles(sd)
         print("Are all triangles acute? ", is_acute)
         print("Number of obtuse triangles: ", num_obtuse)
     

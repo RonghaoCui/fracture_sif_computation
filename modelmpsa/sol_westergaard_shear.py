@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/mpsa/sol2"
+save_dir = "figures/benchmarks/mpsa/sol2/ws"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -25,7 +25,7 @@ params = {
     "domain_size": 1.0,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 45),
+    "theta_rad": math.radians(90 - 135),
     "num_bem_segments": 1000,
     "poi": poi,
     "error_exclusion_zone_fracture_tips": 0.0,
@@ -67,7 +67,7 @@ pp.plot_grid(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "Grids_ws.tiff"),
+    os.path.join(save_dir, "Grids_ws_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -98,7 +98,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "uy_map_ws.tiff"),
+    os.path.join(save_dir, "uy_map_ws_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -128,7 +128,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "ux_map_ws.tiff"),
+    os.path.join(save_dir, "ux_map_ws_135d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -158,7 +158,8 @@ u_jump_val = u_jump.value(model.equation_system)
 normal_op = model.normal_component([fracture_grid])
 u_open_numerical = (normal_op @ u_jump).value(model.equation_system)
 tangent_op = model.tangential_component([fracture_grid])
-u_slip_numerical = (tangent_op @ u_jump).value(model.equation_system)
+# theta = 135 degree, negative sign is needed to match the results. 
+u_slip_numerical = -(tangent_op @ u_jump).value(model.equation_system)
 u_slip_analytical = model.exact_sol.exact_sol_tangential_fracture(model.mdg)
 
 # Plot the profile of tangential displacement jump along the fracture
@@ -191,7 +192,7 @@ ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "ut_ws.tiff"), 
+    os.path.join(save_dir, "ut_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -221,7 +222,7 @@ ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "un_ws.tiff"), 
+    os.path.join(save_dir, "un_ws_135d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
