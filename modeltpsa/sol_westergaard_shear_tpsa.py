@@ -181,8 +181,14 @@ u_jump_val = u_jump.value(model.equation_system)
 normal_op = model.normal_component([fracture_grid])
 u_open_numerical = (normal_op @ u_jump).value(model.equation_system)
 tangent_op = model.tangential_component([fracture_grid])
-# theta = 135 degree, negative sign is needed to match the results. 
-u_slip_numerical = -(tangent_op @ u_jump).value(model.equation_system)
+
+# BUG: when the fracture angle is larger that 90 degree, the tangential jump is 
+# observed to be negative. This is because of definition of the local basis in PorePy. 
+# To fix this, we can simply add a negative sign to the tangential operator.
+# This fracture orientation check is only conducted for the angle ranging from 0 to 180 degree. 
+# If the angle is outside this range, the sign check should be conducted.
+sign_t = 1.0 if np.sin(theta) >= 0 else -1.0 
+u_slip_numerical = sign_t * (tangent_op @ u_jump).value(model.equation_system)
 u_slip_analytical = model.exact_sol.exact_sol_tangential_fracture(model.mdg)
 
 # Plot the profile of tangential displacement jump along the fracture

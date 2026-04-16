@@ -79,13 +79,15 @@ class FractureDisplacementJump:
         normal_op = self.model.normal_component([self.sd_frac]) 
         tangential_op = self.model.tangential_component([self.sd_frac]) 
 
-        # BUG: when the fracture angle is larger that 90 degree, the tangential jump is negative. 
-        # This is because the tangential vector is defined as [sin(theta), cos(theta)], which points 
-        # to the opposite direction of the fracture when theta > 90 degree. 
+        # BUG: when the fracture angle is larger that 90 degree, the tangential jump is 
+        # observed to be negative. This is because of definition of the local basis in PorePy. 
         # To fix this, we can simply add a negative sign to the tangential operator.
+        # This fracture orientation check is only conducted for the angle ranging from 0 to 180 degree. 
+        # If the angle is outside this range, the sign check should be conducted.
+        sign_t = 1.0 if np.sin(self.params["theta_rad"]) >= 0 else -1.0
         self.u_jump_normal = (normal_op @ u_jump).value(self.equation_system)
         self.u_jump_tangential = (tangential_op @ u_jump).value(self.equation_system)
-        # self.u_jump_tangential = -(tangential_op @ u_jump).value(self.equation_system)
+        self.u_jump_tangential = sign_t * self.u_jump_tangential
     
     def _initialize_from_cache(self, cache: dict) -> None:
         self.params = cache["params"]
