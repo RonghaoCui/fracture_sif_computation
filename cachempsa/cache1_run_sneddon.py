@@ -36,13 +36,6 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-# Parameters for grid perturbation
-# params.update({
-#     "perturb_amplitude": 0.0,
-#     "perturb_exponent": 1.5,
-#     "perturb_seed": 1234,
-# })
-
 model = ManuSneddonModel2d(params=params)
 pp.run_time_dependent_model(model)
 
@@ -61,9 +54,7 @@ theta_rads = [
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")
-
     params["meshing_arguments"] = {"cell_size": h}
-    # params["perturb_seed"] = int(seeds[0])
 
     model = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model)

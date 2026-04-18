@@ -28,7 +28,7 @@ os.makedirs(save_csv, exist_ok=True)
 save_model = "data/rotation/mpsa/cache_models/so"
 os.makedirs(save_model, exist_ok=True)
 
-# Save cache models for different mesh sizes and seeds.
+# Save cache models for different mesh sizes and fracture angles.
 cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 # cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
 # cell_sizes = [0.1, 0.055, 0.025, 0.0130, 0.00620, 0.003125]
@@ -358,7 +358,7 @@ ax3.fill_between(
     label=r"$\pm 1$ STD of optimal $r/a$"
 )
 
-# Plot the fitting line using averaged error results.
+# Plot the fitting line using averaged maps.
 ax3.loglog(
     df_best["norm_h"],
     df_best["r"],
