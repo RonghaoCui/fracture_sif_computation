@@ -49,19 +49,15 @@ pp.run_time_dependent_model(model)
 print("=== Initial model run completed. ===")
 
 # Save cache models for different mesh sizes and seeds.
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 # cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
-cell_sizes = [0.1, 0.055, 0.025, 0.0130, 0.00620, 0.003125]
-# seeds = [
-#     1234, 2029, 31415, 27182, 42424, 
-#     1414, 3201, 16180, 17333, 22002,
-# ]
+# cell_sizes = [0.1, 0.055, 0.025, 0.0130, 0.00620, 0.003125]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
 # cell_sizes = [0.1, 0.05]
-# seeds = [1234, 2029]
+
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")

@@ -29,19 +29,14 @@ save_model = "data/rotation/mpsa/cache_models/so"
 os.makedirs(save_model, exist_ok=True)
 
 # Save cache models for different mesh sizes and seeds.
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 # cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
-cell_sizes = [0.1, 0.055, 0.025, 0.0130, 0.00620, 0.003125]
-# seeds = [
-#     1234, 2029, 31415, 27182, 42424, 
-#     1414, 3201, 16180, 17333, 22002,
-# ]
+# cell_sizes = [0.1, 0.055, 0.025, 0.0130, 0.00620, 0.003125]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
 # cell_sizes = [0.1, 0.05]
-# seeds = [1234, 2029]
 
 # For averaged error reults. 
 diag_results = []
@@ -305,6 +300,14 @@ df_band = (
 df_band["r_upper"] = df_band["r_mean"] + df_band["r_std"]
 df_band["r_lower"] = df_band["r_mean"] - df_band["r_std"]
 
+x_band = np.log10(df_band["norm_h"].to_numpy())
+y_band = np.log10(df_band["r_mean"].to_numpy())
+
+alpha_band, logC_band = np.polyfit(x_band, y_band, 1)
+C_band = 10 ** logC_band
+print("The alpha value using mean of optimal r/a:", alpha_band)
+print("The C value using mean of optimal r/a:", C_band)
+
 # Get the minimum mean error with correponding sqrt_dof and r
 idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
 df_best = df_mean.loc[idx].reset_index(drop=True)
@@ -322,38 +325,10 @@ print("The C value using averaged error map:", C)
 norm_h_fit = np.linspace(0.001, 1.0, 999,)
 r_fit = C * norm_h_fit ** alpha
 r_fit_theta = C_mean_theta * norm_h_fit ** alpha_mean_theta
+r_fit_band = C_band * norm_h_fit ** alpha_band
 
 # Plot the curves of sqrt_dof and r with the minimum error
 fig3, ax3 = plt.subplots(figsize=(3.5, 3.0))
-# for i, theta_rad in enumerate(theta_rads):
-#     df_theta = diag_data_theta[diag_data_theta["theta_rad"] == theta_rad]
-
-#     # Get the minimum mean error with correponding sqrt_dof and r for each angle.
-#     idx_theta = df_theta.groupby("norm_h")["error"].idxmin()
-#     df_best_theta = df_theta.loc[idx_theta].reset_index(drop=True)
-    
-#     # Plot each angle's optimal sqrt_dof and r.
-#     ax3.loglog(
-#         df_best_theta["norm_h"],
-#         df_best_theta["r"],
-#         'o--',
-#         color='tab:pink',
-#         linewidth=2,
-#         markersize=6,
-#         # alpha=0.3,
-#         markeredgecolor='none',
-#         label=f"Data (all orientations)" if i == 0 else None
-#     )
-
-# ax3.loglog(
-#     norm_h_fit,
-#     r_fit_theta,
-#     '--',
-#     color='tab:pink',
-#     linewidth=2,
-#     label="Fitting (orientations)"
-# )
-
 ax3.loglog(
     df_band["norm_h"],
     df_band["r_mean"],
@@ -364,6 +339,15 @@ ax3.loglog(
     label="Mean optimal $r/a$"
 )
 
+ax3.loglog(
+    norm_h_fit,
+    r_fit_band,
+    '--',
+    color='tab:orange',
+    linewidth=2,
+    label="Fitting (Mean optimal $r/a$)"
+)
+
 ax3.fill_between(
     df_band["norm_h"],
     df_band["r_lower"],
@@ -371,7 +355,7 @@ ax3.fill_between(
     color='tab:orange',
     alpha=0.35,
     linewidth=0.0,
-    label=r"$\pm 1$ std"
+    label=r"$\pm 1$ STD of optimal $r/a$"
 )
 
 # Plot the fitting line using averaged error results.
@@ -382,7 +366,7 @@ ax3.loglog(
     color='tab:blue',
     # linewidth=2,
     markersize=5, 
-    label="Data (averaged mapping)"
+    label="Data (averaged map)"
 )
 
 ax3.loglog(
@@ -391,7 +375,7 @@ ax3.loglog(
     '--',
     color='tab:blue',
     linewidth=2,
-    label="Fitting (averaged mapping)"
+    label="Fitting (averaged map)"
 )
 
 ax3.set_xlabel(r"$h/a$")
