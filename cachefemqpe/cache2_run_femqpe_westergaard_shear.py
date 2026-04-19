@@ -1,7 +1,6 @@
 """
-Convergence analysis for Westergaard shear problem with grid perturbations using 
-multiple seeds of a random number generator. 
-
+Convergence analysis for Westergaard shear problem by FEM-QPE with fracture rotations 
+using multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
 
@@ -15,7 +14,7 @@ import math
 import pickle
 import os
 
-save_model = "data/perturb/femqpe/cache_models/ws135"
+save_model = "data/rotation/femqpe/cache_models/ws"
 os.makedirs(save_model, exist_ok=True)
 
 a = 0.3
@@ -38,38 +37,24 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-# Parameters for grid perturbation
-params.update({
-    "perturb_amplitude": 0.00,
-    "perturb_exponent": 1.5,
-    "perturb_seed": 1234,
-})
-
 # No perturbation
 use_qpe = True
 fem_model = FemWestergaardShearMode2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 # Save cache models for different mesh sizes and seeds.
-
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00725]
-# seeds = [
-#     1234, 2029, 31415, 27182, 42424, 
-#     1414, 3201, 16180, 17333, 22002,
-# ]
-seeds = [
-    1234,
+# cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00625]
+cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
+theta_rads = [
+    0, 15, 30, 45, 60, 75, 
+    90, 105, 120, 135, 150, 165,
 ]
-# cell_sizes = [0.11, 0.05]
-# seeds = [1234, 2029, 31415, 27182, 42424]
-# seeds = [1234, 2029]
+# cell_sizes = [0.055]
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")
-
     params["meshing_arguments"] = {"cell_size": h}
-    params["perturb_seed"] = int(seeds[0])
 
     use_qpe = True
     fem_model = FemWestergaardShearMode2d(params, use_qpe)
@@ -77,11 +62,11 @@ for i, h in enumerate(cell_sizes):
 
     model_sol = FEMComputeSifErrorConvergence(model=fem_model)
 
-    for si, seed in enumerate(seeds):
-        print(f"\nRunning seed = {seed}")
-        params["perturb_seed"] = int(seed)
+    for si, theta_rad in enumerate(theta_rads):
+        print(f"\nRunning theta_rad = {theta_rad}")
+        params["theta_rad"] = math.radians(90 - theta_rad)
 
-        # Run model
+        # Run model. 
         fem_model = FemWestergaardShearMode2d(params, use_qpe)
         fem_model.model_setup_and_sol()
 
@@ -100,7 +85,7 @@ for i, h in enumerate(cell_sizes):
             "num_dofs": num_dofs,
         }
 
-        filename  = f"model_{h}_seed{seed}.pkl"
+        filename  = f"model_{h}_theta{theta_rad}.pkl"
         filepath = os.path.join(save_model, filename)
         with open(filepath, "wb") as dbfile:
             pickle.dump(cache, dbfile)

@@ -1,7 +1,6 @@
 """
-Convergence analysis for Westergaard shear problem with grid perturbations using 
-multiple seeds of a random number generator. 
-
+Convergence analysis for Westergaard shear problem by FEM without QPEs with fracture rotations 
+using multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
 
@@ -20,35 +19,33 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/perturb/femnoqpe/cache/diagram135"
+save_fig = "figures/rotation/femnoqpe/cache/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/perturb/femnoqpe/cache_diagram135"
+save_csv = "data/rotation/femnoqpe/cache_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/perturb/femnoqpe/cache_models/ws135"
+save_model = "data/rotation/femnoqpe/cache_models/ws"
 os.makedirs(save_model, exist_ok=True)
 
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00725]
-# seeds = [
-#     1234, 2029, 31415, 27182, 42424, 
-#     1414, 3201, 16180, 17333, 22002,
-# ]
-seeds = [
-    1234,
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00625]
+theta_rads = [
+    0, 15, 30, 45, 60, 75, 
+    90, 105, 120, 135, 150, 165,
 ]
 # cell_sizes = [0.11, 0.05]
-# seeds = [1234, 2029, 31415, 27182, 42424]
-# seeds = [1234, 2029]
 
+# For averaged error reults. 
 diag_results = []
+# For error results with different angles.
+diag_results_theta = []
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")
 
-    seed = int(seeds[0])
-    filename  = f"model_{h}_seed{seed}.pkl"
+    theta_rad = int(theta_rads[0])
+    filename  = f"model_{h}_theta{theta_rad}.pkl"
     filepath = os.path.join(save_model, filename)
     with open(filepath, "rb") as dbfile:
         cache = pickle.load(dbfile)
@@ -69,10 +66,10 @@ for i, h in enumerate(cell_sizes):
     error_std_acc = {tuple(pair): [] for pair in pairs_in_cellsizes}
     r_acc     = {tuple(pair): [] for pair in pairs_in_cellsizes}
 
-    for si, seed in enumerate(seeds):
-        print(f"\nRunning seed = {seed}")
+    for si, theta_rad in enumerate(theta_rads):
+        print(f"\nRunning theta_rad = {theta_rad}")
 
-        filename  = f"model_{h}_seed{seed}.pkl"
+        filename  = f"model_{h}_theta{theta_rad}.pkl"
         filepath = os.path.join(save_model, filename)
         with open(filepath, "rb") as dbfile:
             cache = pickle.load(dbfile)
@@ -86,10 +83,23 @@ for i, h in enumerate(cell_sizes):
 
             r_mean = np.mean(r_n) / cache["params"]["a"]
 
+            # For averaged error results.
             error_acc[tuple(sampling_pair)].append(error_ave)
             error_std_acc[tuple(sampling_pair)].extend(error_per_tip)
             r_acc[tuple(sampling_pair)].append(r_mean)
-     
+
+            # Store error results with each angle. 
+            diag_results_theta.append({
+                "theta_rad": theta_rad,
+                "h": h,
+                "r": r_mean,
+                "sqrt_dof": num_dofs,
+                "norm_h": norm_cellsize,
+                "error": error_ave,
+                "error_std": np.std(error_per_tip, ddof=0),
+            })
+
+    # Store error results by averaging over different angles. 
     for sampling_pair in pairs_in_cellsizes:
         pair_key = tuple(sampling_pair)
         errs_mean = np.array(error_acc[pair_key])
@@ -107,6 +117,10 @@ for i, h in enumerate(cell_sizes):
 diag_data = pd.DataFrame(diag_results)
 diag_data.to_csv(os.path.join(save_csv, "diag_data_ws_femnoqpe.csv"), index=False)
 diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_ws_femnoqpe.csv"))
+
+diag_data_theta = pd.DataFrame(diag_results_theta)
+diag_data_theta.to_csv(os.path.join(save_csv, "diag_data_theta_ws_femnoqpe.csv"), index=False)
+diag_data_theta = pd.read_csv(os.path.join(save_csv, "diag_data_theta_ws_femnoqpe.csv"))
 
 mpl.rcParams.update({
     "font.family": "serif",     
@@ -164,7 +178,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_ws_mean.tiff"),
+    os.path.join(save_fig, "diag_ws_mean_femnoqpe.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -215,12 +229,77 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_femnoqpe_ws_std.tiff"),
+    os.path.join(save_fig, "diag_ws_std_femnoqpe.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
 )
 plt.close(fig2)
+
+fit_results_theta = []
+best_theta_results = []
+for theta_rad in theta_rads:
+    df_theta = diag_data_theta[diag_data_theta["theta_rad"] == theta_rad]
+
+    # Get the minimum mean error with correponding sqrt_dof and r for each angle.
+    idx_theta = df_theta.groupby("norm_h")["error"].idxmin()
+    df_best_theta = df_theta.loc[idx_theta].reset_index(drop=True)
+
+    best_theta_results.append(df_best_theta)
+
+    # Get the fitting line for the optimal sqrt_dof and r for each angle.
+    x_theta = np.log10(df_best_theta["norm_h"].to_numpy())
+    y_theta = np.log10(df_best_theta["r"].to_numpy())
+
+    alpha_theta, logC_theta = np.polyfit(x_theta, y_theta, 1)
+    C_theta = 10 ** logC_theta
+
+    fit_results_theta.append({
+        "theta_rad": theta_rad,
+        "alpha": alpha_theta,
+        "C": C_theta,
+    })
+
+fit_data_theta = pd.DataFrame(fit_results_theta)
+fit_data_theta.to_csv(os.path.join(save_csv, "fit_data_theta_ws.csv"), index=False)
+fit_data_theta = pd.read_csv(os.path.join(save_csv, "fit_data_theta_ws.csv"))
+
+# Statistics of fitting results with different angles. 
+alpha_mean_theta = fit_data_theta["alpha"].mean()
+alpha_std_theta = fit_data_theta["alpha"].std(ddof=0)
+C_mean_theta = fit_data_theta["C"].mean()
+C_std_theta = fit_data_theta["C"].std(ddof=0)
+
+print("=== Statistics of fitting results by different angles ===")
+print("Mean alpha:", alpha_mean_theta)
+print("Std alpha:", alpha_std_theta)
+print("Mean C:", C_mean_theta)
+print("Std C:", C_std_theta)
+
+df_best_all_theta = pd.concat(best_theta_results, ignore_index=True)
+df_band = (
+    df_best_all_theta
+    .groupby("norm_h", as_index=False)
+    .agg(
+        r_mean=("r", "mean"),
+        r_std=("r", "std"),
+        r_min=("r", "min"),
+        r_max=("r", "max"),
+    )
+    .sort_values("norm_h")
+    .reset_index(drop=True)
+)
+
+df_band["r_upper"] = df_band["r_mean"] + df_band["r_std"]
+df_band["r_lower"] = df_band["r_mean"] - df_band["r_std"]
+
+x_band = np.log10(df_band["norm_h"].to_numpy())
+y_band = np.log10(df_band["r_mean"].to_numpy())
+
+alpha_band, logC_band = np.polyfit(x_band, y_band, 1)
+C_band = 10 ** logC_band
+print("The alpha value using mean of optimal r/a:", alpha_band)
+print("The C value using mean of optimal r/a:", C_band)
 
 # Get the minimum mean error with correponding sqrt_dof and r
 idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
@@ -236,31 +315,63 @@ print("y values for fitting:", y)
 alpha, logC = np.polyfit(x, y, 1)
 C = 10 ** logC
 
-print("The alpha value:", alpha)
-print("The C value", C)
+print("The alpha value using averaged error map:", alpha)
+print("The C value using averaged error map:", C)
 
-norm_h_fit = np.linspace(0.0, 1.0, 100,)
+norm_h_fit = np.linspace(0.001, 1.0, 999,)
 r_fit = C * norm_h_fit ** alpha
+r_fit_theta = C_mean_theta * norm_h_fit ** alpha_mean_theta
+r_fit_band = C_band * norm_h_fit ** alpha_band
 
 # Plot the curves of sqrt_dof and r with the minimum error
 fig3, ax3 = plt.subplots(figsize=(3.5, 3.0))
+ax3.loglog(
+    df_band["norm_h"],
+    df_band["r_mean"],
+    'o',
+    color='tab:orange',
+    # linewidth=2,
+    markersize=5,
+    label="Mean optimal $r/a$"
+)
+
+ax3.loglog(
+    norm_h_fit,
+    r_fit_band,
+    '--',
+    color='tab:orange',
+    linewidth=2,
+    label="Fitting (Mean optimal $r/a$)"
+)
+
+ax3.fill_between(
+    df_band["norm_h"],
+    df_band["r_lower"],
+    df_band["r_upper"],
+    color='tab:orange',
+    alpha=0.35,
+    linewidth=0.0,
+    label=r"$\pm 1$ STD of optimal $r/a$"
+)
+
+# Plot the fitting line using averaged maps.
 ax3.loglog(
     df_best["norm_h"],
     df_best["r"],
     'o',
     color='tab:blue',
-    linewidth=2,
-    markersize=4, 
-    label="Data"
+    # linewidth=2,
+    markersize=5, 
+    label="Data (averaged map)"
 )
 
 ax3.loglog(
     norm_h_fit,
     r_fit,
     '--',
-    color='tab:orange',
+    color='tab:blue',
     linewidth=2,
-    label="Fitting"
+    label="Fitting (averaged map)"
 )
 
 ax3.set_xlabel(r"$h/a$")
@@ -271,8 +382,8 @@ formatter.set_powerlimits((0, 0))
 ax3.yaxis.set_major_formatter(formatter)
 # ax3.set_xlim(10, 700)
 # ax3.set_ylim(0.0002, 1.0)
-ax3.set_xlim(0.01, 1.0)
-ax3.set_ylim(0.1, 1.0)
+ax3.set_xlim(0.008, 1.0)
+ax3.set_ylim(0.07, 1.0)
 ax3.xaxis.set_major_locator(LogLocator(base=10))
 ax3.xaxis.set_major_formatter(LogFormatterMathtext())
 ax3.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
@@ -284,7 +395,7 @@ ax3.grid(True, which="both", linestyle="--", alpha=0.5)
 ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "conv_femnoqpe_opt_ws.tiff"),
+    os.path.join(save_fig, "conv_opt_ws_femnoqpe.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

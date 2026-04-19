@@ -1,7 +1,6 @@
 """
-Convergence analysis for Sneddon problem with grid perturbation using 
-multiple seeds of a random number generator. 
-
+Convergence analysis for Sneddon problem by MPSA with fracture rotations 
+using multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
 
@@ -17,93 +16,38 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/perturb/mpsa/cache_models/so000"
+save_model = "data/rotation/mpsa/cache_models/so"
 os.makedirs(save_model, exist_ok=True)
 
-save_dir = "figures/perturb/mpsa/cache/conv_sif000"
+save_dir = "figures/rotation/mpsa/cache/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
-cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
-seeds = [
-    1234, 2029, 31415, 27182, 42424, 
-    1414, 3201, 16180, 17333, 22002,
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# cell_sizes = [0.1, 0.055, 0.024, 0.0125, 0.00625, 0.003120]
+theta_rads = [
+    0, 15, 30, 45, 60, 75, 
+    90, 105, 120, 135, 150, 165,
 ]
-# seeds = [1234, 2029]
 
 # We employ an exponent-type function for point selections
-C = 0.68
-alpha = 0.28
-# From Fitting parameters: C=0.68, alpha=0.30
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [2, 3],
-#     [3, 4],
-#     [6, 7],
-#     [10, 11],
-#     [16, 17],
-# ]
-# # From Fitting parameters: C=0.68, alpha=0.25
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [2, 3],
-#     [4, 5],
-#     [7, 8],
-#     [12, 13],
-#     [20, 21], 
-# ]
-# From Fitting parameters: C=0.68, alpha=0.35
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [2, 3],
-#     [3, 4],
-#     [5, 6],
-#     [8, 9],
-#     [13, 14],
-# ]
-# From Fitting parameters: C=0.58, alpha=0.30
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [2, 3],
-#     [3, 4],
-#     [5, 6],
-#     [8, 9],
-#     [14, 15]
-# ]
-# From Fitting parameters: C=0.78, alpha=0.30
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [2, 3],
-#     [4, 5],
-#     [7, 8],
-#     [11, 12],
-#     [19, 20],
-# ]
-# From Fitting parameters: C=0.88, alpha=0.30
-# pairs_in_cellsizes = [
-#     [1, 2],
-#     [3, 4],
-#     [5, 6],
-#     [8, 9],
-#     [13, 14],
-#     [21, 22]
-# ]
+C = 0.739
+alpha = 0.313
 
 all_err_ave = []        # list of (n_h,) arrays
 all_err_per_tip = []    # list of (n_h, 2) arrays
 all_dofs = []           # list of (n_h,) arrays
-for si, seed in enumerate(seeds):
+for si, theta_rad in enumerate(theta_rads):
     error_ave_set = []
     error_per_tip_set = []
     num_frac_cells_set = []
     num_dofs_set = []
 
     for i, h in enumerate(cell_sizes):
-        print(f"\n=== Running seed = {seed} ===")
+        print(f"=== Running for frac angle theta = {theta_rad} ===")
         print(f"Running for mesh size h = {h}")
     
-        filename  = f"model_{h}_seed{seed}.pkl"
+        filename  = f"model_{h}_theta{theta_rad}.pkl"
         filepath = os.path.join(save_model, filename)
         with open(filepath, "rb") as dbfile:
             cache = pickle.load(dbfile)
@@ -111,8 +55,7 @@ for si, seed in enumerate(seeds):
         num_dofs = np.sqrt(cache["num_dofs"])
 
         compSIF = ComputeSifErrorConvergence(cache=cache)
-    
-        # sampling_pair = pairs_in_cellsizes[i]
+
         sampling_pair = compSIF.sampling_pairs_from_power_function(C, alpha)
         compSIF.singularity_order = compSIF.exact_singularity()  
         error_ave, error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
@@ -171,21 +114,21 @@ formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))            # Scientific form
 
 fig, ax = plt.subplots(figsize=(5.0, 3.0))   # inches
-for si in range(len(seeds)):
+for si in range(len(theta_rads)):
     ax.loglog(
         all_dofs[si], all_err_ave[si],
         'o-', color='tab:blue',
         linewidth=2.0,
         markersize=4,
         alpha=0.35, 
-        label=f"Seed {si+1}"
+        label=f"Angle {si+1}"
     )
 
 ax.loglog(mean_dofs, mean_err_ave, 
           'd-', color='tab:blue', 
           linewidth=2.0, 
           markersize=4,
-          label="Average over 10 seeds"
+          label="Average over 12 angles"
 )
 
 ax.loglog(
@@ -229,8 +172,7 @@ ax.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    # os.path.join(save_dir, "conv_sif_so_random_tpss.tiff"),
-    os.path.join(save_dir, "conv_sif_so_with_coeff2.tiff"),
+    os.path.join(save_dir, "conv_sif_so_with_coeff_mpsa.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
