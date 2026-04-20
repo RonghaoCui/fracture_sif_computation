@@ -85,20 +85,37 @@ class WestergaardMixedModeExactSolution2d(SneddonExactSolution2d):
             sd, h / 2, box_faces, bem_centers, u_a, v_a
         )
 
-        eps_xx = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
-        eps_yy = eps_xx
-        eps_xy = self.tau_inf / (2.0 * self.shear_modulus)
+        # Rotate far-field shear displacements to global coordinates
+        t= np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
-        u_inf = np.zeros((sd.dim, sd.num_faces))
         x = sd.face_centers[0, box_faces]
         y = sd.face_centers[1, box_faces]
-        cx, cy = center[:2]
-        u_inf[0, box_faces] = eps_xx * (x - cx) + eps_xy * (y - cy)
-        u_inf[1, box_faces] = eps_yy * (y - cy) + eps_xy * (x - cx)
+
+        dx = x - center[0]
+        dy = y - center[1]
+        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate
+        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate
+
+        eps_shear = self.tau_inf / (2.0 * self.shear_modulus)
+        eps_open = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
+        u_inf = np.zeros((sd.dim, sd.num_faces))
+
+        u_inf[0, box_faces] = eps_shear * (r_n * t[0] + r_t * n[0]) + eps_open * (r_t * t[0] + r_n * n[0])
+        u_inf[1, box_faces] = eps_shear * (r_n * t[1] + r_t * n[1]) + eps_open * (r_t * t[1] + r_n * n[1])
+
+        # eps_xx = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
+        # eps_yy = eps_xx
+        # eps_xy = self.tau_inf / (2.0 * self.shear_modulus)
+
+        # u_inf = np.zeros((sd.dim, sd.num_faces))
+        # x = sd.face_centers[0, box_faces]
+        # y = sd.face_centers[1, box_faces]
+        # cx, cy = center[:2]
+        # u_inf[0, box_faces] = eps_xx * (x - cx) + eps_xy * (y - cy)
+        # u_inf[1, box_faces] = eps_yy * (y - cy) + eps_xy * (x - cx)
 
         return u_inf + u_frac
-        # return u_frac
-        # return u_inf
     
     def exact_sol_normal_fracture(self, mdg: pp.MixedDimensionalGrid) -> np.ndarray:
         """

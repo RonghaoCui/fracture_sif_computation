@@ -81,20 +81,26 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         u_a = -self.analytical_normal_opening(eta)
         u_frac = self.displacement_bc_values_from_bem(sd, h / 2, box_faces, bem_centers, u_a)
 
-        # # Rotate far-field shear displacements to global coordinates
-        # t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
-        # n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
+        # Rotate far-field shear displacements to global coordinates
+        t= np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
         x = sd.face_centers[0, box_faces]
         y = sd.face_centers[1, box_faces]
 
-        eps_xx = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
-        eps_yy = eps_xx
+        dx = x - center[0]
+        dy = y - center[1]
+        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate
+        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate
+
+        eps_coeff = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
         u_inf = np.zeros((sd.dim, sd.num_faces))
 
-        cx, cy = center[:2]
-        u_inf[0, box_faces] = eps_xx * (x - cx)
-        u_inf[1, box_faces] = eps_yy * (y - cy)
+        # cx, cy = center[:2]
+        # u_inf[0, box_faces] = eps_xx * (x - cx)
+        # u_inf[1, box_faces] = eps_yy * (y - cy)
+        u_inf[0, box_faces] = eps_coeff * (r_t * t[0] + r_n * n[0])
+        u_inf[1, box_faces] = eps_coeff * (r_t * t[1] + r_n * n[1])
 
         return u_inf + u_frac
     
@@ -127,7 +133,7 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         Parameters:
             eta: Distances of fracture cell centers to the fracture center.
 
-        Return
+        Return: 
             Array containing analytical normal displacement jumps.
 
         """
