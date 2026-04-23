@@ -1,9 +1,11 @@
 """
-Model for Westergaard's problem in the opening mode by a quadratic finite element method with/without quarter-point 
-elements using Westergaard's analytical solution for tangential displacement jump.
+Model for Westergaard's problem in the opening mode by a quadratic finite 
+element method with/without quarter-point elements using Westergaard's 
+analytical solution for tangential displacement jump.
 
 FEM code resources:
-    - [1] Dang et al., International Journal of Rock Mechanics and Mining Sciences, 160 (2022): 105248.
+    - [1] Dang et al., International Journal of Rock Mechanics and Mining 
+          Sciences, 160 (2022): 105248.
 
 """
 from __future__ import annotations
@@ -15,7 +17,7 @@ from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 from fems import mmfa
 from fems import FemMeshFromPorePy
 
-# Directly use boundary element methods in Westergaard's problem in a opening mode
+# Directly use boundary element methods in Westergaard's problem in a opening mode. 
 class FemExactDirichletBCWestergaardOpen:
     """Class representing the analytical solution for Westergaard's problem in
        in an opening mode.
