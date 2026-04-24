@@ -1,7 +1,7 @@
 """
-Solve the model for Sneddon's problem by a quadratic finite element method (FEM) with quarter-point elements (QPEs).
-Calculate displacement solutions of Sneddon's problem by FEM with QPEs.
-
+Solve the model for Sneddon's problem by a quadratic finite element method (FEM) 
+without quarter-point elements (QPEs).
+Quarter-point elements (QPEs) can be disabled based on the `use_qpe` flag.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/femnoqpe/sol"
+save_dir = "figures/benchmarks/femnoqpe/sol/so"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
