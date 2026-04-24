@@ -1,6 +1,7 @@
 """
-Solve the model for Sneddon's problem by a quadratic finite element method (FEM).
-Quarter-point elements (QPEs) can be activeted based on the `use_qpe` flag.
+Solve the model for Sneddon's problem by a quadratic finite element method (FEM)
+with quarter-point elements (QPEs).
+Quarter-point elements (QPEs) can be activated based on the `use_qpe` flag.
 
 """
 from __future__ import annotations
