@@ -218,7 +218,8 @@ class ComputeSifValue:
     
     def calculate_exact_SIF_KI_sneddon(self) -> float: 
         """
-        Calculate the analytical solution of SIF KI for Sneddon's problem. 
+        Calculate the analytical solution of SIF KI for Sneddon's problem
+        in the opening mode. 
 
         Returns: 
             KI_exact: an analytical KI value.
@@ -228,10 +229,25 @@ class ComputeSifValue:
         KI_exact =  pres0 * np.sqrt(np.pi * self.frac_half_length)
 
         return KI_exact
-    
-    def calculate_exact_SIF_KII_westargaard(self) -> float: 
+
+    def calculate_exact_SIF_KI_westergaard(self) -> float: 
         """
-        Calculate the analytical solution of SIF KII for Westergaard's problem. 
+        Calculate the analytical solution of SIF KI for Westergaard's problem
+        in the opening mode. 
+
+        Returns: 
+            KI_exact: an analytical KI value.
+
+        """
+        sigma_inf0 = self.params["sigma_inf"]
+        KI_exact =  sigma_inf0 * np.sqrt(np.pi * self.frac_half_length)
+
+        return KI_exact
+
+    def calculate_exact_SIF_KII_westergaard(self) -> float: 
+        """
+        Calculate the analytical solution of SIF KII for Westergaard's problem
+        in the shear mode. 
 
         Returns: 
             KII_exact: an analytical KII value.

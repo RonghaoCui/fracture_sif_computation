@@ -182,7 +182,13 @@ class FEMComputeSifErrorConvergence:
         r_n_two: np.ndarray,
     ) -> tuple[float, np.ndarray]:
         """
-        Calculate relative errors of calculated SIFs by FEM for tips, compared with analytical SIF values. 
+        Calculate relative errors of calculated SIFs by FEM for tips, 
+        compared with analytical SIF values. 
+
+        The opening mode involves Sneddon's problem and Westergaard's problem,
+        depending on whether the far-field stress `sigma_inf` is applied or not. 
+        Here, we assume that if `sigma_inf` is not None, the problem is Westergaard's 
+        problem in the opening mode. Otherwise, it is Sneddon's problem. 
 
         Parameters:
             u_jump_n_one: displacement jump of node 1
@@ -201,7 +207,12 @@ class FEMComputeSifErrorConvergence:
             r_n_two, 
             singularity_orders
         )
-        KI_exact = self.FEM_calculate_exact_SIF_KI_sneddon()
+        sigma_inf = self.params.get("sigma_inf", None)
+
+        if sigma_inf is not None:
+            KI_exact = self.FEM_calculate_exact_SIF_KI_westergaard()
+        else:
+            KI_exact = self.FEM_calculate_exact_SIF_KI_sneddon()
 
         return self.FEM_relative_L2_error(KIs, KI_exact)
     
@@ -324,9 +335,25 @@ class FEMComputeSifErrorConvergence:
 
         return KI_exact
     
+    def FEM_calculate_exact_SIF_KI_westergaard(self) -> float: 
+        """
+        Calculate the analytical solution of SIF KI for Westergaard's problem
+        in the opening mode.
+
+        Returns: 
+            KI_exact: an analytical KI value.
+
+        """
+        sigma_inf0 = self.params["sigma_inf"]
+        frac_half_length = self.params["a"]
+        KI_exact =  sigma_inf0 * np.sqrt(np.pi * frac_half_length)
+
+        return KI_exact
+    
     def FEM_calculate_exact_SIF_KII_westergaard(self) -> float: 
         """
-        Calculate the analytical solution of SIF KII for Westergaard's problem.
+        Calculate the analytical solution of SIF KII for Westergaard's problem
+        in the shear mode.
 
         Returns: 
             KII_exact: an analytical KII value.

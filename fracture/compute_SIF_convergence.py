@@ -33,10 +33,10 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         """
         Initialize the SIF convergence computation class.
 
-        Args: 
-        model : object
-            A PorePy-based model that contains the mixed-dimensional grid (mdg),
-            displacement results, projection operators, and a ``params`` dictionary
+        Parameters: 
+            model : object
+                A PorePy-based model that contains the mixed-dimensional grid (mdg),
+                displacement results, projection operators, and a ``params`` dictionary
         """
         super().__init__(model=model, cache=cache)
         self.singularity_order: Optional[float] = None
@@ -47,7 +47,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         """
         The single-point option with a single-scale sampling fracture cell.
 
-        Args:
+        Parameters: 
             steps_pair (tuple[int, int]): 
             Two integers ``(k0, k1)`` specifying the
                 number of fracture cells away from the tip to sampling locations.
@@ -313,6 +313,11 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         Two singularity exponents can be used: exact value 0.5 and numerical singularity 
         exponents calculated from these two samples. 
 
+        The opening mode involves Sneddon's problem and Westergaard's problem,
+        depending on whether the far-field stress `sigma_inf` is applied or not. 
+        Here, we assume that if `sigma_inf` is not None, the problem is Westergaard's 
+        problem in the opening mode. Otherwise, it is Sneddon's problem. 
+
         Parameters:
             u_jump_n_one (np.ndarray): First set (farther) of normal displacement jumps.
             r_n_one (np.ndarray): Distances to tip for the first set.
@@ -332,8 +337,13 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         KIs = SIFValue.KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
         # print("KI at tips:", KIs)
+        
+        sigma_inf = self.params.get("sigma_inf", None)
 
-        KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
+        if sigma_inf is not None:
+            KI_exact =  SIFValue.calculate_exact_SIF_KI_westergaard()
+        else:
+            KI_exact =  SIFValue.calculate_exact_SIF_KI_sneddon()
 
         return self._relative_L2_error(KIs, KI_exact)
     
@@ -369,7 +379,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         KIIs = SIFValue.KII_from_two_points(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two, singularity_orders)
         # print("KII at tips:", KIIs)
 
-        KII_exact =  SIFValue.calculate_exact_SIF_KII_westargaard()
+        KII_exact =  SIFValue.calculate_exact_SIF_KII_westergaard()
 
         return self._relative_L2_error(KIIs, KII_exact)
     
