@@ -8,7 +8,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from fems import FemQpeSneddonModel2d
+from fems import FemSneddonModel2d
 from fems import FEMComputeSifErrorConvergence
 
 import math
@@ -40,7 +40,7 @@ params = {
 
 use_qpe = True
 # use_qpe = False
-fem_model = FemQpeSneddonModel2d(params, use_qpe)
+fem_model = FemSneddonModel2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
 # Only for the horizontal fracture
@@ -126,7 +126,7 @@ num_dofs_set = []
 for i, h in enumerate(cell_sizes):
     print(f"Running for mesh size h = {h}")
     params["meshing_arguments"] = {"cell_size": h}
-    fem_model = FemQpeSneddonModel2d(params, use_qpe)
+    fem_model = FemSneddonModel2d(params, use_qpe)
     fem_model.model_setup_and_sol()
     computeSIF = FEMComputeSifErrorConvergence(model=fem_model)
 
