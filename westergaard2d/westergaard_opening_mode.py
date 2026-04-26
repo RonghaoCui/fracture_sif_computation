@@ -96,9 +96,6 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         eps_coeff = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
         u_inf = np.zeros((sd.dim, sd.num_faces))
 
-        # cx, cy = center[:2]
-        # u_inf[0, box_faces] = eps_xx * (x - cx)
-        # u_inf[1, box_faces] = eps_yy * (y - cy)
         u_inf[0, box_faces] = eps_coeff * (r_t * t[0] + r_n * n[0])
         u_inf[1, box_faces] = eps_coeff * (r_t * t[1] + r_n * n[1])
 

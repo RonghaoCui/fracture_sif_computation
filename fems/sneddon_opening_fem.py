@@ -247,7 +247,8 @@ class SneddonFem2dSolver:
         # Assemble matrices for the linear system: Ku=F
         # Assemble the right hand side
         # Get traction forces for nodes based on Neumann traction on edges
-        F = mmfa.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
+        # F = mmfa.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
+        F = FemMeshFromPorePy.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
         print("Pass loadsegment\n")
         # Plane strain: constitutive law in 2D
         # σ​=2·μe​+λ·​trace(e)·I: e=[exx, eyy, exy].T

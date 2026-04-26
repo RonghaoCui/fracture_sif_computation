@@ -301,3 +301,63 @@ class FemMeshFromPorePy:
         U = spla.spsolve(K, F)
         
         return U[:sdof]
+
+    def loadsegment(p6, NeuDof=None, NeuVal=None):
+        """
+        Assemble consistent nodal loads on quadratic boundary edges.
+
+        This version supports both standard T6 edges and quarter-point edges,
+        because the edge Jacobian is computed from the actual coordinates of
+        the three edge nodes.
+        """
+        sdof = p6.shape[0] * 2
+        F = np.zeros((sdof, 1))
+
+        if NeuDof is None:
+            return F
+
+        # Three-point Gauss rule on [-1, 1].
+        # Two-point is exact for straight quarter-point edges, but three-point is safer.
+        gauss_xi = np.array([
+            -np.sqrt(3.0 / 5.0),
+            0.0,
+            np.sqrt(3.0 / 5.0),
+        ])
+        gauss_w = np.array([
+            5.0 / 9.0,
+            8.0 / 9.0,
+            5.0 / 9.0,
+        ])
+
+        for e in range(NeuDof.shape[0]):
+            index = NeuDof[e, :].astype(int)   # [n0, nmid, n1]
+            coords = p6[index, :2]             # shape = (3, 2)
+            traction = NeuVal[e, :]            # [tx, ty]
+
+            fe = np.zeros((3, 2))
+
+            for xi, w in zip(gauss_xi, gauss_w):
+                # Quadratic edge shape functions:
+                # node order: [-1, 0, +1] -> [n0, nmid, n1]
+                N = np.array([
+                    0.5 * xi * (xi - 1.0),
+                    1.0 - xi**2,
+                    0.5 * xi * (xi + 1.0),
+                ])
+
+                dN_dxi = np.array([
+                    xi - 0.5,
+                    -2.0 * xi,
+                    xi + 0.5,
+                ])
+
+                dx_dxi = dN_dxi @ coords
+                J = np.linalg.norm(dx_dxi)
+
+                fe += np.outer(N, traction) * J * w
+
+            F[index * 2, 0] += fe[:, 0]
+            F[index * 2 + 1, 0] += fe[:, 1]
+
+        return F
+

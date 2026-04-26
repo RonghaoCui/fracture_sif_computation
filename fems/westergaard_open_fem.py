@@ -1,7 +1,7 @@
 """
 Model for Westergaard's problem in the opening mode by a quadratic finite 
 element method with/without quarter-point elements using Westergaard's 
-analytical solution for tangential displacement jump.
+analytical solution for normal displacement jump.
 
 FEM code resources:
     - [1] Dang et al., International Journal of Rock Mechanics and Mining 
@@ -144,17 +144,16 @@ class FemExactDirichletBCWestergaardOpen:
             uy_frac += duy
 
         # # Rotate far-field opening displacements to global coordinates
-        # t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
-        # n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
-        # r = np.array([x - center[0], y - center[1]])
-        # r_t = r @ t   # Local tangential coordinate
-        # r_n = r @ n   # Local normal coordinate
+        r = np.array([x - center[0], y - center[1]])
+        r_t = r @ t   # Local tangential coordinate
+        r_n = r @ n   # Local normal coordinate
 
-        eps_xx = self.sigma_inf / (2.0 * self.mu + 2.0 * self.lam)
-        eps_yy = eps_xx
-        ux_inf = eps_xx * (x - center[0])
-        uy_inf = eps_yy * (y - center[1])
+        eps_coeff = self.sigma_inf / (2.0 * self.mu + 2.0 * self.lam)
+        u_inf = eps_coeff * (r_t * t + r_n * n)
+        ux_inf, uy_inf = u_inf
 
         ux = ux_inf + ux_frac
         uy = uy_inf + uy_frac
