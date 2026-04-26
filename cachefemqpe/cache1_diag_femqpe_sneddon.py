@@ -19,18 +19,18 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/rotation/femqpe/cache/diagram"
+save_fig = "figures/rotation/femqpe/cache/diagram2"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/rotation/femqpe/cache_diagram"
+save_csv = "data/rotation/femqpe/cache_diagram2"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/rotation/femqpe/cache_models/so"
+save_model = "data/rotation/femqpe/cache_models/so2"
 os.makedirs(save_model, exist_ok=True)
 
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00725]
-# cell_sizes = [0.00625]
+cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
@@ -51,7 +51,7 @@ for i, h in enumerate(cell_sizes):
     with open(filepath, "rb") as dbfile:
         cache = pickle.load(dbfile)
 
-    num_dofs = np.sqrt(cache["num_dofs"])
+    num_dofs = cache["num_dofs"]
 
     computeSIF = FEMComputeSifErrorConvergence(cache=cache)
 
@@ -390,7 +390,7 @@ ax3.yaxis.set_major_locator(LogLocator(base=10))
 ax3.yaxis.set_major_formatter(LogFormatterMathtext())
 ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax3.grid(True, which="both", linestyle="--", alpha=0.5)
-ax3.legend(loc="lower left")
+ax3.legend(loc="upper left")
 plt.tight_layout()
 plt.savefig(
     os.path.join(save_fig, "conv_opt_so_femqpe.tiff"),

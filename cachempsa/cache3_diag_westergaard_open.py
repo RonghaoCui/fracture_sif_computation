@@ -1,13 +1,12 @@
 """
-Convergence analysis for shear-mode SIF in Westergaard mixed-mode problem 
-by FEM-QPE with fracture rotations using multiple fracture angles within 
-the range [0°, 180°). 
+Convergence analysis for Westergaard opening problem with fracture rotations using 
+multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
 
 import numpy as np
 import porepy as pp
-from fems import FEMComputeSifErrorConvergence
+from fracture import ComputeSifErrorConvergence
 
 import pandas as pd
 
@@ -20,29 +19,29 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/rotation/femqpe/cache/diagram"
+save_fig = "figures/rotation/mpsa/cache/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/rotation/femqpe/cache_diagram"
+save_csv = "data/rotation/mpsa/cache_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/rotation/femqpe/cache_models/wm"
+save_model = "data/rotation/mpsa/cache_models/wo"
 os.makedirs(save_model, exist_ok=True)
 
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-# cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00625]
-cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
+# Save cache models for different mesh sizes and fracture angles.
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
-# cell_sizes = [0.11, 0.05]
+# cell_sizes = [0.1, 0.05]
 
 # For averaged error reults. 
 diag_results = []
 # For error results with different angles.
 diag_results_theta = []
 
+# Read the cache models and compute the SIF convergence results. 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")
 
@@ -54,15 +53,18 @@ for i, h in enumerate(cell_sizes):
 
     num_dofs = np.sqrt(cache["num_dofs"])
 
-    computeSIF = FEMComputeSifErrorConvergence(cache=cache)
+    compSIF = ComputeSifErrorConvergence(cache=cache)
 
+    # Number of fracture cells
+    # num_frac_cells = compSIF.get_number_of_fracture_cells() 
+    # print("Number of fracture cells:", num_frac_cells)
     # Normalized cell size
     norm_cellsize = (
         cache["params"]["meshing_arguments"]["cell_size"]
         / cache["params"]["a"]
     )
 
-    pairs_in_cellsizes = computeSIF.generate_sampling_pairs()
+    pairs_in_cellsizes = compSIF.generate_sampling_pairs()
 
     error_acc = {tuple(pair): [] for pair in pairs_in_cellsizes}
     error_std_acc = {tuple(pair): [] for pair in pairs_in_cellsizes}
@@ -75,17 +77,18 @@ for i, h in enumerate(cell_sizes):
         filepath = os.path.join(save_model, filename)
         with open(filepath, "rb") as dbfile:
             cache = pickle.load(dbfile)
-
-        computeSIF = FEMComputeSifErrorConvergence(cache=cache)
-        pairs_in_cellsizes = computeSIF.generate_sampling_pairs()
+    
+        compSIF = ComputeSifErrorConvergence(cache=cache)
+        pairs_in_cellsizes = compSIF.generate_sampling_pairs()
                 
         for sampling_pair in pairs_in_cellsizes: 
-            error_ave, error_per_tip = computeSIF.FEM_two_points_single_scale_tangential(sampling_pair)
-            _, r_n = computeSIF.FEM_extract_sampling_tangential_jump(sampling_pair[0])
+            compSIF.singularity_order = compSIF.exact_singularity()  
+            error_ave, error_per_tip = compSIF.two_points_single_scale_normal(sampling_pair)
+            _, r_n = compSIF.extract_sampling_normal_jump(sampling_pair[0])
 
             r_mean = np.mean(r_n) / cache["params"]["a"]
 
-            # For averaged error results.
+            # For averaged error results. 
             error_acc[tuple(sampling_pair)].append(error_ave)
             error_std_acc[tuple(sampling_pair)].extend(error_per_tip)
             r_acc[tuple(sampling_pair)].append(r_mean)
@@ -101,7 +104,7 @@ for i, h in enumerate(cell_sizes):
                 "error_std": np.std(error_per_tip, ddof=0),
             })
 
-    # Store error results by averaging over different angles. 
+    # Store error results by averaging over different angles.  
     for sampling_pair in pairs_in_cellsizes:
         pair_key = tuple(sampling_pair)
         errs_mean = np.array(error_acc[pair_key])
@@ -117,12 +120,12 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv(os.path.join(save_csv, "diag_data_wms_femqpe.csv"), index=False)
-diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_wms_femqpe.csv"))
+diag_data.to_csv(os.path.join(save_csv, "diag_data_wo.csv"), index=False)
+diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_wo.csv"))
 
 diag_data_theta = pd.DataFrame(diag_results_theta)
-diag_data_theta.to_csv(os.path.join(save_csv, "diag_data_theta_wms_femqpe.csv"), index=False)
-diag_data_theta = pd.read_csv(os.path.join(save_csv, "diag_data_theta_wms_femqpe.csv"))
+diag_data_theta.to_csv(os.path.join(save_csv, "diag_data_theta_wo.csv"), index=False)
+diag_data_theta = pd.read_csv(os.path.join(save_csv, "diag_data_theta_wo.csv"))
 
 mpl.rcParams.update({
     "font.family": "serif",     
@@ -180,7 +183,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_wms_mean_femqpe.tiff"),
+    os.path.join(save_fig, "diag_wo_mean_mpsa.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -231,7 +234,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_wms_std_femqpe.tiff"),
+    os.path.join(save_fig, "diag_wo_std_mpsa.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -263,8 +266,8 @@ for theta_rad in theta_rads:
     })
 
 fit_data_theta = pd.DataFrame(fit_results_theta)
-fit_data_theta.to_csv(os.path.join(save_csv, "fit_data_theta_wms.csv"), index=False)
-fit_data_theta = pd.read_csv(os.path.join(save_csv, "fit_data_theta_wms.csv"))
+fit_data_theta.to_csv(os.path.join(save_csv, "fit_data_theta_wo.csv"), index=False)
+fit_data_theta = pd.read_csv(os.path.join(save_csv, "fit_data_theta_wo.csv"))
 
 # Statistics of fitting results with different angles. 
 alpha_mean_theta = fit_data_theta["alpha"].mean()
@@ -310,9 +313,6 @@ df_best = df_mean.loc[idx].reset_index(drop=True)
 # Get the fitting line for the optimal sqrt_dof and r
 x = np.log10(df_best["norm_h"].to_numpy())
 y = np.log10(df_best["r"].to_numpy())
-
-print("x values for fitting:", x)
-print("y values for fitting:", y)
 
 alpha, logC = np.polyfit(x, y, 1)
 C = 10 ** logC
@@ -394,10 +394,10 @@ ax3.yaxis.set_major_locator(LogLocator(base=10))
 ax3.yaxis.set_major_formatter(LogFormatterMathtext())
 ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax3.grid(True, which="both", linestyle="--", alpha=0.5)
-ax3.legend(loc="upper left")
+ax3.legend(loc="lower right")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "conv_opt_wms_femqpe.tiff"),
+    os.path.join(save_fig, "conv_opt_wo_mpsa.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

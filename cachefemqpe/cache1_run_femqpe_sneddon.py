@@ -14,7 +14,7 @@ import math
 import pickle
 import os
 
-save_model = "data/rotation/femqpe/cache_models/so"
+save_model = "data/rotation/femqpe/cache_models/so2"
 os.makedirs(save_model, exist_ok=True)
 
 a = 0.3
@@ -43,14 +43,14 @@ fem_model.model_setup_and_sol()
 print("=== Initial model run completed. ===")
 
 # Save cache models for different mesh sizes and seeds.
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00725]
 # cell_sizes = [0.00625]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
-# cell_sizes = [0.1, 0.05]
+cell_sizes = [0.055]
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")

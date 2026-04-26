@@ -50,7 +50,7 @@ for i, h in enumerate(cell_sizes):
     with open(filepath, "rb") as dbfile:
         cache = pickle.load(dbfile)
 
-    num_dofs = np.sqrt(cache["num_dofs"])
+    num_dofs = cache["num_dofs"]
 
     computeSIF = FEMComputeSifErrorConvergence(cache=cache)
 

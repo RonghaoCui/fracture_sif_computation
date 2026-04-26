@@ -1,6 +1,7 @@
 """
-Convergence analysis for Westergaard shear problem by FEM-QPE with fracture rotations 
-using multiple fracture angles within the range [0°, 180°). 
+Convergence analysis for shear-mode SIF in Westergaard mixed-mode problem 
+by FEM-QPE with fracture rotations using multiple fracture angles within 
+the range [0°, 180°). 
 """
 from __future__ import annotations
 
@@ -16,14 +17,14 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/rotation/femqpe/cache_models/ws"
+save_model = "data/rotation/femqpe/cache_models/wm"
 os.makedirs(save_model, exist_ok=True)
 
 save_dir = "figures/rotation/femqpe/cache/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
 # cell_sizes = [0.11, 0.05]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
@@ -167,7 +168,7 @@ ax.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "Conv_sif_ws_with_coeff_femqpe.tiff"),
+    os.path.join(save_dir, "Conv_sif_wm_with_coeff_femqpe_shear.tiff"),
     # os.path.join(save_dir, "FEM_conv_sif_so_random_withcoeff.tiff"),
     format="tiff",
     dpi=300,

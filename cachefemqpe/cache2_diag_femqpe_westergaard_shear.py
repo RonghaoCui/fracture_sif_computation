@@ -30,7 +30,8 @@ os.makedirs(save_model, exist_ok=True)
 
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 # cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00625]
-cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
+# cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.1, 0.075, 0.055, 0.0375, 0.025, 0.01875, 0.0125, 0.009375, 0.00625]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
@@ -51,7 +52,7 @@ for i, h in enumerate(cell_sizes):
     with open(filepath, "rb") as dbfile:
         cache = pickle.load(dbfile)
 
-    num_dofs = np.sqrt(cache["num_dofs"])
+    num_dofs = cache["num_dofs"]
 
     computeSIF = FEMComputeSifErrorConvergence(cache=cache)
 

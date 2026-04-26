@@ -1,7 +1,6 @@
 """
-Convergence analysis for opening-mode SIF in Westergaard mixed-mode problem 
-by FEM-QPE with fracture rotations using multiple fracture angles within 
-the range [0°, 180°). 
+Convergence analysis for Westergaard opening problem by FEM without QPEs with fracture rotations 
+using multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
 
@@ -20,18 +19,17 @@ from matplotlib.colors import LogNorm
 
 import pickle
 import os
-save_fig = "figures/rotation/femqpe/cache/diagram"
+save_fig = "figures/rotation/femnoqpe/cache/diagram"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/rotation/femqpe/cache_diagram"
+save_csv = "data/rotation/femnoqpe/cache_diagram"
 os.makedirs(save_csv, exist_ok=True)
 
-save_model = "data/rotation/femqpe/cache_models/wm"
+save_model = "data/rotation/femnoqpe/cache_models/wo"
 os.makedirs(save_model, exist_ok=True)
 
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 # cell_sizes = [0.095, 0.05, 0.026, 0.0125, 0.00625]
-cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
@@ -52,7 +50,7 @@ for i, h in enumerate(cell_sizes):
     with open(filepath, "rb") as dbfile:
         cache = pickle.load(dbfile)
 
-    num_dofs = np.sqrt(cache["num_dofs"])
+    num_dofs = cache["num_dofs"]
 
     computeSIF = FEMComputeSifErrorConvergence(cache=cache)
 
@@ -117,12 +115,12 @@ for i, h in enumerate(cell_sizes):
         })
 
 diag_data = pd.DataFrame(diag_results)
-diag_data.to_csv(os.path.join(save_csv, "diag_data_wmo_femqpe.csv"), index=False)
-diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_wmo_femqpe.csv"))
+diag_data.to_csv(os.path.join(save_csv, "diag_data_wo_femnoqpe.csv"), index=False)
+diag_data = pd.read_csv(os.path.join(save_csv, "diag_data_wo_femnoqpe.csv"))
 
 diag_data_theta = pd.DataFrame(diag_results_theta)
-diag_data_theta.to_csv(os.path.join(save_csv, "diag_data_theta_wmo_femqpe.csv"), index=False)
-diag_data_theta = pd.read_csv(os.path.join(save_csv, "diag_data_theta_wmo_femqpe.csv"))
+diag_data_theta.to_csv(os.path.join(save_csv, "diag_data_theta_wo_femnoqpe.csv"), index=False)
+diag_data_theta = pd.read_csv(os.path.join(save_csv, "diag_data_theta_wo_femnoqpe.csv"))
 
 mpl.rcParams.update({
     "font.family": "serif",     
@@ -180,7 +178,7 @@ ax1.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax1.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_wmo_mean_femqpe.tiff"),
+    os.path.join(save_fig, "diag_wo_mean_femnoqpe.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -231,7 +229,7 @@ ax2.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax2.grid(True, which="both", linestyle="--", alpha=0.5)
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "diag_wmo_std_femqpe.tiff"),
+    os.path.join(save_fig, "diag_wo_std_femnoqpe.tiff"),
     dpi=300,
     bbox_inches="tight",
     pil_kwargs={"compression": "tiff_lzw"}
@@ -263,8 +261,8 @@ for theta_rad in theta_rads:
     })
 
 fit_data_theta = pd.DataFrame(fit_results_theta)
-fit_data_theta.to_csv(os.path.join(save_csv, "fit_data_theta_wmo.csv"), index=False)
-fit_data_theta = pd.read_csv(os.path.join(save_csv, "fit_data_theta_wmo.csv"))
+fit_data_theta.to_csv(os.path.join(save_csv, "fit_data_theta_wo.csv"), index=False)
+fit_data_theta = pd.read_csv(os.path.join(save_csv, "fit_data_theta_wo.csv"))
 
 # Statistics of fitting results with different angles. 
 alpha_mean_theta = fit_data_theta["alpha"].mean()
@@ -394,10 +392,10 @@ ax3.yaxis.set_major_locator(LogLocator(base=10))
 ax3.yaxis.set_major_formatter(LogFormatterMathtext())
 ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax3.grid(True, which="both", linestyle="--", alpha=0.5)
-ax3.legend(loc="upper left")
+ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_fig, "conv_opt_wmo_femqpe.tiff"),
+    os.path.join(save_fig, "conv_opt_wo_femnoqpe.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",

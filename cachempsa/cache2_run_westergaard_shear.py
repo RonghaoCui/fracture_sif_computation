@@ -1,5 +1,5 @@
 """
-Convergence analysis for Sneddon problem with fracture rotations using 
+Convergence analysis for Westergaard shear problem with fracture rotations using 
 multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
