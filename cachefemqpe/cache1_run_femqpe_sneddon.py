@@ -50,7 +50,7 @@ theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
-cell_sizes = [0.055]
+cell_sizes = [0.0124]
 
 for i, h in enumerate(cell_sizes):
     print(f"=== Running for mesh size h = {h} ===")

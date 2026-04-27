@@ -247,7 +247,7 @@ class FractureDisplacementJump:
         # convert distance to cell index
         idx = int(np.round((r_from_tip - h / 2.0) / h))
         # ensure index >= 0
-        # idx = max(idx, 0)
+        idx = max(idx, 0)
 
         return [idx, idx + 1]
     

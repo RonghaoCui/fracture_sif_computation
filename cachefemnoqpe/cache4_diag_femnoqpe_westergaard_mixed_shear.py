@@ -393,7 +393,7 @@ ax3.yaxis.set_major_locator(LogLocator(base=10))
 ax3.yaxis.set_major_formatter(LogFormatterMathtext())
 ax3.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 ax3.grid(True, which="both", linestyle="--", alpha=0.5)
-ax3.legend(loc="upper left")
+ax3.legend(loc="lower left")
 plt.tight_layout()
 plt.savefig(
     os.path.join(save_fig, "conv_opt_wms_femnoqpe.tiff"),

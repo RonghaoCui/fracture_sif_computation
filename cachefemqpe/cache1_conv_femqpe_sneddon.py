@@ -16,21 +16,21 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 
 import pickle
 import os
-save_model = "data/rotation/femqpe/cache_models/so"
+save_model = "data/rotation/femqpe/cache_models/so2"
 os.makedirs(save_model, exist_ok=True)
 
 save_dir = "figures/rotation/femqpe/cache/conv_sif"
 os.makedirs(save_dir, exist_ok=True)
 
 #  Define mesh sizes to convergence analysis
-cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+cell_sizes = [0.1, 0.055, 0.025, 0.0124, 0.00625]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
 ]
 
-C = 1.044
-alpha = 0.364
+C = 0.407
+alpha = 0.233
 
 all_err_ave = []        # list of (n_h,) arrays
 all_err_per_tip = []    # list of (n_h, 2) arrays

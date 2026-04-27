@@ -30,8 +30,11 @@ theta_rads = [
     90, 105, 120, 135, 150, 165,
 ]
 
-C = 0.667
-alpha = 0.375
+# C = 0.667
+# alpha = 0.375
+C = 0.642
+alpha = 0.356
+
 
 all_err_ave = []        # list of (n_h,) arrays
 all_err_per_tip = []    # list of (n_h, 2) arrays

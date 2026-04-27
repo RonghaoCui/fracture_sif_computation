@@ -1,5 +1,5 @@
 """
-Convergence analysis for Westergaard shear problem by FEM without QPEs with fracture rotations 
+Convergence analysis for Westergaard shear problem by MPSA with fracture rotations 
 using multiple fracture angles within the range [0°, 180°). 
 """
 from __future__ import annotations
