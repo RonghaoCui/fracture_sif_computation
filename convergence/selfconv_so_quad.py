@@ -235,12 +235,14 @@ def relative_l2_error_mixed_dimensional_overlap_between_models(
     print("fracture error", abs(fracture_den_sq - fracture_den_sq2) / abs(fracture_den_sq2))
 
     # 1D interface displacement
-    interface_H = coarse_model.mdg.interfaces()[0]
-    interface_h = fine_model.mdg.interfaces()[0]
+    # interface_H = coarse_model.mdg.interfaces()[0]
+    # interface_h = fine_model.mdg.interfaces()[0]
 
     mH_cc = extract_interface_displacement_cc(coarse_model)
     mh_cc = extract_interface_displacement_cc(fine_model)
 
+    # We use fracture grids for interface error computation since the interface cells 
+    # are defined on the fracture grid.
     interface_num_sq, interface_den_sq = (
         interface_overlap_l2_components_p1_quad(
             sd_H=gamma_H,
@@ -383,7 +385,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_mpsa_so.csv")
+    csv_path = os.path.join(save_csv, "selfconv_mpsa_so_test.csv")
     df.to_csv(csv_path, index=False)
 
     # Reference line
@@ -484,7 +486,7 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_mpsa_5.png"),
+        os.path.join(save_dir, "self_convergence_so_mpsa_test.png"),
         dpi=300,
         bbox_inches="tight",
     )

@@ -14,8 +14,8 @@ def _cell_nodes(sd: pp.Grid) -> np.ndarray:
     """Get node indices for each cell. 
     
     Only simplex grids are supported: 
-        - 2D triangles  -> 3 nodes
-        - 1D segments   -> 2 nodes. 
+        - 2D triangles  -> 3 nodes: [node_i, node_j, node_k].
+        - 1D segments   -> 2 nodes: [node_i, node_j]. 
 
     Parameters:
         sd: grid        
@@ -37,20 +37,13 @@ def _nodal_average_from_cell_values(
     The weight can be either "volume" or "uniform". 
     The former gives a volume-weighted average, while the latter gives a simple average.
 
-    Cell-center variables can be scalar or vector. 
-    Particularly, displacement variables are vector with n_components = grid dimension.
+    Cell-center variables should be vector. 
+    Particularly, displacement variables are vector.
 
     Returns: 
-        values_cc: shape (n_components, num_cells)
-            or shape (num_cells,) for scalar.
+        values_cc: shape (n_components, num_cells) for vector.
     """
-    # Check if values_cc is scalar (shape (num_cells,)) or vector (shape (n_components, num_cells)).
-    scalar = values_cc.ndim == 1
-    if scalar:
-        values_cc = values_cc[None, :]
-
-    n_comp, n_cells = values_cc.shape
-
+    n_comp = values_cc.shape[0]
     u_node = np.zeros((n_comp, sd.num_nodes))
     w_node = np.zeros(sd.num_nodes)
 
@@ -69,7 +62,7 @@ def _nodal_average_from_cell_values(
 
     u_node /= w_node[None, :]
 
-    return u_node[0] if scalar else u_node
+    return u_node
 
 
 def _p1_coefficients_from_nodal_values_2d(
@@ -81,31 +74,31 @@ def _p1_coefficients_from_nodal_values_2d(
 
     Parameters: 
         sd: 2D grid. 
-        nodal_values: shape = (n_components, num_nodes) or (num_nodes,).
-        node_xy: shape = (2, num_nodes), in the same coordinate frame used 
-            by TransferGrid.
+        nodal_values: vector, shape = (n_components, num_nodes).
+        node_xy: shape = (2, num_nodes), in the same coordinate used 
+            by :class:`TransferGrid`.
 
     Returns: 
         coeff: shape = (n_components, num_cells, 3).
             For each component and cell, 3 coefficients [a, b, c] define the field. 
             coeff[comp, cell] = [a, b, c] represents u(x,y) = a*x + b*y + c.
     """
-    nodal_values = np.asarray(nodal_values)
-    if nodal_values.ndim == 1:
-        nodal_values = nodal_values[None, :]
-
     n_comp = nodal_values.shape[0]
     cells = _cell_nodes(sd)
 
     coeff = np.zeros((n_comp, sd.num_cells, 3))
 
-    for c, nodes in enumerate(cells):
-        xy = node_xy[:, nodes]  # (2, 3)
-        A = np.column_stack((xy[0], xy[1], np.ones(3)))  # (3, 3)
+    for i, nodes in enumerate(cells):
+        xy = node_xy[:, nodes] 
+        # Construct the matrix for the three vertices of the triangle. 
+        # A = [[x0, y0, 1],  -> node 0
+        #      [x1, y1, 1],  -> node 1
+        #      [x2, y2, 1]]. -> node 2
+        A = np.column_stack((xy[0], xy[1], np.ones(3)))  
 
-        for m in range(n_comp):
-            rhs = nodal_values[m, nodes]
-            coeff[m, c, :] = np.linalg.solve(A, rhs)
+        for j in range(n_comp):
+            rhs = nodal_values[j, nodes]
+            coeff[j, i, :] = np.linalg.solve(A, rhs)
 
     return coeff
 
@@ -140,6 +133,15 @@ def _triangle_area(xy: np.ndarray) -> float:
 
 
 def _transfer_triangles(tr: pp.Grid) -> np.ndarray:
+    """Get node indices for each triangle cell in the transfer grid.
+
+    Parameters:
+        tr: transfer grid, which is a 2D simplex grid.
+
+    Returns:
+        node indices: cell_id -> [node0, node1, node2],
+            shape = (num_cells, 3).
+    """
     cn = tr.cell_nodes().tocsc()
     return cn.indices.reshape((3, tr.num_cells), order="F").T
 
@@ -148,10 +150,16 @@ def _triangle_quadrature_degree4(xy: np.ndarray) -> tuple[np.ndarray, np.ndarray
     """Compute the degree-4 quadrature rule on one physical triangle.
 
     Proposed by Dunavant (1985), this method offers 6-point quadrature consisting 
-    of two groups. Each group consists of 3 quadrature points, resulting in 
-    a total of 6 quadrature points. With the same weights, the quadrature points 
-    in each group have a format of barycentric coordinates, (a, a, b), 
+    of two groups on a reference triangle. Each group consists of 3 quadrature 
+    points, resulting in a total of 6 quadrature points. In each group, the quadrature 
+    points have the same weight and a format of barycentric coordinates, (a, a, b), 
     where a + a + b = 1. 
+
+    Th reference triangle is defined by vertices (0,0), (1,0), and (0,1), whose area 
+    is 0.5. Therefore, the quadrature weights of six quadrature points sum to 0.5 on 
+    the reference triangle. This is the reason why we at first halve the weights in the 
+    Dunavant (1985) and then multiply the weights by 2.0 * physical area to get the 
+    correct quadrature weights on the physical triangle.
 
     The reference can be found in: 
         - Dunavant, D. (1985). International Journal for Numerical Methods in 
@@ -161,17 +169,17 @@ def _triangle_quadrature_degree4(xy: np.ndarray) -> tuple[np.ndarray, np.ndarray
         xy: triangle vertices, shape = (2, 3).
 
     Returns: 
-        qx: quadrature points, shape = (2, num_quad).
-        qw: weights, shape = (num_quad,).
+        quad_x: quadrature points, shape = (2, num_quad).
+        quad_w: weights, shape = (num_quad,).
     """
     # Dunavant 6-point rule, degree 4.
     a1 = 0.445948490915965
     b1 = 0.108103018168070
-    w1 = 0.111690794839005
+    w1 = 0.223381589678011 / 2.0
 
     a2 = 0.091576213509771
     b2 = 0.816847572980459
-    w2 = 0.054975871827661
+    w2 = 0.109951743655322 / 2.0
 
     bary = np.array([
         [a1, a1, b1],
@@ -185,13 +193,13 @@ def _triangle_quadrature_degree4(xy: np.ndarray) -> tuple[np.ndarray, np.ndarray
     weights_ref = np.array([w1, w1, w1, w2, w2, w2])
 
     area = _triangle_area(xy)
-    qx = xy @ bary.T
+    quad_x = xy @ bary.T
 
     # Dunavant weights sum to 0.5 on the reference triangle.
     # Therefore multiply by 2 * physical area.
-    qw = 2.0 * area * weights_ref
+    quad_w = 2.0 * area * weights_ref
 
-    return qx, qw
+    return quad_x, quad_w
 
 
 def matrix_overlap_l2_components_p1_quad(
@@ -202,8 +210,16 @@ def matrix_overlap_l2_components_p1_quad(
     weight: str = "volume",
     tol: float = 1e-8,
 ) -> tuple[float, float]:
-    """
-    Access Jhabriel's grid transfer generation for 2D matrix. 
+    """Compute overlap-based relative L2 error components for P1 fields on 2D grids.
+
+    This implementation accesses the non-matching grid transfer methodology,  
+    :class:`TransferGrid`, developed by Jhabriel Varela. PorePy grids are typically 
+    stored as embeded 3D coordinates, even for 2D grids. :class:`TransferGrid` internally 
+    maps coarse and fine grids to a shared rotated 2D coordinate frame, where the transfer 
+    grid is generated by intersecting the coarse and fine cells.
+    
+    Reference: 
+        - Varela, et al. (2025). arXiv preprint arXiv:2512.09087.
 
     It computes: 
         numerator_sq   = ∫_Omega |u_H^P1 - u_h^P1|^2 dx
@@ -214,12 +230,15 @@ def matrix_overlap_l2_components_p1_quad(
     """
     tg = TransferGrid(sd_H, sd_h, tol=tol, name="matrix_transfer")
 
+    # Get the rotated grids for coarse and fine meshes.
     src_rot = tg._get_rotated_grid(sd_H)
     tgt_rot = tg._get_rotated_grid(sd_h)
 
+    # Reconstruct nodal values from cell-center values on the original grids.
     uH_node = _nodal_average_from_cell_values(sd_H, uH_cc, weight=weight)
     uh_node = _nodal_average_from_cell_values(sd_h, uh_cc, weight=weight)
 
+    # Compute P1 coefficients for coarse and fine grids in the common rotated coordinates.
     CH = _p1_coefficients_from_nodal_values_2d(
         sd_H, uH_node, src_rot.nodes[:2, :]
     )
@@ -227,16 +246,17 @@ def matrix_overlap_l2_components_p1_quad(
         sd_h, uh_node, tgt_rot.nodes[:2, :]
     )
 
-    tr = tg.transfer
+    tr = tg.transfer   # the transfer grid
     tr_cells = _transfer_triangles(tr)
     Xtr = tr.nodes[:2, :]
 
+    # Get the mapping from transfer cells to source (coarse) and 
+    # target (fine) grids.
     t2s = tg.transfer_to_source.tocsr()
     t2t = tg.transfer_to_target.tocsr()
 
     numerator_sq = 0.0
     denominator_sq = 0.0
-
     for j, nodes in enumerate(tr_cells):
         xy = Xtr[:, nodes]
 
@@ -246,15 +266,15 @@ def matrix_overlap_l2_components_p1_quad(
         KH = int(src_parent[0])
         kh = int(tgt_parent[0])
 
-        qx, qw = _triangle_quadrature_degree4(xy)
+        quad_x, quad_w = _triangle_quadrature_degree4(xy)
 
-        uH_q = _eval_p1_2d(CH[:, KH, :], qx)
-        uh_q = _eval_p1_2d(Ch[:, kh, :], qx)
+        uH_q = _eval_p1_2d(CH[:, KH, :], quad_x)
+        uh_q = _eval_p1_2d(Ch[:, kh, :], quad_x)
 
         diff_q = uH_q - uh_q
 
-        numerator_sq += float(np.sum(qw * np.sum(diff_q**2, axis=0)))
-        denominator_sq += float(np.sum(qw * np.sum(uh_q**2, axis=0)))
+        numerator_sq += float(np.sum(quad_w * np.sum(diff_q**2, axis=0)))
+        denominator_sq += float(np.sum(quad_w * np.sum(uh_q**2, axis=0)))
 
     return numerator_sq, denominator_sq
 
@@ -268,46 +288,38 @@ def _p1_coefficients_from_nodal_values_1d(
 
     Parameters: 
         sd: 1D grid.
-        nodal_values: shape = (n_components, num_nodes)  or (num_nodes,).
+        nodal_values: vector, shape = (n_components, num_nodes).
         node_s: shape = (1, num_nodes), in the same coordinate frame used 
-            by TransferGrid.
+            by :class:`TransferGrid`.
 
     Returns: 
         coeff: shape = (n_components, num_cells, 2)
-            For each component and cell, 2 coefficients [a, b] define the field. 
+            For each component and cell, two coefficients [a, b] define the field. 
             coeff[comp, cell] = [a, b] represents u(s) = a*s + b.
     """
-    nodal_values = np.asarray(nodal_values)
-
-    if nodal_values.ndim == 1:
-        nodal_values = nodal_values[None, :]
-
     n_comp = nodal_values.shape[0]
     cells = _cell_nodes(sd)
 
     coeff = np.zeros((n_comp, sd.num_cells, 2))
 
-    for c, (n0, n1) in enumerate(cells):
+    for i, (n0, n1) in enumerate(cells):
         s0 = float(node_s[n0])
         s1 = float(node_s[n1])
 
-        if abs(s1 - s0) < 1e-14:
-            raise RuntimeError(f"Degenerate 1D cell {c}.")
-
-        for m in range(n_comp):
-            v0 = float(nodal_values[m, n0])
-            v1 = float(nodal_values[m, n1])
+        for j in range(n_comp):
+            v0 = float(nodal_values[j, n0])
+            v1 = float(nodal_values[j, n1])
 
             a = (v1 - v0) / (s1 - s0)
             b = v0 - a * s0
 
-            coeff[m, c, :] = [a, b]
+            coeff[j, i, :] = [a, b]
 
     return coeff
 
 
 def _eval_p1_1d(coeff: np.ndarray, s: np.ndarray) -> np.ndarray:
-    """Evaluate the P1 field at points in 1D.
+    """Evaluate the P1 field at given points in 1D.
     
     Parameters: 
         coeff: shape = (n_components, 2)
@@ -325,25 +337,25 @@ def _segment_quadrature_gauss(
     num_quad: int = 3,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute Gauss-Legendre quadrature rule on one 1D segment [s0, s1].
+
     Here, we use the standard Gauss-Legendre quadrature, which is exact 
     for polynomials of degree up to 2*num_quad - 1. Therefore, in order to cover
     the P1 and P2 fields (whose squared errors have degrees of 2 and 4, repectively), 
     num_quad = 3 is used.
 
     Returns: 
-        qs: quadrature points, shape = (num_quad,).
-        qw: weights, shape = (num_quad,).
+        quad_s: quadrature points, shape = (num_quad,).
+        quad_w: weights, shape = (num_quad,).
     """
     xi, wi = np.polynomial.legendre.leggauss(num_quad)
 
     mid = 0.5 * (s0 + s1)
     half = 0.5 * (s1 - s0)
 
-    qs = mid + half * xi
-    qw = abs(half) * wi
+    quad_s = mid + half * xi
+    quad_w = abs(half) * wi
 
-    return qs, qw
-
+    return quad_s, quad_w
 
 def fracture_overlap_l2_components_p1_quad(
     sd_H: pp.Grid,
@@ -354,10 +366,13 @@ def fracture_overlap_l2_components_p1_quad(
     tol: float = 1e-8,
     num_quad: int = 3,
 ) -> tuple[float, float]:
-    """
-    Jhabriel's grid transfer generation for 1D fracture.
+    """Compute overlap-based relative L2 error components for P1 fields on 1D fracture grids.
+
+    This implementation accesses the line grid transfer methodology,  
+    :class:`TransferLine`, developed by Jhabriel Varela. 
     
-    Here, the variable is displacement jump vector. 
+    Reference: 
+        - Varela, et al. (2025). arXiv preprint arXiv:2512.09087.
     
     Using num_quad = 3 is enough to cover the squared error of P1 and P2 fields 
     (degrees 2 and 4, respectively).
@@ -366,40 +381,28 @@ def fracture_overlap_l2_components_p1_quad(
         numerator_sq   = ∫_Gamma |w_H^P1 - w_h^P1|^2 ds
         denominator_sq = ∫_Gamma |w_h^P1|^2 ds
     """
-    # if sd_H.dim != 1 or sd_h.dim != 1:
-    #     raise ValueError("fracture_overlap_l2_components_p1 expects 1D grids.")
-
     tl = TransferLine(sd_H, sd_h, tol=tol, name="fracture_transfer")
 
-    wH_cc = np.asarray(wH_cc)
-    wh_cc = np.asarray(wh_cc)
-
-    if wH_cc.ndim == 1:
-        wH_cc = wH_cc[None, :]
-    if wh_cc.ndim == 1:
-        wh_cc = wh_cc[None, :]
-
-    # if wH_cc.shape[1] != sd_H.num_cells:
-    #     raise ValueError(f"wH_cc shape {wH_cc.shape} incompatible with {sd_H.num_cells} cells.")
-    # if wh_cc.shape[1] != sd_h.num_cells:
-    #     raise ValueError(f"wh_cc shape {wh_cc.shape} incompatible with {sd_h.num_cells} cells.")
-
+    # Reconstruct nodal values from cell-center values on the original grids.
     wH_node = _nodal_average_from_cell_values(sd_H, wH_cc, weight=weight)
     wh_node = _nodal_average_from_cell_values(sd_h, wh_cc, weight=weight)
 
+    # Get rotated grids from source (coarse) and target (fine) grids.
     sH = tl._x_in_common_frame(sd_H, use_rotation=tl._rotate_source)
     sh = tl._x_in_common_frame(sd_h, use_rotation=tl._rotate_target)
 
+    # Compute P1 coefficients for coarse and fine grids in the shared rotated coordinates.
     CH = _p1_coefficients_from_nodal_values_1d(sd_H, wH_node, sH)
     Ch = _p1_coefficients_from_nodal_values_1d(sd_h, wh_node, sh)
 
     xtr = tl.transfer.nodes[0, :]
+    # Get the mapping from transfer cells to source (coarse) and 
+    # target (fine) grids.
     t2s = tl.transfer_to_source.tocsr()
     t2t = tl.transfer_to_target.tocsr()
 
     numerator_sq = 0.0
     denominator_sq = 0.0
-
     for j in range(tl.transfer.num_cells):
         s0 = float(xtr[j])
         s1 = float(xtr[j + 1])
@@ -410,15 +413,15 @@ def fracture_overlap_l2_components_p1_quad(
         KH = int(src_parent[0])
         kh = int(tgt_parent[0])
 
-        qs, qw = _segment_quadrature_gauss(s0, s1, num_quad=num_quad)
+        quad_s, quad_w = _segment_quadrature_gauss(s0, s1, num_quad=num_quad)
 
-        wH_q = _eval_p1_1d(CH[:, KH, :], qs)
-        wh_q = _eval_p1_1d(Ch[:, kh, :], qs)
+        wH_q = _eval_p1_1d(CH[:, KH, :], quad_s)
+        wh_q = _eval_p1_1d(Ch[:, kh, :], quad_s)
 
         diff_q = wH_q - wh_q
 
-        numerator_sq += float(np.sum(qw * np.sum(diff_q**2, axis=0)))
-        denominator_sq += float(np.sum(qw * np.sum(wh_q**2, axis=0)))
+        numerator_sq += float(np.sum(quad_w * np.sum(diff_q**2, axis=0)))
+        denominator_sq += float(np.sum(quad_w * np.sum(wh_q**2, axis=0)))
 
     return numerator_sq, denominator_sq
 
@@ -431,8 +434,8 @@ def interface_overlap_l2_components_p1_quad(
     tol: float = 1e-8,
     num_quad: int = 3,
 ) -> tuple[float, float]:
-    """
-    Access Jhabriel's grid transfer generation for two-sided mortar/interface (1D).
+    """Compute overlap-based relative L2 error components for P1 fields on 1D 
+    interface grids.
     
     Using num_quad = 3 is enough to cover the squared error of P1 and P2 fields 
     (degrees 2 and 4, respectively).
@@ -449,10 +452,7 @@ def interface_overlap_l2_components_p1_quad(
     Computes:
         sum_side ∫_Gamma ||u_H^side - u_h^side||^2 ds
     """
-    # mH_cc = np.asarray(mH_cc)
-    # mh_cc = np.asarray(mh_cc)
-
-    # BUG: need to check whether two sides should be split.
+    # Two-side mortar grids can be split with the correct ordering. 
     H_side_0 = mH_cc[:, :sd_H.num_cells]
     H_side_1 = mH_cc[:, sd_H.num_cells:]
 
