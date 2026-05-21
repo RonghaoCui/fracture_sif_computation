@@ -14,12 +14,7 @@ from westergaard2d import WestergaardMixedMode2d
 # from mdamr.non_matching.transfer_grid import TransferGrid
 
 from selfconv import (
-    matrix_overlap_l2_components_p1,
-    fracture_overlap_l2_components_p1,
-    interface_overlap_l2_components_p1,
-    matrix_overlap_l2_components_p1_quad,
-    fracture_overlap_l2_components_p1_quad,
-    interface_overlap_l2_components_p1_quad, 
+    relative_l2_error_p1_field_between_models, 
 )
 
 import pandas as pd
@@ -74,200 +69,6 @@ def run_sneddon_model(h: float) -> object:
     return model
 
 
-# Extract matrix grid and cell-centered MPSA displacement
-# def matrix_grid(model: ManuSneddonModel2d) -> pp.Grid:
-#     return model.mdg.subdomains(dim=2)[0]
-
-def extract_matrix_displacement_cc(
-        model: object
-    ) -> np.ndarray:
-    """Compute cell-centered displacement on the 2D matrix grid.
-
-    Parameters:
-        model: A solved PorePy model.
-
-    Returns: 
-        cell-centered displacement (shape=(2, num_cells)).
-    """
-    sd = model.mdg.subdomains(dim=2)[0]
-    u = model.displacement([sd]).value(model.equation_system)
-    return u.reshape((model.nd, sd.num_cells), order="F")
-
-
-# Displacement jump on 1D fracture. 
-# def fracture_grid(model: ManuSneddonModel2d) -> pp.Grid:
-#     """Return the 1D fracture grid."""
-#     return model.mdg.subdomains(dim=1)[0]
-
-def extract_fracture_displacement_jump_cc(
-        model: object
-    ) -> np.ndarray:
-    """Compute cell-centered displacement jump on the 1D fracture cells.
-
-    Parameters:
-        model: A solved PorePy model.
-
-    Returns:
-        cell-centered displacement (shape=(2, num_cells)).
-    """
-    sd = model.mdg.subdomains(dim=1)[0]
-    u_jump = model.displacement_jump([sd]).value(
-        model.equation_system
-    )
-    return u_jump.reshape((model.nd, sd.num_cells), order="F")
-
-# Displacement on 1D interfaces
-# def mortar_grid(model: ManuSneddonModel2d) -> pp.MortarGrid:
-#     return model.mdg.interfaces()[0]
-
-def extract_interface_displacement_cc(
-    model: object,
-) -> np.ndarray:
-    """Compute cell-centered displacement on the matrix-fracture 
-    mortar/interface cells.
-
-    Parameters:
-        model: A solved PorePy model. 
-
-    Returns:
-        cell-centered displacement (shape=(2, num_cells)).
-
-    Notes: 
-        For one fracture with two sides, num_mortar_cells = 2 * num_fracture_cells.
-    """
-    md = model.mdg.interfaces()[0]
-    u_intf = model.interface_displacement([md]).value(
-        model.equation_system
-    )
-    return u_intf.reshape((model.nd, md.num_cells), order="F")
-
-
-def relative_l2_error_mixed_dimensional_overlap_between_models(
-    coarse_model: object,
-    fine_model: object,
-    averaging_weight: str = "volume",
-    tol: float = 1e-8,
-) -> tuple[float, float, float, float, float, float]:
-
-    # 2D matrix displacement
-    sd_H = coarse_model.mdg.subdomains(dim=2)[0]
-    sd_h = fine_model.mdg.subdomains(dim=2)[0]
-
-    uH_cc = extract_matrix_displacement_cc(coarse_model)
-    uh_cc = extract_matrix_displacement_cc(fine_model)
-
-    matrix_num_sq, matrix_den_sq = (
-        matrix_overlap_l2_components_p1_quad(
-            sd_H=sd_H,
-            sd_h=sd_h,
-            uH_cc=uH_cc,
-            uh_cc=uh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    matrix_num_sq2, matrix_den_sq2 = (
-        matrix_overlap_l2_components_p1(
-            sd_H=sd_H,
-            sd_h=sd_h,
-            uH_cc=uH_cc,
-            uh_cc=uh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    print("matrix error", abs(matrix_num_sq - matrix_num_sq2) / abs(matrix_num_sq2))
-    print("matrix error", abs(matrix_den_sq - matrix_den_sq2) / abs(matrix_den_sq2))
-
-    # 1D fracture displacement jump
-    gamma_H = coarse_model.mdg.subdomains(dim=1)[0]
-    gamma_h = fine_model.mdg.subdomains(dim=1)[0]
-
-    wH_cc = extract_fracture_displacement_jump_cc(coarse_model)
-    wh_cc = extract_fracture_displacement_jump_cc(fine_model)
-
-    fracture_num_sq, fracture_den_sq = (
-        fracture_overlap_l2_components_p1_quad(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            wH_cc=wH_cc,
-            wh_cc=wh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    fracture_num_sq2, fracture_den_sq2 = (
-        fracture_overlap_l2_components_p1(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            wH_cc=wH_cc,
-            wh_cc=wh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    print("fracture error", abs(fracture_num_sq - fracture_num_sq2) / abs(fracture_num_sq2))
-    print("fracture error", abs(fracture_den_sq - fracture_den_sq2) / abs(fracture_den_sq2))
-
-    # 1D interface displacement
-    interface_H = coarse_model.mdg.interfaces()[0]
-    interface_h = fine_model.mdg.interfaces()[0]
-
-    mH_cc = extract_interface_displacement_cc(coarse_model)
-    mh_cc = extract_interface_displacement_cc(fine_model)
-
-    interface_num_sq, interface_den_sq = (
-        interface_overlap_l2_components_p1_quad(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            mH_cc=mH_cc,
-            mh_cc=mh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    interface_num_sq2, interface_den_sq2 = (
-        interface_overlap_l2_components_p1(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            mH_cc=mH_cc,
-            mh_cc=mh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
-
-    print("interface error", abs(interface_num_sq - interface_num_sq2) / abs(interface_num_sq2))
-    print("interface error", abs(interface_den_sq - interface_den_sq2) / abs(interface_den_sq2))
-
-    matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
-    fracture_error = np.sqrt(fracture_num_sq / fracture_den_sq)
-    interface_error = np.sqrt(interface_num_sq / interface_den_sq)
-
-    matrix_error2 = np.sqrt(matrix_num_sq2 / matrix_den_sq2)
-    fracture_error2 = np.sqrt(fracture_num_sq2 / fracture_den_sq2)
-    interface_error2 = np.sqrt(interface_num_sq2 / interface_den_sq2)
-
-    # print("mH_cc shape:", mH_cc.shape)
-    # print("fracture cells:", gamma_H.num_cells)
-    # print("mH side 0 first:", mH_cc[:, :3])
-    # print("mH side 1 first:", mH_cc[:, gamma_H.num_cells:gamma_H.num_cells+3])
-
-    return (
-        float(matrix_error),
-        float(fracture_error),
-        float(interface_error),
-        float(matrix_error2),
-        float(fracture_error2),
-        float(interface_error2),
-    )
-
-
 # Main convergence analysis
 if __name__ == "__main__":
     cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
@@ -292,7 +93,7 @@ if __name__ == "__main__":
         coarse_model = run_sneddon_model(h)
 
         err_matrix, err_fracture, err_interface, err_matrix2, err_fracture2, err_interface2 = (
-            relative_l2_error_mixed_dimensional_overlap_between_models(
+            relative_l2_error_p1_field_between_models(
                 coarse_model,
                 fine_model,
                 averaging_weight="volume",
