@@ -210,7 +210,8 @@ def matrix_overlap_l2_components_p1_quad(
     weight: str = "volume",
     tol: float = 1e-8,
 ) -> tuple[float, float]:
-    """Compute overlap-based relative L2 error components for P1 fields on 2D grids.
+    """Compute overlap-based relative L2 error components for P1 fields on 2D grids
+    using the quadrature rule.
 
     This implementation accesses the non-matching grid transfer methodology,  
     :class:`TransferGrid`, developed by Jhabriel Varela. PorePy grids are typically 
@@ -278,6 +279,79 @@ def matrix_overlap_l2_components_p1_quad(
 
     return numerator_sq, denominator_sq
 
+
+def matrix_overlap_l2_components_p1_exact(
+    sd_H: pp.Grid,
+    sd_h: pp.Grid,
+    uH_cc: np.ndarray,
+    uh_cc: np.ndarray,
+    weight: str = "volume",
+    tol: float = 1e-8,
+) -> tuple[float, float]:
+    """
+    Compute overlap-based relative L2 error components for P1 fields on 2D grids
+    using exact integration.
+
+    Notes:
+        This is a reference implementation for testing the quadrature-based method. 
+        The exact integration is performed by the exact 1D P1 mass matrix on each 
+        triangle. This cannot be used for P2 fields. 
+    """
+    tg = TransferGrid(sd_H, sd_h, tol=tol, name="matrix_transfer")
+
+    src_rot = tg._get_rotated_grid(sd_H)
+    tgt_rot = tg._get_rotated_grid(sd_h)
+
+    uH_node = _nodal_average_from_cell_values(sd_H, uH_cc, weight=weight)
+    uh_node = _nodal_average_from_cell_values(sd_h, uh_cc, weight=weight)
+
+    CH = _p1_coefficients_from_nodal_values_2d(
+        sd_H, uH_node, src_rot.nodes[:2, :]
+    )
+    Ch = _p1_coefficients_from_nodal_values_2d(
+        sd_h, uh_node, tgt_rot.nodes[:2, :]
+    )
+
+    tr = tg.transfer
+    tr_cells = _transfer_triangles(tr)
+    Xtr = tr.nodes[:2, :]
+
+    # Exact P1 mass matrix on a triangle:
+    # ∫_T phi_i phi_j dx = |T|/12 * [[2,1,1],[1,2,1],[1,1,2]]
+    M_ref = np.array(
+        [[2.0, 1.0, 1.0],
+         [1.0, 2.0, 1.0],
+         [1.0, 1.0, 2.0]]
+    ) / 12.0
+
+    numerator_sq = 0.0
+    denominator_sq = 0.0
+
+    t2s = tg.transfer_to_source.tocsr()
+    t2t = tg.transfer_to_target.tocsr()
+
+    for j, nodes in enumerate(tr_cells):
+        xy = Xtr[:, nodes]
+        area = _triangle_area(xy)
+
+        src_parent = t2s[j].indices
+        tgt_parent = t2t[j].indices
+
+        KH = int(src_parent[0])
+        kh = int(tgt_parent[0])
+
+        uH_v = _eval_p1_2d(CH[:, KH, :], xy)  # (2, 3)
+        uh_v = _eval_p1_2d(Ch[:, kh, :], xy)  # (2, 3)
+
+        diff_v = uH_v - uh_v
+
+        M = area * M_ref
+
+        for comp in range(2):
+            numerator_sq += float(diff_v[comp] @ M @ diff_v[comp])
+            denominator_sq += float(uh_v[comp] @ M @ uh_v[comp])
+
+    return numerator_sq, denominator_sq
 
 def _p1_coefficients_from_nodal_values_1d(
     sd: pp.Grid,
@@ -357,6 +431,7 @@ def _segment_quadrature_gauss(
 
     return quad_s, quad_w
 
+
 def fracture_overlap_l2_components_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
@@ -366,7 +441,8 @@ def fracture_overlap_l2_components_p1_quad(
     tol: float = 1e-8,
     num_quad: int = 3,
 ) -> tuple[float, float]:
-    """Compute overlap-based relative L2 error components for P1 fields on 1D fracture grids.
+    """Compute overlap-based relative L2 error components for P1 fields on 
+    1D fracture grids using the quadrature rule.
 
     This implementation accesses the line grid transfer methodology,  
     :class:`TransferLine`, developed by Jhabriel Varela. 
@@ -425,6 +501,74 @@ def fracture_overlap_l2_components_p1_quad(
 
     return numerator_sq, denominator_sq
 
+def fracture_overlap_l2_components_p1_exact(
+    sd_H: pp.Grid,
+    sd_h: pp.Grid,
+    wH_cc: np.ndarray,
+    wh_cc: np.ndarray,
+    weight: str = "volume",
+    tol: float = 1e-8,
+) -> tuple[float, float]:
+    """Compute overlap-based relative L2 error components for P1 fields on 
+    1D fracture grids using the exact integration.
+
+    Notes:
+        This is a reference implementation for testing the quadrature-based method. 
+        The exact integration is performed by the exact 1D P1 mass matrix on each 
+        triangle. This cannot be used for P2 fields. 
+    """
+    # if sd_H.dim != 1 or sd_h.dim != 1:
+    #     raise ValueError("fracture_overlap_l2_components_p1 expects 1D grids.")
+
+    tl = TransferLine(sd_H, sd_h, tol=tol, name="fracture_transfer")
+
+    wH_node = _nodal_average_from_cell_values(sd_H, wH_cc, weight=weight)
+    wh_node = _nodal_average_from_cell_values(sd_h, wh_cc, weight=weight)
+
+    sH = tl._x_in_common_frame(sd_H, use_rotation=tl._rotate_source)
+    sh = tl._x_in_common_frame(sd_h, use_rotation=tl._rotate_target)
+
+    CH = _p1_coefficients_from_nodal_values_1d(sd_H, wH_node, sH)
+    Ch = _p1_coefficients_from_nodal_values_1d(sd_h, wh_node, sh)
+
+    xtr = tl.transfer.nodes[0, :]
+    t2s = tl.transfer_to_source.tocsr()
+    t2t = tl.transfer_to_target.tocsr()
+
+    # Exact 1D P1 mass matrix on segment [s0, s1]:
+    # ∫ phi_i phi_j ds = L/6 * [[2,1],[1,2]]
+    M_ref = np.array([[2.0, 1.0], [1.0, 2.0]]) / 6.0
+
+    numerator_sq = 0.0
+    denominator_sq = 0.0
+
+    for j in range(tl.transfer.num_cells):
+        s0 = float(xtr[j])
+        s1 = float(xtr[j + 1])
+        length = abs(s1 - s0)
+
+        src_parent = t2s[j].indices
+        tgt_parent = t2t[j].indices
+
+        KH = int(src_parent[0])
+        kh = int(tgt_parent[0])
+
+        s_pair = np.array([s0, s1])
+
+        wH_v = _eval_p1_1d(CH[:, KH, :], s_pair)  # (n_comp, 2)
+        wh_v = _eval_p1_1d(Ch[:, kh, :], s_pair)  # (n_comp, 2)
+
+        diff_v = wH_v - wh_v
+
+        M = length * M_ref
+
+        for comp in range(diff_v.shape[0]):
+            numerator_sq += float(diff_v[comp] @ M @ diff_v[comp])
+            denominator_sq += float(wh_v[comp] @ M @ wh_v[comp])
+
+    return numerator_sq, denominator_sq
+
+
 def interface_overlap_l2_components_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
@@ -435,7 +579,7 @@ def interface_overlap_l2_components_p1_quad(
     num_quad: int = 3,
 ) -> tuple[float, float]:
     """Compute overlap-based relative L2 error components for P1 fields on 1D 
-    interface grids.
+    interface grids using the quadrature rule.
     
     Using num_quad = 3 is enough to cover the squared error of P1 and P2 fields 
     (degrees 2 and 4, respectively).
@@ -480,3 +624,229 @@ def interface_overlap_l2_components_p1_quad(
     )
 
     return num0 + num1, den0 + den1
+
+
+def interface_overlap_l2_components_p1_exact(
+    sd_H: pp.Grid,
+    sd_h: pp.Grid,
+    mH_cc: np.ndarray,
+    mh_cc: np.ndarray,
+    weight: str = "volume",
+    tol: float = 1e-8,
+) -> tuple[float, float]:
+    """Compute overlap-based relative L2 error components for P1 fields on 1D 
+    interface grids using the exact integration.
+
+    Notes:
+        This is a reference implementation for testing the quadrature-based method. 
+        The exact integration is performed by the exact 1D P1 mass matrix on each 
+        triangle. This cannot be used for P2 fields. 
+    """
+    H_side_0 = mH_cc[:, :sd_H.num_cells]
+    H_side_1 = mH_cc[:, sd_H.num_cells:]
+
+    h_side_0 = mh_cc[:, :sd_h.num_cells]
+    h_side_1 = mh_cc[:, sd_h.num_cells:]
+
+    num0, den0 = fracture_overlap_l2_components_p1_exact(
+        sd_H=sd_H,
+        sd_h=sd_h,
+        wH_cc=H_side_0,
+        wh_cc=h_side_0,
+        weight=weight,
+        tol=tol,
+    )
+
+    num1, den1 = fracture_overlap_l2_components_p1_exact(
+        sd_H=sd_H,
+        sd_h=sd_h,
+        wH_cc=H_side_1,
+        wh_cc=h_side_1,
+        weight=weight,
+        tol=tol,
+    )
+
+    return num0 + num1, den0 + den1
+
+
+# Extract cell-centered displacement on 2D matrix grid. 
+def extract_matrix_displacement_cc(
+        model: object
+    ) -> np.ndarray:
+    """Compute cell-centered displacement on the 2D matrix grid.
+
+    Parameters:
+        model: A solved PorePy model.
+
+    Returns: 
+        cell-centered displacement (shape=(2, num_cells)).
+    """
+    sd = model.mdg.subdomains(dim=2)[0]
+    u = model.displacement([sd]).value(model.equation_system)
+    return u.reshape((model.nd, sd.num_cells), order="F")
+
+
+# Extract cell-centered displacement jump on 1D fracture. 
+def extract_fracture_displacement_jump_cc(
+        model: object
+    ) -> np.ndarray:
+    """Compute cell-centered displacement jump on the 1D fracture cells.
+
+    Parameters:
+        model: A solved PorePy model.
+
+    Returns:
+        cell-centered displacement (shape=(2, num_cells)).
+    """
+    sd = model.mdg.subdomains(dim=1)[0]
+    u_jump = model.displacement_jump([sd]).value(
+        model.equation_system
+    )
+    return u_jump.reshape((model.nd, sd.num_cells), order="F")
+
+
+# Extract cell-centered displacement on 1D interfaces.
+def extract_interface_displacement_cc(
+    model: object,
+) -> np.ndarray:
+    """Compute cell-centered displacement on the matrix-fracture 
+    mortar/interface cells.
+
+    Parameters:
+        model: A solved PorePy model.
+
+    Returns:
+        cell-centered displacement (shape=(2, num_cells)).
+
+    Notes: 
+        For one fracture with two sides, num_mortar_cells = 2 * num_fracture_cells.
+    """
+    md = model.mdg.interfaces()[0]
+    u_intf = model.interface_displacement([md]).value(
+        model.equation_system
+    )
+    return u_intf.reshape((model.nd, md.num_cells), order="F")
+
+
+def relative_l2_error_p1_field_between_models(
+    coarse_model: object,
+    fine_model: object,
+    averaging_weight: str = "volume",
+    tol: float = 1e-8,
+) -> tuple[float, float, float, float, float, float]:
+
+    # 2D matrix grid.
+    sd_H = coarse_model.mdg.subdomains(dim=2)[0]
+    sd_h = fine_model.mdg.subdomains(dim=2)[0]
+
+    # Cell-centered displacement on the 2D matrix grid.
+    uH_cc = extract_matrix_displacement_cc(coarse_model)
+    uh_cc = extract_matrix_displacement_cc(fine_model)
+
+    matrix_num_sq, matrix_den_sq = (
+        matrix_overlap_l2_components_p1_quad(
+            sd_H=sd_H,
+            sd_h=sd_h,
+            uH_cc=uH_cc,
+            uh_cc=uh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    matrix_num_sq2, matrix_den_sq2 = (
+        matrix_overlap_l2_components_p1_exact(
+            sd_H=sd_H,
+            sd_h=sd_h,
+            uH_cc=uH_cc,
+            uh_cc=uh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    print("matrix error", abs(matrix_num_sq - matrix_num_sq2) / abs(matrix_num_sq2))
+    print("matrix error", abs(matrix_den_sq - matrix_den_sq2) / abs(matrix_den_sq2))
+
+    # 1D fracture displacement jump
+    gamma_H = coarse_model.mdg.subdomains(dim=1)[0]
+    gamma_h = fine_model.mdg.subdomains(dim=1)[0]
+
+    wH_cc = extract_fracture_displacement_jump_cc(coarse_model)
+    wh_cc = extract_fracture_displacement_jump_cc(fine_model)
+
+    fracture_num_sq, fracture_den_sq = (
+        fracture_overlap_l2_components_p1_quad(
+            sd_H=gamma_H,
+            sd_h=gamma_h,
+            wH_cc=wH_cc,
+            wh_cc=wh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    fracture_num_sq2, fracture_den_sq2 = (
+        fracture_overlap_l2_components_p1_exact(
+            sd_H=gamma_H,
+            sd_h=gamma_h,
+            wH_cc=wH_cc,
+            wh_cc=wh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    print("fracture error", abs(fracture_num_sq - fracture_num_sq2) / abs(fracture_num_sq2))
+    print("fracture error", abs(fracture_den_sq - fracture_den_sq2) / abs(fracture_den_sq2))
+
+    # 1D interface displacement
+    # interface_H = coarse_model.mdg.interfaces()[0]
+    # interface_h = fine_model.mdg.interfaces()[0]
+
+    mH_cc = extract_interface_displacement_cc(coarse_model)
+    mh_cc = extract_interface_displacement_cc(fine_model)
+
+    # We use fracture grids for interface error computation since the interface cells 
+    # are defined on the fracture grid.
+    interface_num_sq, interface_den_sq = (
+        interface_overlap_l2_components_p1_quad(
+            sd_H=gamma_H,
+            sd_h=gamma_h,
+            mH_cc=mH_cc,
+            mh_cc=mh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    interface_num_sq2, interface_den_sq2 = (
+        interface_overlap_l2_components_p1_exact(
+            sd_H=gamma_H,
+            sd_h=gamma_h,
+            mH_cc=mH_cc,
+            mh_cc=mh_cc,
+            weight=averaging_weight,
+            tol=tol,
+        )
+    )
+
+    print("interface error", abs(interface_num_sq - interface_num_sq2) / abs(interface_num_sq2))
+    print("interface error", abs(interface_den_sq - interface_den_sq2) / abs(interface_den_sq2))
+
+    matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
+    fracture_error = np.sqrt(fracture_num_sq / fracture_den_sq)
+    interface_error = np.sqrt(interface_num_sq / interface_den_sq)
+
+    matrix_error2 = np.sqrt(matrix_num_sq2 / matrix_den_sq2)
+    fracture_error2 = np.sqrt(fracture_num_sq2 / fracture_den_sq2)
+    interface_error2 = np.sqrt(interface_num_sq2 / interface_den_sq2)
+
+    return (
+        float(matrix_error),
+        float(fracture_error),
+        float(interface_error),
+        float(matrix_error2),
+        float(fracture_error2),
+        float(interface_error2),
+    )
