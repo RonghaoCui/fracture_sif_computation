@@ -108,16 +108,47 @@ def relative_l2_error_between_fem_models(
 
 if __name__ == "__main__":
 
-    cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-    # cell_sizes = [0.1, 0.05, 0.025]
+    # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+    cell_sizes = [0.1, 0.05, 0.025]
 
-    use_qpe = True
+    # use_qpe = True
+    use_qpe = False
 
     h_ref = cell_sizes[-1]
     print(f"Running reference FEM model h = {h_ref}")
     fine_model = run_fem_sneddon_model(
         h=h_ref,
         use_qpe=use_qpe,
+    )
+
+    print("\n=== SELF TO SELF SANITY CHECK ===")
+    num_sq, den_sq = matrix_overlap_l2_components_t6_quad(
+        coarse_model=fine_model,
+        fine_model=fine_model,
+        tol=1e-8,
+    )
+
+    print("matrix self numerator_sq =", num_sq)
+    print("matrix self relative error =", np.sqrt(num_sq / den_sq))
+
+    print("\n=== FRACTURE SELF TO SELF SANITY CHECK ===")
+    (
+        normal_num_sq,
+        normal_den_sq,
+        tangential_num_sq,
+        tangential_den_sq,
+    ) = fracture_overlap_l2_components_p2_quad(
+        coarse_model=fine_model,
+        fine_model=fine_model,
+        tol=1e-8,
+        num_quad=3,
+    )
+
+    print("normal self relative error =", np.sqrt(normal_num_sq / normal_den_sq))
+    print("tangential self relative error =", np.sqrt(tangential_num_sq / tangential_den_sq))
+    print(
+        "combined fracture self relative error =",
+        np.sqrt((normal_num_sq + tangential_num_sq) / (normal_den_sq + tangential_den_sq)),
     )
 
     results = []
@@ -164,7 +195,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_qfemnoqpe_so_quad.csv")
+    csv_path = os.path.join(save_csv, "selfconv_qfemnoqpe_so_quad_test.csv")
     df.to_csv(csv_path, index=False)
     print(f"Saved results to {csv_path}")
 
@@ -245,7 +276,7 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_qfemnoqpe_quad.png"), 
+        os.path.join(save_dir, "self_convergence_so_qfemnoqpe_quad_test.png"), 
         dpi=300, 
         bbox_inches="tight"
     )

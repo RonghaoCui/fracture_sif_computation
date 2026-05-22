@@ -1,6 +1,7 @@
 """
 Self-convergence utilities for mixed-dimensional MPSA analysis.
 """
+from .quadrature_integration import QuadratureIntegration
 
 from .overlap_p1 import (
     matrix_overlap_l2_components_p1,
@@ -18,6 +19,7 @@ from .overlap_t6_quad import (
 )
 
 __all__ = [
+    "QuadratureIntegration",
     "matrix_overlap_l2_components_p1",
     "fracture_overlap_l2_components_p1",
     "interface_overlap_l2_components_p1",

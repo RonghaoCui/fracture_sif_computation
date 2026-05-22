@@ -9,6 +9,8 @@ import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
 # from mdamr.utils.quadrature import get_quadpy_elements
 from mdamr.non_matching.transfer_grid import TransferGrid, TransferLine
 
+from selfconv import QuadratureIntegration
+
 
 def _cell_nodes(sd: pp.Grid) -> np.ndarray:
     """Get node indices for each cell. 
@@ -117,91 +119,6 @@ def _eval_p1_2d(coeff: np.ndarray, xy: np.ndarray) -> np.ndarray:
     return coeff[:, 0:1] * xy[0][None, :] + coeff[:, 1:2] * xy[1][None, :] + coeff[:, 2:3]
 
 
-def _triangle_area(xy: np.ndarray) -> float:
-    """Compute the area of a triangle given its vertices.
-
-    Parameters:
-        xy: shape = (2, 3), where each column is a vertex (x, y).
-
-    Returns:
-        Area of the triangle.
-    """
-    p0 = xy[:, 0]
-    p1 = xy[:, 1]
-    p2 = xy[:, 2]
-    return 0.5 * abs(np.linalg.det(np.column_stack((p1 - p0, p2 - p0))))
-
-
-def _transfer_triangles(tr: pp.Grid) -> np.ndarray:
-    """Get node indices for each triangle cell in the transfer grid.
-
-    Parameters:
-        tr: transfer grid, which is a 2D simplex grid.
-
-    Returns:
-        node indices: cell_id -> [node0, node1, node2],
-            shape = (num_cells, 3).
-    """
-    cn = tr.cell_nodes().tocsc()
-    return cn.indices.reshape((3, tr.num_cells), order="F").T
-
-
-def _triangle_quadrature_degree4(xy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Compute the degree-4 quadrature rule on one physical triangle.
-
-    Proposed by Dunavant (1985), this method offers 6-point quadrature consisting 
-    of two groups on a reference triangle. Each group consists of 3 quadrature 
-    points, resulting in a total of 6 quadrature points. In each group, the quadrature 
-    points have the same weight and a format of barycentric coordinates, (a, a, b), 
-    where a + a + b = 1. 
-
-    Th reference triangle is defined by vertices (0,0), (1,0), and (0,1), whose area 
-    is 0.5. Therefore, the quadrature weights of six quadrature points sum to 0.5 on 
-    the reference triangle. This is the reason why we at first halve the weights in the 
-    Dunavant (1985) and then multiply the weights by 2.0 * physical area to get the 
-    correct quadrature weights on the physical triangle.
-
-    The reference can be found in: 
-        - Dunavant, D. (1985). International Journal for Numerical Methods in 
-        Engineering, 21(6), 1129-1148.
-
-    Parameters: 
-        xy: triangle vertices, shape = (2, 3).
-
-    Returns: 
-        quad_x: quadrature points, shape = (2, num_quad).
-        quad_w: weights, shape = (num_quad,).
-    """
-    # Dunavant 6-point rule, degree 4.
-    a1 = 0.445948490915965
-    b1 = 0.108103018168070
-    w1 = 0.223381589678011 / 2.0
-
-    a2 = 0.091576213509771
-    b2 = 0.816847572980459
-    w2 = 0.109951743655322 / 2.0
-
-    bary = np.array([
-        [a1, a1, b1],
-        [a1, b1, a1],
-        [b1, a1, a1],
-        [a2, a2, b2],
-        [a2, b2, a2],
-        [b2, a2, a2],
-    ])
-
-    weights_ref = np.array([w1, w1, w1, w2, w2, w2])
-
-    area = _triangle_area(xy)
-    quad_x = xy @ bary.T
-
-    # Dunavant weights sum to 0.5 on the reference triangle.
-    # Therefore multiply by 2 * physical area.
-    quad_w = 2.0 * area * weights_ref
-
-    return quad_x, quad_w
-
-
 def matrix_overlap_l2_components_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
@@ -240,6 +157,7 @@ def matrix_overlap_l2_components_p1_quad(
     uh_node = _nodal_average_from_cell_values(sd_h, uh_cc, weight=weight)
 
     # Compute P1 coefficients for coarse and fine grids in the common rotated coordinates.
+    # Rotated nodes are used. 
     CH = _p1_coefficients_from_nodal_values_2d(
         sd_H, uH_node, src_rot.nodes[:2, :]
     )
@@ -248,7 +166,7 @@ def matrix_overlap_l2_components_p1_quad(
     )
 
     tr = tg.transfer   # the transfer grid
-    tr_cells = _transfer_triangles(tr)
+    tr_cells = QuadratureIntegration.transfer_triangles(tr)
     Xtr = tr.nodes[:2, :]
 
     # Get the mapping from transfer cells to source (coarse) and 
@@ -260,14 +178,13 @@ def matrix_overlap_l2_components_p1_quad(
     denominator_sq = 0.0
     for j, nodes in enumerate(tr_cells):
         xy = Xtr[:, nodes]
+        
+        quad_x, quad_w = QuadratureIntegration.triangle_quadrature_degree4(xy)
 
-        src_parent = t2s[j].indices
-        tgt_parent = t2t[j].indices
-
-        KH = int(src_parent[0])
-        kh = int(tgt_parent[0])
-
-        quad_x, quad_w = _triangle_quadrature_degree4(xy)
+        # Get the parent coarse and fine cells corresponding to 
+        # the current transfer cell.
+        KH = t2s[j].indices[0]
+        kh = t2t[j].indices[0]
 
         uH_q = _eval_p1_2d(CH[:, KH, :], quad_x)
         uh_q = _eval_p1_2d(Ch[:, kh, :], quad_x)
@@ -313,7 +230,7 @@ def matrix_overlap_l2_components_p1_exact(
     )
 
     tr = tg.transfer
-    tr_cells = _transfer_triangles(tr)
+    tr_cells = QuadratureIntegration.transfer_triangles(tr)
     Xtr = tr.nodes[:2, :]
 
     # Exact P1 mass matrix on a triangle:
@@ -332,13 +249,12 @@ def matrix_overlap_l2_components_p1_exact(
 
     for j, nodes in enumerate(tr_cells):
         xy = Xtr[:, nodes]
-        area = _triangle_area(xy)
+        area = QuadratureIntegration.triangle_area(xy)
 
-        src_parent = t2s[j].indices
-        tgt_parent = t2t[j].indices
-
-        KH = int(src_parent[0])
-        kh = int(tgt_parent[0])
+        # Get the parent coarse and fine cells corresponding to 
+        # the current transfer cell.
+        KH = t2s[j].indices[0]
+        kh = t2t[j].indices[0]
 
         uH_v = _eval_p1_2d(CH[:, KH, :], xy)  # (2, 3)
         uh_v = _eval_p1_2d(Ch[:, kh, :], xy)  # (2, 3)
@@ -405,33 +321,6 @@ def _eval_p1_1d(coeff: np.ndarray, s: np.ndarray) -> np.ndarray:
     return coeff[:, 0:1] * s[None, :] + coeff[:, 1:2]
 
 
-def _segment_quadrature_gauss(
-    s0: float,
-    s1: float,
-    num_quad: int = 3,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Compute Gauss-Legendre quadrature rule on one 1D segment [s0, s1].
-
-    Here, we use the standard Gauss-Legendre quadrature, which is exact 
-    for polynomials of degree up to 2*num_quad - 1. Therefore, in order to cover
-    the P1 and P2 fields (whose squared errors have degrees of 2 and 4, repectively), 
-    num_quad = 3 is used.
-
-    Returns: 
-        quad_s: quadrature points, shape = (num_quad,).
-        quad_w: weights, shape = (num_quad,).
-    """
-    xi, wi = np.polynomial.legendre.leggauss(num_quad)
-
-    mid = 0.5 * (s0 + s1)
-    half = 0.5 * (s1 - s0)
-
-    quad_s = mid + half * xi
-    quad_w = abs(half) * wi
-
-    return quad_s, quad_w
-
-
 def fracture_overlap_l2_components_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
@@ -483,13 +372,14 @@ def fracture_overlap_l2_components_p1_quad(
         s0 = float(xtr[j])
         s1 = float(xtr[j + 1])
 
-        src_parent = t2s[j].indices
-        tgt_parent = t2t[j].indices
+        # Get the parent coarse and fine cells corresponding to 
+        # the current transfer cell.
+        KH = t2s[j].indices[0]
+        kh = t2t[j].indices[0]
 
-        KH = int(src_parent[0])
-        kh = int(tgt_parent[0])
-
-        quad_s, quad_w = _segment_quadrature_gauss(s0, s1, num_quad=num_quad)
+        quad_s, quad_w = QuadratureIntegration.segment_quadrature_gauss(
+            s0, s1, num_quad=num_quad
+        )
 
         wH_q = _eval_p1_1d(CH[:, KH, :], quad_s)
         wh_q = _eval_p1_1d(Ch[:, kh, :], quad_s)
@@ -547,11 +437,10 @@ def fracture_overlap_l2_components_p1_exact(
         s1 = float(xtr[j + 1])
         length = abs(s1 - s0)
 
-        src_parent = t2s[j].indices
-        tgt_parent = t2t[j].indices
-
-        KH = int(src_parent[0])
-        kh = int(tgt_parent[0])
+        # Get the parent coarse and fine cells corresponding to 
+        # the current transfer cell.
+        KH = t2s[j].indices[0]
+        kh = t2t[j].indices[0]
 
         s_pair = np.array([s0, s1])
 
