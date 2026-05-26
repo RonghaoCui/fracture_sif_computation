@@ -1,3 +1,9 @@
+"""
+Self-convergence functionlities of P2 fields for 2D standard FEM models containing a fracture. 
+
+The models are solved with the standard T6 element without QPE, where the mid-side nodes are 
+correctly placed at the midpoints of the edges in the original 2D grid.
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -59,19 +65,19 @@ def _barycentric_coordinates(
     return np.linalg.solve(A, rhs)
 
 
-def _t6_shape_functions_from_barycentric(L: np.ndarray) -> np.ndarray:
+def _t6_shape_functions_2d(L: np.ndarray) -> np.ndarray:
     """Compute T6 shape functions from barycentric coordinates of given points.
 
     The T6 node order in a triangle is consistent with the FEM mesh 
     construction: [v0, m01, v1, m12, v2, m02]. Correspondingly, the T6 shape 
     functions for these six nodes are defined as follows, where L0, L1, L2 are barycentric 
     coordinates of given points, respectively:
-        N0 = L0 * (2.0*L0 - 1.0)
-        N1 = 4.0 * L0 * L1
-        N2 = L1 * (2.0*L1 - 1.0)
-        N3 = 4.0 * L1 * L2
-        N4 = L2 * (2.0*L2 - 1.0)
-        N5 = 4.0 * L0 * L2
+        N0 = L0 * (2.0*L0 - 1.0),
+        N1 = 4.0 * L0 * L1,
+        N2 = L1 * (2.0*L1 - 1.0),
+        N3 = 4.0 * L1 * L2,
+        N4 = L2 * (2.0*L2 - 1.0),
+        N5 = 4.0 * L0 * L2.
 
     Parameters:
         L: shape = (3, num_points)
@@ -132,11 +138,11 @@ def _eval_t6_2d(
     # defined by the corner vertices.
     L = _barycentric_coordinates(vertices, qx)
     # Compute T6 shape functions at quadrature points.
-    N = _t6_shape_functions_from_barycentric(L)
+    N = _t6_shape_functions_2d(L)
     return element_u @ N
 
 
-def matrix_overlap_l2_components_t6_quad(
+def matrix_error_integration_t6_quad(
     coarse_model: object,
     fine_model: object,
     tol: float = 1e-8,
@@ -150,7 +156,7 @@ def matrix_overlap_l2_components_t6_quad(
     With this matrix, FEM nodes can be rotated as well with a additional method 
     :meth:`_rotate_fem_nodes_to_transfer_frame`.
     
-    Reference: 
+    References: 
         - Varela, et al. (2025). arXiv preprint arXiv:2512.09087.
 
     It computes
@@ -234,11 +240,24 @@ def matrix_overlap_l2_components_t6_quad(
 
     return numerator_sq, denominator_sq
 
-# For displacement jump on 1D fracture
-def _p2_shape_1d(xi: np.ndarray) -> np.ndarray:
-    """Quadratic Lagrange shape functions on [-1, 1].
 
-    Node order: left, middle, right.
+# For displacement jump on 1D fracture
+def _p2_shape_functions_1d(xi: np.ndarray) -> np.ndarray:
+    """Calculate values of quadratic (P2) shape functions at given points on 1D 
+    reference coordinates, [-1, 1]. Three nodes on the 1D edge follows the 
+    order: left, middle, right.
+
+    Shape functions of these three nodes on 1D reference coordinates are defined 
+    as follows:
+        N0 = 0.5 * xi * (xi - 1.0),
+        N1 = 1.0 - xi**2,
+        N2 = 0.5 * xi * (xi + 1.0).
+
+    Parameters:
+        xi: shape = (num_points,)
+
+    Returns:
+        N: shape = (num_points, 3)
     """
     return np.vstack([
         0.5 * xi * (xi - 1.0),
@@ -247,30 +266,24 @@ def _p2_shape_1d(xi: np.ndarray) -> np.ndarray:
     ])
 
 
-# def _build_p2_segments_from_sorted_nodes(
-#     s: np.ndarray,
-#     values: np.ndarray,
-# ) -> list[tuple[np.ndarray, np.ndarray]]:
-#     """Build consecutive P2 segments from sorted fracture nodes.
+def _eval_p2_segment_1d(
+    s_quad: np.ndarray,
+    s_seg: np.ndarray,
+    v_seg: np.ndarray,
+) -> np.ndarray:
+    """
+    Calculate values of P2 field at given pointson one physical 1D segment.
+    
+    """
+    s0 = s_seg[0]
+    s2 = s_seg[2]
 
-#     Assumes node order along fracture is:
-#         vertex, mid-node, vertex, mid-node, vertex, ...
-#     """
-#     segments = []
+    # Map quadrature points from [s0, s2] to [-1, 1].
+    xi = 2.0 * (s_quad - s0) / (s2 - s0) - 1.0
+    N = _p2_shape_functions_1d(xi)
 
-#     if len(s) < 3:
-#         raise ValueError("Need at least three fracture nodes for P2 segments.")
+    return v_seg @ N
 
-#     for i in range(0, len(s) - 2, 2):
-#         s_seg = s[i : i + 3]
-#         v_seg = values[i : i + 3]
-
-#         if not np.all(np.diff(s_seg) > -1e-12):
-#             raise ValueError("Fracture coordinates are not sorted.")
-
-#         segments.append((s_seg, v_seg))
-
-#     return segments
 
 def _fracture_p2_jump_segments_from_model(model: object):
     theta = model.theta_rad
@@ -287,9 +300,6 @@ def _fracture_p2_jump_segments_from_model(model: object):
     segs_t = []
 
     for upper, lower in zip(upper_edges, lower_edges):
-        upper = np.asarray(upper, dtype=int)
-        lower = np.asarray(lower, dtype=int)
-
         pts = model.nodes_p6[upper, :2]
         s = pts @ t
 
@@ -311,23 +321,6 @@ def _fracture_p2_jump_segments_from_model(model: object):
 
     return segs_n, segs_t
 
-def _eval_p2_segment_1d(
-    s_query: np.ndarray,
-    s_seg: np.ndarray,
-    v_seg: np.ndarray,
-) -> np.ndarray:
-    """Evaluate a scalar P2 field on one physical 1D segment."""
-    s0 = float(s_seg[0])
-    s2 = float(s_seg[2])
-
-    if abs(s2 - s0) < 1e-14:
-        raise RuntimeError("Degenerate P2 fracture segment.")
-
-    xi = 2.0 * (s_query - s0) / (s2 - s0) - 1.0
-    N = _p2_shape_1d(xi)
-
-    return v_seg @ N
-
 
 def _find_parent_segment(
     segments: list[tuple[np.ndarray, np.ndarray]],
@@ -344,7 +337,8 @@ def _find_parent_segment(
 
     raise RuntimeError(f"No parent P2 segment found for s = {s_mid}.")
 
-def fracture_overlap_l2_components_p2_quad(
+
+def fracture_error_integration_p2_quad(
     coarse_model: object,
     fine_model: object,
     tol: float = 1e-8,
@@ -419,4 +413,39 @@ def fracture_overlap_l2_components_p2_quad(
         tangential_num_sq,
         tangential_den_sq,
     )
+
+
+def relative_error_p2_fem(
+    coarse_model: object,
+    fine_model: object,
+    tol: float = 1e-8,
+) -> tuple[float, float]:
+    """Return matrix relative L2 error and its squared components.
+    """
+
+    matrix_num_sq, matrix_den_sq = matrix_error_integration_t6_quad(
+        coarse_model=coarse_model,
+        fine_model=fine_model,
+        tol=tol,
+    )
+
+    (
+        normal_num_sq,
+        normal_den_sq,
+        tangential_num_sq,
+        tangential_den_sq,
+    ) = fracture_error_integration_p2_quad(
+        coarse_model=coarse_model,
+        fine_model=fine_model,
+        tol=tol,
+        num_quad=3,
+    )
+
+    matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
+    fracture_error = np.sqrt(
+        (normal_num_sq + tangential_num_sq) 
+        / (normal_den_sq + tangential_den_sq)
+    )  
+  
+    return matrix_error, fracture_error
 

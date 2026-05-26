@@ -14,7 +14,7 @@ from westergaard2d import WestergaardOpenMode2d
 # from mdamr.non_matching.transfer_grid import TransferGrid
 
 from selfconv import (
-    relative_l2_error_p1_field_between_models, 
+    relative_error_p1_mpsa,
 )
 
 import pandas as pd
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         coarse_model = run_sneddon_model(h)
 
         err_matrix, err_fracture, err_interface, err_matrix2, err_fracture2, err_interface2 = (
-            relative_l2_error_p1_field_between_models(
+            relative_error_p1_mpsa(
                 coarse_model,
                 fine_model,
                 averaging_weight="volume",

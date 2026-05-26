@@ -1,3 +1,7 @@
+"""
+Self-convergence functionlities of P1 fields for 2D MPSA models containing a fracture. 
+
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -119,7 +123,7 @@ def _eval_p1_2d(coeff: np.ndarray, xy: np.ndarray) -> np.ndarray:
     return coeff[:, 0:1] * xy[0][None, :] + coeff[:, 1:2] * xy[1][None, :] + coeff[:, 2:3]
 
 
-def matrix_overlap_l2_components_p1_quad(
+def matrix_error_integration_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     uH_cc: np.ndarray,
@@ -197,7 +201,7 @@ def matrix_overlap_l2_components_p1_quad(
     return numerator_sq, denominator_sq
 
 
-def matrix_overlap_l2_components_p1_exact(
+def matrix_error_integration_p1_exact(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     uH_cc: np.ndarray,
@@ -321,7 +325,7 @@ def _eval_p1_1d(coeff: np.ndarray, s: np.ndarray) -> np.ndarray:
     return coeff[:, 0:1] * s[None, :] + coeff[:, 1:2]
 
 
-def fracture_overlap_l2_components_p1_quad(
+def fracture_error_integration_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     wH_cc: np.ndarray,
@@ -391,7 +395,7 @@ def fracture_overlap_l2_components_p1_quad(
 
     return numerator_sq, denominator_sq
 
-def fracture_overlap_l2_components_p1_exact(
+def fracture_error_integration_p1_exact(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     wH_cc: np.ndarray,
@@ -458,7 +462,7 @@ def fracture_overlap_l2_components_p1_exact(
     return numerator_sq, denominator_sq
 
 
-def interface_overlap_l2_components_p1_quad(
+def interface_error_integration_p1_quad(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     mH_cc: np.ndarray,
@@ -492,7 +496,7 @@ def interface_overlap_l2_components_p1_quad(
     h_side_0 = mh_cc[:, :sd_h.num_cells]
     h_side_1 = mh_cc[:, sd_h.num_cells:]
 
-    num0, den0 = fracture_overlap_l2_components_p1_quad(
+    num0, den0 = fracture_error_integration_p1_quad(
         sd_H=sd_H,
         sd_h=sd_h,
         wH_cc=H_side_0,
@@ -502,7 +506,7 @@ def interface_overlap_l2_components_p1_quad(
         num_quad=num_quad,
     )
 
-    num1, den1 = fracture_overlap_l2_components_p1_quad(
+    num1, den1 = fracture_error_integration_p1_quad(
         sd_H=sd_H,
         sd_h=sd_h,
         wH_cc=H_side_1,
@@ -515,7 +519,7 @@ def interface_overlap_l2_components_p1_quad(
     return num0 + num1, den0 + den1
 
 
-def interface_overlap_l2_components_p1_exact(
+def interface_error_integration_p1_exact(
     sd_H: pp.Grid,
     sd_h: pp.Grid,
     mH_cc: np.ndarray,
@@ -537,7 +541,7 @@ def interface_overlap_l2_components_p1_exact(
     h_side_0 = mh_cc[:, :sd_h.num_cells]
     h_side_1 = mh_cc[:, sd_h.num_cells:]
 
-    num0, den0 = fracture_overlap_l2_components_p1_exact(
+    num0, den0 = fracture_error_integration_p1_exact(
         sd_H=sd_H,
         sd_h=sd_h,
         wH_cc=H_side_0,
@@ -546,7 +550,7 @@ def interface_overlap_l2_components_p1_exact(
         tol=tol,
     )
 
-    num1, den1 = fracture_overlap_l2_components_p1_exact(
+    num1, den1 = fracture_error_integration_p1_exact(
         sd_H=sd_H,
         sd_h=sd_h,
         wH_cc=H_side_1,
@@ -617,7 +621,7 @@ def extract_interface_displacement_cc(
     return u_intf.reshape((model.nd, md.num_cells), order="F")
 
 
-def relative_l2_error_p1_field_between_models(
+def relative_error_p1_mpsa(
     coarse_model: object,
     fine_model: object,
     averaging_weight: str = "volume",
@@ -633,7 +637,7 @@ def relative_l2_error_p1_field_between_models(
     uh_cc = extract_matrix_displacement_cc(fine_model)
 
     matrix_num_sq, matrix_den_sq = (
-        matrix_overlap_l2_components_p1_quad(
+        matrix_error_integration_p1_quad(
             sd_H=sd_H,
             sd_h=sd_h,
             uH_cc=uH_cc,
@@ -644,7 +648,7 @@ def relative_l2_error_p1_field_between_models(
     )
 
     matrix_num_sq2, matrix_den_sq2 = (
-        matrix_overlap_l2_components_p1_exact(
+        matrix_error_integration_p1_exact(
             sd_H=sd_H,
             sd_h=sd_h,
             uH_cc=uH_cc,
@@ -665,7 +669,7 @@ def relative_l2_error_p1_field_between_models(
     wh_cc = extract_fracture_displacement_jump_cc(fine_model)
 
     fracture_num_sq, fracture_den_sq = (
-        fracture_overlap_l2_components_p1_quad(
+        fracture_error_integration_p1_quad(
             sd_H=gamma_H,
             sd_h=gamma_h,
             wH_cc=wH_cc,
@@ -676,7 +680,7 @@ def relative_l2_error_p1_field_between_models(
     )
 
     fracture_num_sq2, fracture_den_sq2 = (
-        fracture_overlap_l2_components_p1_exact(
+        fracture_error_integration_p1_exact(
             sd_H=gamma_H,
             sd_h=gamma_h,
             wH_cc=wH_cc,
@@ -699,7 +703,7 @@ def relative_l2_error_p1_field_between_models(
     # We use fracture grids for interface error computation since the interface cells 
     # are defined on the fracture grid.
     interface_num_sq, interface_den_sq = (
-        interface_overlap_l2_components_p1_quad(
+        interface_error_integration_p1_quad(
             sd_H=gamma_H,
             sd_h=gamma_h,
             mH_cc=mH_cc,
@@ -710,7 +714,7 @@ def relative_l2_error_p1_field_between_models(
     )
 
     interface_num_sq2, interface_den_sq2 = (
-        interface_overlap_l2_components_p1_exact(
+        interface_error_integration_p1_exact(
             sd_H=gamma_H,
             sd_h=gamma_h,
             mH_cc=mH_cc,

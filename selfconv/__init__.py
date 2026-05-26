@@ -10,12 +10,11 @@ from .overlap_p1 import (
 )
 
 from .overlap_p1_quad import (
-    relative_l2_error_p1_field_between_models,
+    relative_error_p1_mpsa,
 )
 
 from .overlap_t6_quad import (
-    matrix_overlap_l2_components_t6_quad,
-    fracture_overlap_l2_components_p2_quad,
+    relative_error_p2_fem,
 )
 
 __all__ = [
@@ -23,7 +22,6 @@ __all__ = [
     "matrix_overlap_l2_components_p1",
     "fracture_overlap_l2_components_p1",
     "interface_overlap_l2_components_p1",
-    "relative_l2_error_p1_field_between_models",
-    "matrix_overlap_l2_components_t6_quad",
-    "fracture_overlap_l2_components_p2_quad",
+    "relative_error_p1_mpsa",
+    "relative_error_p2_fem",
 ]

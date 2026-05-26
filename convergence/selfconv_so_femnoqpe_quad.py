@@ -21,15 +21,14 @@ from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
 from fems import FemSneddonModel2d
 from selfconv import (
-    matrix_overlap_l2_components_t6_quad,
-    fracture_overlap_l2_components_p2_quad,
+    relative_error_p2_fem,
 )
 
 
-save_dir = "figures/convergence/selfconv/qfem"
+save_dir = "figures/convergence/selfconv/femnoqpe"
 os.makedirs(save_dir, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/qfem/so"
+save_csv = "data/convergence/selfconv/femnoqpe/so"
 os.makedirs(save_csv, exist_ok=True)
 
 
@@ -71,47 +70,11 @@ def run_fem_sneddon_model(
     return model
 
 
-def relative_l2_error_between_fem_models(
-    coarse_model: FemSneddonModel2d,
-    fine_model: FemSneddonModel2d,
-    tol: float = 1e-8,
-) -> tuple[float, float]:
-    """Return matrix relative L2 error and its squared components.
-    """
-
-    matrix_num_sq, matrix_den_sq = matrix_overlap_l2_components_t6_quad(
-        coarse_model=coarse_model,
-        fine_model=fine_model,
-        tol=tol,
-    )
-
-    (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    ) = fracture_overlap_l2_components_p2_quad(
-        coarse_model=coarse_model,
-        fine_model=fine_model,
-        tol=tol,
-        num_quad=3,
-    )
-
-    matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
-    fracture_error = np.sqrt(
-        (normal_num_sq + tangential_num_sq) 
-        / (normal_den_sq + tangential_den_sq)
-    )  
-  
-    return matrix_error, fracture_error
-
-
 if __name__ == "__main__":
 
     # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
     cell_sizes = [0.1, 0.05, 0.025]
 
-    # use_qpe = True
     use_qpe = False
 
     h_ref = cell_sizes[-1]
@@ -119,36 +82,6 @@ if __name__ == "__main__":
     fine_model = run_fem_sneddon_model(
         h=h_ref,
         use_qpe=use_qpe,
-    )
-
-    print("\n=== SELF TO SELF SANITY CHECK ===")
-    num_sq, den_sq = matrix_overlap_l2_components_t6_quad(
-        coarse_model=fine_model,
-        fine_model=fine_model,
-        tol=1e-8,
-    )
-
-    print("matrix self numerator_sq =", num_sq)
-    print("matrix self relative error =", np.sqrt(num_sq / den_sq))
-
-    print("\n=== FRACTURE SELF TO SELF SANITY CHECK ===")
-    (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    ) = fracture_overlap_l2_components_p2_quad(
-        coarse_model=fine_model,
-        fine_model=fine_model,
-        tol=1e-8,
-        num_quad=3,
-    )
-
-    print("normal self relative error =", np.sqrt(normal_num_sq / normal_den_sq))
-    print("tangential self relative error =", np.sqrt(tangential_num_sq / tangential_den_sq))
-    print(
-        "combined fracture self relative error =",
-        np.sqrt((normal_num_sq + tangential_num_sq) / (normal_den_sq + tangential_den_sq)),
     )
 
     results = []
@@ -163,7 +96,7 @@ if __name__ == "__main__":
             use_qpe=use_qpe,
         )
 
-        err_matrix, err_fracture = relative_l2_error_between_fem_models(
+        err_matrix, err_fracture = relative_error_p2_fem(
             coarse_model=coarse_model,
             fine_model=fine_model,
             tol=1e-8,
