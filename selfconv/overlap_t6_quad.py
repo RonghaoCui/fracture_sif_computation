@@ -272,54 +272,97 @@ def _eval_p2_segment_1d(
     v_seg: np.ndarray,
 ) -> np.ndarray:
     """
-    Calculate values of P2 field at given pointson one physical 1D segment.
+    Calculate values of P2 field at given point on one physical 1D segment.
+
+    Parameters:
+        s_quad: shape = (num_quad,)
+            quadrature points in physical 1D coordinates.
+        s_seg: shape = (3,)
+            physical coordinates of the left, middle, and right nodes on 
+            the P2 segment.
+        v_seg: shape = (2,3)
+            nodal vectors on the segment. 
+    
+    Returns:
+        Interpolated values of 1D P2 field at quadrature points, 
+        shape = (2, num_quad).
     
     """
     s0 = s_seg[0]
     s2 = s_seg[2]
 
-    # Map quadrature points from [s0, s2] to [-1, 1].
+    # Map quadrature points from physical coordinates [s0, s2] to 
+    # reference coordinates [-1, 1].
     xi = 2.0 * (s_quad - s0) / (s2 - s0) - 1.0
     N = _p2_shape_functions_1d(xi)
 
     return v_seg @ N
 
 
-def _fracture_p2_jump_segments_from_model(model: object):
+def _fracture_p2_jump_segments_from_model(
+    model: object,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """
+    Calculate values of P2 field at given pointson one physical 1D segment.
+
+    Fracture orientation is considered here by projecting fracture nodes onto the 
+    tangential direction of the fracture. This produces 1D coordinates along the 
+    fracture, used for sorting the three nodes on each quadratic edge in the 
+    order: left, middle, right. 
+
+    Parameters: 
+        model: a solved FEM model. 
+
+    Returns:
+        segs: the list of fracture P2 segments. 
+            Each segment is represented as (s, jump_xy),
+            where 
+            s: shape = (3,)
+                1D coordinates of the left, middle, and right nodes along the
+                fracture. 
+            jump_xy: shape = (2,3)
+                displacement jump values in global xy coordinates.
+    
+    """
     theta = model.theta_rad
     t = np.array([np.sin(theta), np.cos(theta)])
-    n = np.array([-np.cos(theta), np.sin(theta)])
 
     ux = model.U[0::2]
     uy = model.U[1::2]
 
+    # [n0, m01, n1] for each edge. 
     upper_edges = model.upper_frac_edge_dofs
     lower_edges = model.lower_frac_edge_dofs
 
-    segs_n = []
-    segs_t = []
+    segs = []
 
     for upper, lower in zip(upper_edges, lower_edges):
-        pts = model.nodes_p6[upper, :2]
-        s = pts @ t
+        
+        nodes = model.nodes_p6[upper, :2]
 
+        # 1D coordinates along the fracture, used for sorting 
+        # the points in the correct order. 
+        s = nodes @ t
         idx = np.argsort(s)
+
         s = s[idx]
         upper = upper[idx]
         lower = lower[idx]
 
+        # Shape = (3, 2), where the three rows correspond to the 
+        # three nodes on the 1D segment. 
         u_upper = np.column_stack((ux[upper], uy[upper]))
         u_lower = np.column_stack((ux[lower], uy[lower]))
 
-        jump = u_upper - u_lower
+        jump = u_upper - u_lower  # shape = (3,2)
+        jump_xy = jump.T          # shape = (2,3)
 
-        segs_n.append((s, jump @ n))
-        segs_t.append((s, jump @ t))
+        segs.append((s, jump_xy))
 
-    segs_n.sort(key=lambda seg: seg[0][0])
-    segs_t.sort(key=lambda seg: seg[0][0])
+    # Sort using n0 in 1D
+    segs.sort(key=lambda seg: seg[0][0])
 
-    return segs_n, segs_t
+    return segs
 
 
 def _find_parent_segment(
@@ -327,10 +370,22 @@ def _find_parent_segment(
     s_mid: float,
     tol: float = 1e-8,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Find the P2 segment containing s_mid."""
+    """Find the parent P2 segment containing the given 1D point.
+
+    Parameters:
+        segments: list of fracture P2 segments.
+        s_mid: 1D coordinate of the given point. 
+        tol: tolerance for interval checks.
+
+    Returns:
+        s_seg: shape = (3,)
+            1D coordinates of the parent P2 segment. 
+        v_seg: shape = (2,3)
+            nodal jump values corresponding to the parant segment.
+    """
     for s_seg, v_seg in segments:
-        s_left = min(float(s_seg[0]), float(s_seg[2]))
-        s_right = max(float(s_seg[0]), float(s_seg[2]))
+        s_left = s_seg[0]
+        s_right = s_seg[2]
 
         if s_left - tol <= s_mid <= s_right + tol:
             return s_seg, v_seg
@@ -344,75 +399,65 @@ def fracture_error_integration_p2_quad(
     tol: float = 1e-8,
     num_quad: int = 3,
 ) -> tuple[float, float, float, float]:
+    """Compute overlap-based relative L2 error components for P2 fields on 
+    1D fracture grids using the quadrature rule.
 
-    segs_H_n, segs_H_t = _fracture_p2_jump_segments_from_model(coarse_model)
-    segs_h_n, segs_h_t = _fracture_p2_jump_segments_from_model(fine_model)
+    It computes: 
+        numerator_sq   = ∫_Gamma |w_H^P2 - w_h^P2|^2 ds
+        denominator_sq = ∫_Gamma |w_h^P2|^2 ds
+    """
+    segs_H = _fracture_p2_jump_segments_from_model(coarse_model)
+    segs_h = _fracture_p2_jump_segments_from_model(fine_model)
 
-    H_endpoints = np.array([seg[0][0] for seg in segs_H_n] + [segs_H_n[-1][0][2]])
-    h_endpoints = np.array([seg[0][0] for seg in segs_h_n] + [segs_h_n[-1][0][2]])
+    # Reconstruct 1D fracture nodes: left endnodes of all P2 edges plus the right 
+    # endnodes on the last edge. 
+    H_endpoints = np.array([seg[0][0] for seg in segs_H] + [segs_H[-1][0][2]])
+    h_endpoints = np.array([seg[0][0] for seg in segs_h] + [segs_h[-1][0][2]])
 
+    # Restrict the range of 1D grids in case that 1D fractures in coarse and 
+    # fine meshes may have slightly different length. 
     s_min = max(np.min(H_endpoints), np.min(h_endpoints))
     s_max = min(np.max(H_endpoints), np.max(h_endpoints))
 
+    # Construct transfer nodes for 1D overlaps partition between coarse and fine 
+    # grids. Floating-point noise is removed to avoid generating nearly-zero 
+    # overlap intervals. 
     overlap_nodes = np.unique(
         np.round(
             np.concatenate([
                 H_endpoints[(H_endpoints >= s_min - tol) & (H_endpoints <= s_max + tol)],
                 h_endpoints[(h_endpoints >= s_min - tol) & (h_endpoints <= s_max + tol)],
             ]),
-            decimals=14,
+            decimals=8,
         )
     )
 
     xi, wi = np.polynomial.legendre.leggauss(num_quad)
 
-    normal_num_sq = 0.0
-    normal_den_sq = 0.0
-    tangential_num_sq = 0.0
-    tangential_den_sq = 0.0
+    numerator_sq = 0.0
+    denominator_sq = 0.0
 
     for s0, s1 in zip(overlap_nodes[:-1], overlap_nodes[1:]):
-        s0 = float(s0)
-        s1 = float(s1)
+        # Mapping of quadrature points from reference coordinates 
+        # to physical coordinates.
+        s_mid = 0.5 * (s0 + s1)
+        s_half = 0.5 * (s1 - s0)
 
-        if abs(s1 - s0) < tol:
-            continue
+        s_quad = s_mid + s_half * xi
+        w_quad = abs(s_half) * wi
 
-        smid = 0.5 * (s0 + s1)
+        s_seg_H, v_seg_H = _find_parent_segment(segs_H, s_mid, tol=tol)
+        s_seg_h, v_seg_h = _find_parent_segment(segs_h, s_mid, tol=tol)
 
-        s_seg_H_n, v_seg_H_n = _find_parent_segment(segs_H_n, smid, tol=tol)
-        s_seg_h_n, v_seg_h_n = _find_parent_segment(segs_h_n, smid, tol=tol)
+        jump_H_quad = _eval_p2_segment_1d(s_quad, s_seg_H, v_seg_H)
+        jump_h_quad = _eval_p2_segment_1d(s_quad, s_seg_h, v_seg_h)
 
-        s_seg_H_t, v_seg_H_t = _find_parent_segment(segs_H_t, smid, tol=tol)
-        s_seg_h_t, v_seg_h_t = _find_parent_segment(segs_h_t, smid, tol=tol)
+        diff_quad = jump_H_quad - jump_h_quad
 
-        mid = 0.5 * (s0 + s1)
-        half = 0.5 * (s1 - s0)
+        numerator_sq += float(np.sum(w_quad * np.sum(diff_quad**2, axis=0)))
+        denominator_sq += float(np.sum(w_quad * np.sum(jump_h_quad**2, axis=0)))
 
-        sq = mid + half * xi
-        wq = abs(half) * wi
-
-        jumpH_n_q = _eval_p2_segment_1d(sq, s_seg_H_n, v_seg_H_n)
-        jumph_n_q = _eval_p2_segment_1d(sq, s_seg_h_n, v_seg_h_n)
-
-        jumpH_t_q = _eval_p2_segment_1d(sq, s_seg_H_t, v_seg_H_t)
-        jumph_t_q = _eval_p2_segment_1d(sq, s_seg_h_t, v_seg_h_t)
-
-        diff_n_q = jumpH_n_q - jumph_n_q
-        diff_t_q = jumpH_t_q - jumph_t_q
-
-        normal_num_sq += float(np.sum(wq * diff_n_q**2))
-        normal_den_sq += float(np.sum(wq * jumph_n_q**2))
-
-        tangential_num_sq += float(np.sum(wq * diff_t_q**2))
-        tangential_den_sq += float(np.sum(wq * jumph_t_q**2))
-
-    return (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    )
+    return numerator_sq, denominator_sq
 
 
 def relative_error_p2_fem(
@@ -420,7 +465,7 @@ def relative_error_p2_fem(
     fine_model: object,
     tol: float = 1e-8,
 ) -> tuple[float, float]:
-    """Return matrix relative L2 error and its squared components.
+    """Return relative L2 error of matrix displacement and fracture displacement jump.
     """
 
     matrix_num_sq, matrix_den_sq = matrix_error_integration_t6_quad(
@@ -429,12 +474,7 @@ def relative_error_p2_fem(
         tol=tol,
     )
 
-    (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    ) = fracture_error_integration_p2_quad(
+    fracture_num_sq, fracture_den_sq = fracture_error_integration_p2_quad(
         coarse_model=coarse_model,
         fine_model=fine_model,
         tol=tol,
@@ -442,10 +482,7 @@ def relative_error_p2_fem(
     )
 
     matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
-    fracture_error = np.sqrt(
-        (normal_num_sq + tangential_num_sq) 
-        / (normal_den_sq + tangential_den_sq)
-    )  
+    fracture_error = np.sqrt(fracture_num_sq / fracture_den_sq)  
   
     return matrix_error, fracture_error
 

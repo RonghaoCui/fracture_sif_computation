@@ -196,6 +196,8 @@ class SneddonFem2dSolver:
         self.lower_frac_edges = None
         self.upper_frac_nodes = None
         self.lower_frac_nodes = None
+        self.upper_frac_edge_dofs = None
+        self.lower_frac_edge_dofs = None
 
     def model_setup_and_sol(self) -> np.ndarray:
         """
@@ -281,11 +283,11 @@ class SneddonFem2dSolver:
         The coordinates of Tip 1 and Tip 2 are 0.0 and 2a, respectively.  
 
         Returns: 
-            x_coords: shape = (n, )
+            x_coords: shape = (n, ),
                 x coordinates of fracture surface nodes from small to large values.            
-            u_jump_normal: shape = (n, )
+            u_jump_normal: shape = (n, ),
                 normal displacement jump along the fracture.
-            u_jump_tangential: shape = (n, )
+            u_jump_tangential: shape = (n, ),
                 tangential displacement jump along the fracture.
 
         """
@@ -419,8 +421,13 @@ class SneddonFem2dSolver:
       
         NeuDof = np.array(NeuDof, dtype=int)
         NeuVal = np.array(NeuVal, dtype=float)
-        upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
-        lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
+        # upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
+        # lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
+        self.upper_frac_edge_dofs = np.array(NeuDof_upper, dtype=int)
+        self.lower_frac_edge_dofs = np.array(NeuDof_lower, dtype=int)
+
+        upper_frac_nodes = np.unique(self.upper_frac_edge_dofs.ravel())
+        lower_frac_nodes = np.unique(self.lower_frac_edge_dofs.ravel())
 
         return NeuDof, NeuVal, upper_frac_nodes, lower_frac_nodes
 

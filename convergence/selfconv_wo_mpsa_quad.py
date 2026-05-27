@@ -25,14 +25,14 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_dir = "figures/convergence/selfconv/mpsa"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/convergence/selfconv/mpsa"
+os.makedirs(save_fig, exist_ok=True)
 
 save_csv = "data/convergence/selfconv/mpsa/wo"
 os.makedirs(save_csv, exist_ok=True)
 
 # Basic model
-def make_sneddon_params(h: float) -> dict:
+def make_model_params(h: float) -> dict:
     a = 0.3
     poi = 0.25
     shear_modulus = 1.0
@@ -61,8 +61,8 @@ def make_sneddon_params(h: float) -> dict:
     }
 
 
-def run_sneddon_model(h: float) -> object:
-    params = make_sneddon_params(h)
+def run_benchmark_model(h: float) -> object:
+    params = make_model_params(h)
     model = WestergaardOpenMode2d(params=params)
     pp.run_time_dependent_model(model)
     return model
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # Use the finest grid as the reference solution.
     h_ref = cell_sizes[-1]
     print(f"Running reference model h = {h_ref}")
-    fine_model = run_sneddon_model(h_ref)
+    fine_model = run_benchmark_model(h_ref)
 
     results = []
     matrix_errors = []
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     for h in cell_sizes[:-1]:
         print(f"\nRunning coarse model h = {h}")
-        coarse_model = run_sneddon_model(h)
+        coarse_model = run_benchmark_model(h)
 
         err_matrix, err_fracture, err_interface, err_matrix2, err_fracture2, err_interface2 = (
             relative_error_p1_mpsa(
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     formatter.set_powerlimits((0, 0))
     ax.yaxis.set_major_formatter(formatter)
 
-    ax.set_xlim(10, 300)
+    ax.set_xlim(10, 500)
     ax.set_ylim(0.001, 1.0)
     ax.xaxis.set_major_locator(LogLocator(base=10))
     ax.xaxis.set_major_formatter(LogFormatterMathtext())
@@ -259,12 +259,41 @@ if __name__ == "__main__":
     ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
-    ax.legend()
+    ax.legend(loc="upper right")
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_wo_mpsa.png"),
+        os.path.join(save_fig, "selfconv_wo_mpsa.tiff"),
+        format="tiff",
         dpi=300,
         bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
+
+    # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
+    slope_matrix_quad, intercept_matrix_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(matrix_errors),
+        1,
+    )
+
+    slope_fracture_quad, intercept_fracture_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(fracture_errors),
+        1,
+    )
+
+    slope_interface_quad, intercept_interface_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(interface_errors),
+        1,
+    )
+
+    print(f"Slope for MPSA matrix (quad): {slope_matrix_quad:.2f}")
+    print(f"Slope for MPSA fracture (quad): {slope_fracture_quad:.2f}")
+    print(f"Slope for MPSA interface (quad): {slope_interface_quad:.2f}")
+
+# Slope for MPSA matrix (quad): -1.39
+# Slope for MPSA fracture (quad): -1.19
+# Slope for MPSA interface (quad): -1.20

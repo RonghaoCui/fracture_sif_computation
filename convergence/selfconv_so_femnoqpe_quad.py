@@ -1,6 +1,6 @@
 """
 Self-convergence analysis for Sneddon's problem solved by standard quadratic FEM
-(T6/QFEM without quarter-point elements), using overlap integration with degree-4
+without quarter-point elements, using overlap integration with degree-4
 triangle quadrature.
 
 This script computes the matrix-domain relative L2 error
@@ -25,15 +25,15 @@ from selfconv import (
 )
 
 
-save_dir = "figures/convergence/selfconv/femnoqpe"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/convergence/selfconv/femnoqpe"
+os.makedirs(save_fig, exist_ok=True)
 
 save_csv = "data/convergence/selfconv/femnoqpe/so"
 os.makedirs(save_csv, exist_ok=True)
 
 
-def make_sneddon_params(h: float) -> dict:
-    """Create parameters for the FEM Sneddon benchmark."""
+def make_model_params(h: float) -> dict:
+    """Create parameters for the FEM benchmark model."""
     a = 0.30
     poi = 0.25
     shear_modulus = 1.0
@@ -59,12 +59,12 @@ def make_sneddon_params(h: float) -> dict:
     }
 
 
-def run_fem_sneddon_model(
+def run_fem_benchmark_model(
     h: float,
     use_qpe: bool,
-) -> FemSneddonModel2d:
-    """Build and solve a standard/QPE FEM Sneddon model."""
-    params = make_sneddon_params(h=h)
+) -> object:
+    """Build and solve a FEM benchmark model."""
+    params = make_model_params(h=h)
     model = FemSneddonModel2d(params, use_qpe=use_qpe)
     model.model_setup_and_sol()
     return model
@@ -72,14 +72,14 @@ def run_fem_sneddon_model(
 
 if __name__ == "__main__":
 
-    # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-    cell_sizes = [0.1, 0.05, 0.025]
+    cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
+    # cell_sizes = [0.1, 0.05, 0.025]
 
     use_qpe = False
 
     h_ref = cell_sizes[-1]
     print(f"Running reference FEM model h = {h_ref}")
-    fine_model = run_fem_sneddon_model(
+    fine_model = run_fem_benchmark_model(
         h=h_ref,
         use_qpe=use_qpe,
     )
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     for h in cell_sizes[:-1]:
         print(f"\nRunning coarse FEM model h = {h}")
-        coarse_model = run_fem_sneddon_model(
+        coarse_model = run_fem_benchmark_model(
             h=h,
             use_qpe=use_qpe,
         )
@@ -128,9 +128,8 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_qfemnoqpe_so_quad_test.csv")
+    csv_path = os.path.join(save_csv, "selfconv_femnoqpe_so.csv")
     df.to_csv(csv_path, index=False)
-    print(f"Saved results to {csv_path}")
 
     # Reference lines. Adjust initial_value_line if needed for your figure.
     num_dofs_line = np.array([10, 30, 50, 70, 100, 300, 500, 1000, 3000])
@@ -193,7 +192,7 @@ if __name__ == "__main__":
     ax.set_xlabel(r"$\sqrt{\mathrm{DOF}}$")
     ax.set_ylabel("Relative error")
 
-    ax.set_xlim(10, 300)
+    ax.set_xlim(10, 500)
     ax.set_ylim(0.001, 1.0)
 
     ax.yaxis.set_major_formatter(formatter)
@@ -205,13 +204,35 @@ if __name__ == "__main__":
     ax.yaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10) * 0.1))
 
     ax.grid(True, which="both", linestyle="--", alpha=0.5)
-    ax.legend()
+    ax.legend(loc="upper right")
 
     plt.tight_layout()
+
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_qfemnoqpe_quad_test.png"), 
-        dpi=300, 
-        bbox_inches="tight"
+        os.path.join(save_fig, "selfconv_so_femnoqpe_quad.tiff"),
+        format="tiff",
+        dpi=300,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
+
+    # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
+    slope_matrix_quad, intercept_matrix_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(matrix_errors),
+        1,
+    )
+
+    slope_fracture_quad, intercept_fracture_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(fracture_errors),
+        1,
+    )
+
+    print(f"Slope for standard FEM matrix (quad): {slope_matrix_quad:.2f}")
+    print(f"Slope for standard FEM fracture (quad): {slope_fracture_quad:.2f}")
+
+# Slope for standard FEM matrix (quad): -1.35
+# Slope for standard FEM fracture (quad): -1.23
 

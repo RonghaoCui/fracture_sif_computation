@@ -206,6 +206,8 @@ class WestergaardShearFem2dSolver:
         self.lower_frac_edges = None
         self.upper_frac_nodes = None
         self.lower_frac_nodes = None
+        self.upper_frac_edge_dofs = None
+        self.lower_frac_edge_dofs = None
 
     def model_setup_and_sol(self) -> np.ndarray:
         """
@@ -422,8 +424,13 @@ class WestergaardShearFem2dSolver:
       
         NeuDof = np.array(NeuDof, dtype=int)
         NeuVal = np.array(NeuVal, dtype=float)
-        upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
-        lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
+        # upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
+        # lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
+        self.upper_frac_edge_dofs = np.array(NeuDof_upper, dtype=int)
+        self.lower_frac_edge_dofs = np.array(NeuDof_lower, dtype=int)
+
+        upper_frac_nodes = np.unique(self.upper_frac_edge_dofs.ravel())
+        lower_frac_nodes = np.unique(self.lower_frac_edge_dofs.ravel())
 
         return NeuDof, NeuVal, upper_frac_nodes, lower_frac_nodes
 
