@@ -1,3 +1,15 @@
+"""Generate visualization figures for the 2D Westergaard shear-mode benchmark 
+using the MPSA solver by PorePy.
+
+This script:
+    1. Runs the 2D Westergaard shear-mode benchmark with a simplex grid.
+    2. Plots the computational grid.
+    3. Plots the x- and y-displacement fields.
+    4. Extracts the displacement jump along the fracture.
+    5. Compares the numerical and analytical normal displacement jumps.
+    6. Plots the tangential displacement jump.
+    7. Saves all figures as compressed TIFF files.
+"""
 from __future__ import annotations
 
 import porepy as pp
@@ -10,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/mpsa/sol2/ws"
+save_dir = "figures/models/mpsa/sol/ws/"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -25,7 +37,7 @@ params = {
     "domain_size": 1.0,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "poi": poi,
     "error_exclusion_zone_fracture_tips": 0.0,
@@ -67,7 +79,7 @@ pp.plot_grid(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "Grids_ws_000d.tiff"),
+    os.path.join(save_dir, "Grids_ws_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -98,7 +110,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "uy_map_ws_000d.tiff"),
+    os.path.join(save_dir, "uy_map_ws_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -128,7 +140,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "ux_map_ws_000d.tiff"),
+    os.path.join(save_dir, "ux_map_ws_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -198,7 +210,7 @@ ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "ut_ws_000d.tiff"), 
+    os.path.join(save_dir, "ut_ws_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -228,7 +240,7 @@ ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "un_ws_000d.tiff"), 
+    os.path.join(save_dir, "un_ws_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
