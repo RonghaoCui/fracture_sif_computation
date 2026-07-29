@@ -1,8 +1,16 @@
-"""
-Solve the model for Westergaard's problem in the mixed mode by a quadratic 
-finite element method (FEM) without quarter-point elements (QPEs).
-Quarter-point elements (QPEs) can be disabled based on the `use_qpe` flag.
+"""Generate visualization figures for the 2D Westergaard mixed-mode benchmark using 
+the solver of standard quadratic finite element method (QFEM). The computational geometry 
+is meshed based on PorePy.
 
+Quarter-point elements (QPEs) are disabled based on the `use_qpe` flag.
+
+This script:
+    1. Runs the 2D benchmark with a simplex grid.
+    2. Plots the computational grid.
+    3. Extracts the displacement jump along the fracture.
+    4. Plots the displacement jump, compared with the analytical solution.
+    5. Plots the x- and y-displacement fields.
+    6. Saves all figures as compressed TIFF files.
 """
 from __future__ import annotations
 
@@ -17,7 +25,7 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/benchmarks/femnoqpe/sol/wm"
+save_dir = "figures/models/qfem/sol/wm/"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
@@ -41,8 +49,7 @@ params = {
     "error_exclusion_zone_fracture_tips": 0.0,
 }
 
-use_qpe = True
-# use_qpe = False
+use_qpe = False
 fem_model = FemWestergaardMixedMode2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
@@ -82,7 +89,7 @@ ax1.set_ylim(0.0, 1.0)
 # ax1.grid(True, linestyle="--", alpha=0.5)
 fig1.tight_layout()
 fig1.savefig(
-    os.path.join(save_dir, "FEM_mesh_t3_wm_45d.tiff"), 
+    os.path.join(save_dir, "QFEM_grids_wm_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -94,7 +101,7 @@ plt.close(fig1)
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
 
-print("x_coords: ", x_coords)
+# print("x_coords: ", x_coords)
 # print("u_jump_normal: ", u_jump_normal.shape)
 # print("u_jump_tangential: ", u_jump_tangential.shape)
 
@@ -136,7 +143,7 @@ ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)
 fig2.tight_layout()
 fig2.savefig(
-    os.path.join(save_dir, "FEM_delta_un_wm_45d.tiff"), 
+    os.path.join(save_dir, "QFEM_un_wm_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -175,7 +182,7 @@ ax3.legend()
 ax3.grid(True, linestyle="--", alpha=0.5)
 fig3.tight_layout()
 fig3.savefig(
-    os.path.join(save_dir, "FEM_delta_ut_wm_45d.tiff"), 
+    os.path.join(save_dir, "QFEM_ut_wm_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -225,7 +232,7 @@ ax4.set_xlim(0.0, 1.0)
 ax4.set_ylim(0.0, 1.0)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "FEM_ux_sol_wm_45d.tiff"), 
+    os.path.join(save_dir, "QFEM_ux_map_wm_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -252,7 +259,7 @@ ax5.set_xlim(0.0, 1.0)
 ax5.set_ylim(0.0, 1.0)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "FEM_uy_sol_wm_45d.tiff"), 
+    os.path.join(save_dir, "QFEM_uy_map_wm_45d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -260,8 +267,4 @@ fig5.savefig(
 )
 # plt.show()
 plt.close(fig5)
-
-
-# Slope for standard FEM matrix (quad): -1.34
-# Slope for standard FEM fracture (quad): -1.24
 
