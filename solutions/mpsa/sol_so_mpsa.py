@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/models/mpsa/sol/so/"
+save_dir = "figures/solutions/mpsa/sol/so/"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
