@@ -1,6 +1,6 @@
 """
 Self-convergence analysis for Sneddon's problem solved by standard quadratic FEM
-without quarter-point elements, using overlap integration with degree-4
+without quarter-point elements, using overlap integration with degree-4/higher-order
 triangle quadrature.
 
 This script computes the matrix-domain relative L2 error
@@ -20,10 +20,12 @@ import porepy as pp
 from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
 from fems import FemSneddonModel2d
+# from selfconv import (
+#     relative_error_p2_fem,
+# )
 from selfconv import (
-    relative_error_p2_fem,
+    relative_error_p2_fem_qpe,
 )
-
 
 save_fig = "figures/convergence/selfconv/femnoqpe"
 os.makedirs(save_fig, exist_ok=True)
@@ -96,9 +98,16 @@ if __name__ == "__main__":
             use_qpe=use_qpe,
         )
 
-        err_matrix, err_fracture = relative_error_p2_fem(
+        # err_matrix, err_fracture = relative_error_p2_fem(
+        #     coarse_model=coarse_model,
+        #     fine_model=fine_model,
+        #     tol=1e-8,
+        # )
+        err_matrix, err_fracture = relative_error_p2_fem_qpe(
             coarse_model=coarse_model,
             fine_model=fine_model,
+            num_quad=7,
+            use_qpe=use_qpe,
             tol=1e-8,
         )
 

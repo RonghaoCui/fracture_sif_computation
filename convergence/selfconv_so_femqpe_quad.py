@@ -1,7 +1,7 @@
 """
-Self-convergence analysis for Sneddon's problem solved by standard quadratic FEM
-(T6/QFEM without quarter-point elements), using overlap integration with degree-4
-triangle quadrature.
+Self-convergence analysis for Sneddon's problem solved by quadratic FEM
+with quarter-point elements, using overlap integration with high-degree
+quadrature rules.
 
 This script computes the matrix-domain relative L2 error
     ||u_H^{T6} - u_h^{T6}|| / ||u_h^{T6}||
@@ -21,7 +21,7 @@ from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
 from fems import FemSneddonModel2d
 from selfconv import (
-    relative_error_p2_between_fem_models,
+    relative_error_p2_fem_qpe,
 )
 
 
@@ -32,8 +32,8 @@ save_csv = "data/convergence/selfconv/femqpe/so"
 os.makedirs(save_csv, exist_ok=True)
 
 
-def make_sneddon_params(h: float) -> dict:
-    """Create parameters for the FEM Sneddon benchmark."""
+def make_model_params(h: float) -> dict:
+    """Create parameters for the FEM benchmark model."""
     a = 0.30
     poi = 0.25
     shear_modulus = 1.0
@@ -59,12 +59,12 @@ def make_sneddon_params(h: float) -> dict:
     }
 
 
-def run_fem_sneddon_model(
+def run_fem_benchmark_model(
     h: float,
     use_qpe: bool,
-) -> FemSneddonModel2d:
-    """Build and solve a FEM Sneddon model."""
-    params = make_sneddon_params(h=h)
+) -> object:
+    """Build and solve a FEM benchmark model."""
+    params = make_model_params(h=h)
     model = FemSneddonModel2d(params, use_qpe=use_qpe)
     model.model_setup_and_sol()
     return model
@@ -72,14 +72,14 @@ def run_fem_sneddon_model(
 
 if __name__ == "__main__":
 
-    cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-    # cell_sizes = [0.1, 0.05, 0.025]
+    # cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625, 0.0050]
+    cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625]
 
     use_qpe = True
 
     h_ref = cell_sizes[-1]
     print(f"Running reference FEM model h = {h_ref}")
-    fine_model = run_fem_sneddon_model(
+    fine_model = run_fem_benchmark_model(
         h=h_ref,
         use_qpe=use_qpe,
     )
@@ -91,14 +91,15 @@ if __name__ == "__main__":
 
     for h in cell_sizes[:-1]:
         print(f"\nRunning coarse FEM model h = {h}")
-        coarse_model = run_fem_sneddon_model(
+        coarse_model = run_fem_benchmark_model(
             h=h,
             use_qpe=use_qpe,
         )
 
-        err_matrix, err_fracture = relative_error_p2_between_fem_models(
+        err_matrix, err_fracture = relative_error_p2_fem_qpe(
             coarse_model=coarse_model,
             fine_model=fine_model,
+            num_quad=7,
             use_qpe=use_qpe,
             tol=1e-8,
         )
@@ -129,7 +130,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_femqpe_so_quad_test3.csv")
+    csv_path = os.path.join(save_csv, "selfconv_femqpe_so.csv")
     df.to_csv(csv_path, index=False)
     print(f"Saved results to {csv_path}")
 
@@ -194,8 +195,8 @@ if __name__ == "__main__":
     ax.set_xlabel(r"$\sqrt{\mathrm{DOF}}$")
     ax.set_ylabel("Relative error")
 
-    ax.set_xlim(10, 300)
-    ax.set_ylim(0.0001, 1.0)
+    ax.set_xlim(10, 1000)
+    ax.set_ylim(0.00001, 1.0)
 
     ax.yaxis.set_major_formatter(formatter)
     ax.xaxis.set_major_locator(LogLocator(base=10))
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_femqpe_quad_test3.png"), 
+        os.path.join(save_dir, "self_convergence_so_femqpe_quad.png"), 
         dpi=300, 
         bbox_inches="tight"
     )
