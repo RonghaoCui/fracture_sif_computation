@@ -1,6 +1,6 @@
 """
-Self-convergence analysis for Sneddon's problem solved by quadratic FEM
-with quarter-point elements, using overlap integration with high-degree
+Self-convergence analysis for the 2D Sneddon benchmark solved by quadratic 
+FEM with quarter-point elements, using overlap integration with high-degree
 quadrature rules.
 
 This script computes the matrix-domain relative L2 error
@@ -25,10 +25,10 @@ from selfconv import (
 )
 
 
-save_dir = "figures/convergence/selfconv/femqpe"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/selfconv/qfem_qpe"
+os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/femqpe/so"
+save_csv = "data/selfconv/qfem_qpe/so"
 os.makedirs(save_csv, exist_ok=True)
 
 
@@ -72,7 +72,6 @@ def run_fem_benchmark_model(
 
 if __name__ == "__main__":
 
-    # cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625, 0.0050]
     cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625]
 
     use_qpe = True
@@ -130,7 +129,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_femqpe_so.csv")
+    csv_path = os.path.join(save_csv, "selfconv_qfem_qpe_so.csv")
     df.to_csv(csv_path, index=False)
     print(f"Saved results to {csv_path}")
 
@@ -165,7 +164,7 @@ if __name__ == "__main__":
         matrix_errors,
         "o-",
         color="tab:blue",
-        label="QFEM matrix (quad)",
+        label="QFEM matrix",
     )
 
     ax.loglog(
@@ -173,7 +172,7 @@ if __name__ == "__main__":
         fracture_errors,
         "s-",
         color="tab:orange",
-        label="QFEM fracture (quad)",
+        label="QFEM fracture",
     )
 
     # Reference slopes.
@@ -211,9 +210,30 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_femqpe_quad.png"), 
-        dpi=300, 
-        bbox_inches="tight"
+        os.path.join(save_fig, "selfconv_so_qfem_qpe.tiff"),
+        format="tiff",
+        dpi=300,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
+
+    # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
+    slope_matrix_quad, intercept_matrix_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(matrix_errors),
+        1,
+    )
+
+    slope_fracture_quad, intercept_fracture_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(fracture_errors),
+        1,
+    )
+
+    print(f"Slope for standard FEM matrix (quad): {slope_matrix_quad:.2f}")
+    print(f"Slope for standard FEM fracture (quad): {slope_fracture_quad:.2f}")
+
+# Slope for standard FEM matrix (quad): -1.97
+# Slope for standard FEM fracture (quad): -0.97
 

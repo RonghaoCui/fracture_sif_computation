@@ -1,6 +1,6 @@
 """
-Self-convergence analysis for Westergaard's Mixed Mode problem in the mixed-dimensional grids. 
-
+Self-convergence analysis for the 2D Sneddon benchmark in the mixed-dimensional grids
+solved by MPSA in PorePy. 
 """
 
 from __future__ import annotations
@@ -8,13 +8,10 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from westergaard2d import WestergaardMixedMode2d
-
-# import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
-# from mdamr.non_matching.transfer_grid import TransferGrid
+from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 
 from selfconv import (
-    relative_error_p1_mpsa,
+    relative_error_p1_mpsa, 
 )
 
 import pandas as pd
@@ -25,11 +22,12 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_fig = "figures/convergence/selfconv/mpsa"
+save_fig = "figures/selfconv/mpsa"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/mpsa/wm"
+save_csv = "data/selfconv/mpsa/so"
 os.makedirs(save_csv, exist_ok=True)
+
 
 # Basic model
 def make_model_params(h: float) -> dict:
@@ -48,26 +46,21 @@ def make_model_params(h: float) -> dict:
         },
         "a": a,
         "domain_size": 1.0,
+        "p0": 1e-4,
+        "poi": poi,
         "meshing_arguments": {"cell_size": h},
         "grid_type": "simplex",
         "theta_rad": math.radians(90 - 0),
         "num_bem_segments": 1000,
-        "poi": poi,
-        "error_exclusion_zone_fracture_tips": 0.0,
-        "sigma_inf": 1e-4,  # far_field normal stress
-        "tau_inf": 1e-4,    # far_field shear stress
-        "mu": 0.0,          # friction coefficient
-        "p0": 0.0,          # This pressure value will not be calculated in this model. 
-                            # But "p0" is needed because of model's parental class
+        "error_exclusion_zone_fracture_tips": 0.1,
     }
 
 
 def run_benchmark_model(h: float) -> object:
     params = make_model_params(h)
-    model = WestergaardMixedMode2d(params=params)
+    model = ManuSneddonModel2d(params=params)
     pp.run_time_dependent_model(model)
     return model
-
 
 # Main convergence analysis
 if __name__ == "__main__":
@@ -83,16 +76,13 @@ if __name__ == "__main__":
     matrix_errors = []
     fracture_errors = []
     interface_errors = []
-    matrix_errors2 = []
-    fracture_errors2 = []
-    interface_errors2 = []
     sqrt_dofs = []
 
     for h in cell_sizes[:-1]:
         print(f"\nRunning coarse model h = {h}")
         coarse_model = run_benchmark_model(h)
 
-        err_matrix, err_fracture, err_interface, err_matrix2, err_fracture2, err_interface2 = (
+        err_matrix, err_fracture, err_interface = (
             relative_error_p1_mpsa(
                 coarse_model,
                 fine_model,
@@ -112,27 +102,11 @@ if __name__ == "__main__":
 
         # 2D matrix
         dof_md = matrix_dof
-
-        # 2D matrix + 1D fracture
-        # dof_md = (
-        #     coarse_model.nd * sd_matrix.num_cells 
-        #     + coarse_model.nd * sd_frac.num_cells
-        # )
-
-        # 2D matrix + 1D interfaces
-        # dof_md = (
-        #     coarse_model.nd * sd_matrix.num_cells
-        #     + coarse_model.nd * mg.num_cells
-        # )
-
         sqrt_dof = np.sqrt(dof_md)
 
         matrix_errors.append(err_matrix)
         fracture_errors.append(err_fracture)
         interface_errors.append(err_interface)
-        matrix_errors2.append(err_matrix2)
-        fracture_errors2.append(err_fracture2)
-        interface_errors2.append(err_interface2)
         sqrt_dofs.append(sqrt_dof)
 
         print(f"Matrix relative L2 error: {err_matrix:.6e}")
@@ -148,22 +122,15 @@ if __name__ == "__main__":
             "matrix_error_quad": err_matrix,
             "fracture_error_quad": err_fracture,
             "interface_error_quad": err_interface,
-            "matrix_error_exact": err_matrix2,
-            "fracture_error_exact": err_fracture2,
-            "interface_error_exact": err_interface2,
-
         })
 
     matrix_errors = np.asarray(matrix_errors)
     fracture_errors = np.asarray(fracture_errors)
     interface_errors = np.asarray(interface_errors)
-    matrix_errors2 = np.asarray(matrix_errors2)
-    fracture_errors2 = np.asarray(fracture_errors2)
-    interface_errors2 = np.asarray(interface_errors2)
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_mpsa_wm.csv")
+    csv_path = os.path.join(save_csv, "selfconv_mpsa_so.csv")
     df.to_csv(csv_path, index=False)
 
     # Reference line
@@ -193,42 +160,21 @@ if __name__ == "__main__":
         sqrt_dofs, 
         matrix_errors, 
         "o-", color='tab:blue',
-        label="MPSA matrix (quad)"
+        label="MPSA matrix"
     )
 
     ax.loglog(
         sqrt_dofs,
         fracture_errors,
         "s-", color='tab:orange',
-        label="MPSA fracture (quad)",
+        label="MPSA fracture",
     )
 
     ax.loglog(
         sqrt_dofs,
         interface_errors,
         "^-",color='tab:pink',
-        label="MPSA interface (quad)",
-    )
-
-    ax.loglog(
-        sqrt_dofs, 
-        matrix_errors2, 
-        "o--", color='tab:blue',
-        label="MPSA matrix (exact)",
-    )
-
-    ax.loglog(
-        sqrt_dofs,
-        fracture_errors2,
-        "s--", color='tab:orange',
-        label="MPSA fracture (exact)",
-    )
-
-    ax.loglog(
-        sqrt_dofs,
-        interface_errors2,
-        "^--",color='tab:pink',
-        label="MPSA interface (exact)",
+        label="MPSA interface",
     )
 
     # Reference slopes.
@@ -264,14 +210,14 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_fig, "selfconv_wm_mpsa.tiff"),
+        os.path.join(save_fig, "selfconv_so_mpsa.tiff"),
         format="tiff",
         dpi=300,
         bbox_inches="tight",
         pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
-    
+
     # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
     slope_matrix_quad, intercept_matrix_quad = np.polyfit(
         np.log10(sqrt_dofs),
@@ -295,6 +241,7 @@ if __name__ == "__main__":
     print(f"Slope for MPSA fracture (quad): {slope_fracture_quad:.2f}")
     print(f"Slope for MPSA interface (quad): {slope_interface_quad:.2f}")
 
-# Slope for MPSA matrix (quad): -1.30
-# Slope for MPSA fracture (quad): -1.18
-# Slope for MPSA interface (quad): -1.20
+# Slope for MPSA matrix (quad): -1.43
+# Slope for MPSA fracture (quad): -1.19
+# Slope for MPSA interface (quad): -1.22
+

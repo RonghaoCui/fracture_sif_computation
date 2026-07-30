@@ -1,7 +1,7 @@
 """
-Self-convergence analysis for Sneddon's problem solved by standard quadratic FEM
-(T6/QFEM without quarter-point elements), using overlap integration with degree-4
-triangle quadrature.
+Self-convergence analysis for the 2D Westergaard sliding-mode benchmark solved 
+by quadratic FEM with quarter-point elements, using overlap integration with 
+high-degree quadrature rules.
 
 This script computes the matrix-domain relative L2 error
     ||u_H^{T6} - u_h^{T6}|| / ||u_h^{T6}||
@@ -19,16 +19,16 @@ import pandas as pd
 import porepy as pp
 from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
-from fems import FemSneddonModel2d
+from fems import FemWestergaardShearMode2d
 from selfconv import (
     relative_error_p2_fem_qpe,
 )
 
 
-save_dir = "figures/convergence/selfconv/femqpe"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/selfconv/qfem_qpe"
+os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/femqpe/so"
+save_csv = "data/selfconv/qfem_qpe/ws"
 os.makedirs(save_csv, exist_ok=True)
 
 
@@ -49,7 +49,8 @@ def make_model_params(h: float) -> dict:
         },
         "a": a,
         "domain_size": 1.0,
-        "p0": 1e-4,
+        "p0": 0.0,
+        "tau_inf": 1e-4,    # far_field shear stress
         "poi": poi,
         "meshing_arguments": {"cell_size": h},
         "grid_type": "simplex",
@@ -62,44 +63,38 @@ def make_model_params(h: float) -> dict:
 def run_fem_benchmark_model(
     h: float,
     use_qpe: bool,
-) -> FemSneddonModel2d:
+) -> object:
     """Build and solve a FEM benchmark model."""
     params = make_model_params(h=h)
-    model = FemSneddonModel2d(params, use_qpe=use_qpe)
+    model = FemWestergaardShearMode2d(params, use_qpe=use_qpe)
     model.model_setup_and_sol()
     return model
 
 
 if __name__ == "__main__":
 
-    # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.0050]
-    cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
-    # cell_sizes = [0.1, 0.05, 0.025]
-    # cell_sizes = [0.025, 0.0125, 0.00625]
-    # cell_sizes = [0.1, 0.0050]
+    cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625]
 
     use_qpe = True
+
+    h_ref = cell_sizes[-1]
+    print(f"Running reference FEM model h = {h_ref}")
+    fine_model = run_fem_benchmark_model(
+        h=h_ref,
+        use_qpe=use_qpe,
+    )
 
     results = []
     matrix_errors = []
     fracture_errors = []
     sqrt_dofs = []
 
-    # Optional: cache solved models to avoid re-solving the same mesh twice.
-    models = {}
-
-    for h in cell_sizes:
-        print(f"\nRunning FEM model h = {h}")
-        models[h] = run_fem_benchmark_model(
+    for h in cell_sizes[:-1]:
+        print(f"\nRunning coarse FEM model h = {h}")
+        coarse_model = run_fem_benchmark_model(
             h=h,
             use_qpe=use_qpe,
         )
-
-    for h_coarse, h_fine in zip(cell_sizes[:-1], cell_sizes[1:]):
-        print(f"\nComparing h = {h_coarse} against h = {h_fine}")
-
-        coarse_model = models[h_coarse]
-        fine_model = models[h_fine]
 
         err_matrix, err_fracture = relative_error_p2_fem_qpe(
             coarse_model=coarse_model,
@@ -135,7 +130,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_femqpe_so_quad_test4.csv")
+    csv_path = os.path.join(save_csv, "selfconv_qfem_qpe_ws.csv")
     df.to_csv(csv_path, index=False)
     print(f"Saved results to {csv_path}")
 
@@ -170,7 +165,7 @@ if __name__ == "__main__":
         matrix_errors,
         "o-",
         color="tab:blue",
-        label="QFEM matrix (quad)",
+        label="QFEM matrix",
     )
 
     ax.loglog(
@@ -178,7 +173,7 @@ if __name__ == "__main__":
         fracture_errors,
         "s-",
         color="tab:orange",
-        label="QFEM fracture (quad)",
+        label="QFEM fracture",
     )
 
     # Reference slopes.
@@ -216,9 +211,29 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_so_femqpe_quad_test4.png"), 
-        dpi=300, 
-        bbox_inches="tight"
+        os.path.join(save_fig, "selfconv_ws_qfem_qpe.tiff"),
+        format="tiff",
+        dpi=300,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
 
+    # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
+    slope_matrix_quad, intercept_matrix_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(matrix_errors),
+        1,
+    )
+
+    slope_fracture_quad, intercept_fracture_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(fracture_errors),
+        1,
+    )
+
+    print(f"Slope for standard FEM matrix (quad): {slope_matrix_quad:.2f}")
+    print(f"Slope for standard FEM fracture (quad): {slope_fracture_quad:.2f}")
+
+# Slope for standard FEM matrix (quad): -1.85
+# Slope for standard FEM fracture (quad): -1.00 

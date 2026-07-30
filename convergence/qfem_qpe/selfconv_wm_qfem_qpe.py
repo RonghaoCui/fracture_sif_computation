@@ -1,5 +1,5 @@
 """
-Self-convergence analysis for Westergaard's problem in the shear mode solved 
+Self-convergence analysis for the 2D Westergaard mixed-mode benchmark solved 
 by quadratic FEM with quarter-point elements, using overlap integration with 
 high-degree quadrature rules.
 
@@ -19,16 +19,16 @@ import pandas as pd
 import porepy as pp
 from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
-from fems import FemWestergaardShearMode2d
+from fems import FemWestergaardMixedMode2d
 from selfconv import (
     relative_error_p2_fem_qpe,
 )
 
 
-save_dir = "figures/convergence/selfconv/femqpe"
-os.makedirs(save_dir, exist_ok=True)
+save_fig = "figures/selfconv/qfem_qpe"
+os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/femqpe/ws"
+save_csv = "data/selfconv/qfem_qpe/wm"
 os.makedirs(save_csv, exist_ok=True)
 
 
@@ -50,7 +50,8 @@ def make_model_params(h: float) -> dict:
         "a": a,
         "domain_size": 1.0,
         "p0": 0.0,
-        "tau_inf": 1e-4,    # far_field shear stress
+        "sigma_inf": 1e-4,    # far_field normal stress
+        "tau_inf": 1e-4,      # far_field shear stress
         "poi": poi,
         "meshing_arguments": {"cell_size": h},
         "grid_type": "simplex",
@@ -66,14 +67,13 @@ def run_fem_benchmark_model(
 ) -> object:
     """Build and solve a FEM benchmark model."""
     params = make_model_params(h=h)
-    model = FemWestergaardShearMode2d(params, use_qpe=use_qpe)
+    model = FemWestergaardMixedMode2d(params, use_qpe=use_qpe)
     model.model_setup_and_sol()
     return model
 
 
 if __name__ == "__main__":
 
-    # cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625, 0.0050]
     cell_sizes = [0.1, 0.05, 0.025, 0.0124, 0.00625]
 
     use_qpe = True
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_femqpe_ws.csv")
+    csv_path = os.path.join(save_csv, "selfconv_qfem_qpe_wm.csv")
     df.to_csv(csv_path, index=False)
     print(f"Saved results to {csv_path}")
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         matrix_errors,
         "o-",
         color="tab:blue",
-        label="QFEM matrix (quad)",
+        label="QFEM matrix",
     )
 
     ax.loglog(
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         fracture_errors,
         "s-",
         color="tab:orange",
-        label="QFEM fracture (quad)",
+        label="QFEM fracture",
     )
 
     # Reference slopes.
@@ -212,9 +212,30 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig(
-        os.path.join(save_dir, "self_convergence_ws_femqpe_quad.png"), 
-        dpi=300, 
-        bbox_inches="tight"
+        os.path.join(save_fig, "selfconv_wm_qfem_qpe.tiff"),
+        format="tiff",
+        dpi=300,
+        bbox_inches="tight",
+        pil_kwargs={"compression": "tiff_lzw"}
     )
     plt.close(fig)
+
+    # Slope in log-log plot: log(error) = slope * log(sqrt_dof) + intercept
+    slope_matrix_quad, intercept_matrix_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(matrix_errors),
+        1,
+    )
+
+    slope_fracture_quad, intercept_fracture_quad = np.polyfit(
+        np.log10(sqrt_dofs),
+        np.log10(fracture_errors),
+        1,
+    )
+
+    print(f"Slope for standard FEM matrix (quad): {slope_matrix_quad:.2f}")
+    print(f"Slope for standard FEM fracture (quad): {slope_fracture_quad:.2f}")
+
+# Slope for standard FEM matrix (quad): -1.92
+# Slope for standard FEM fracture (quad): -0.99
 

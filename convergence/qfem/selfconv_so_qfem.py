@@ -1,5 +1,5 @@
 """
-Self-convergence analysis for Sneddon's problem solved by standard quadratic FEM
+Self-convergence analysis for the 2D Sneddon benchmark solved by standard quadratic FEM
 without quarter-point elements, using overlap integration with degree-4/higher-order
 triangle quadrature.
 
@@ -27,10 +27,10 @@ from selfconv import (
     relative_error_p2_fem_qpe,
 )
 
-save_fig = "figures/convergence/selfconv/femnoqpe"
+save_fig = "figures/selfconv/qfem"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/femnoqpe/so"
+save_csv = "data/selfconv/qfem/so"
 os.makedirs(save_csv, exist_ok=True)
 
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
-    csv_path = os.path.join(save_csv, "selfconv_femnoqpe_so.csv")
+    csv_path = os.path.join(save_csv, "selfconv_qfem_so.csv")
     df.to_csv(csv_path, index=False)
 
     # Reference lines. Adjust initial_value_line if needed for your figure.
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         matrix_errors,
         "o-",
         color="tab:blue",
-        label="QFEM matrix (quad)",
+        label="QFEM matrix",
     )
 
     ax.loglog(
@@ -179,7 +179,7 @@ if __name__ == "__main__":
         fracture_errors,
         "s-",
         color="tab:orange",
-        label="QFEM fracture (quad)",
+        label="QFEM fracture",
     )
 
     # Reference slopes.
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     plt.savefig(
-        os.path.join(save_fig, "selfconv_so_femnoqpe_quad.tiff"),
+        os.path.join(save_fig, "selfconv_so_qfem.tiff"),
         format="tiff",
         dpi=300,
         bbox_inches="tight",

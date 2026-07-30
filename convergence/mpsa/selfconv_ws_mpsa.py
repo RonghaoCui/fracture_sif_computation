@@ -1,6 +1,6 @@
 """
-Self-convergence analysis for Westergaard's Mode II problem in the mixed-dimensional grids. 
-
+Self-convergence analysis for the 2D Westergaard sliding-mode benchmark in the 
+mixed-dimensional grids solved by MPSA in PorePy. 
 """
 
 from __future__ import annotations
@@ -9,9 +9,6 @@ import porepy as pp
 import numpy as np
 
 from westergaard2d import WestergaardShearMode2d
-
-# import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
-# from mdamr.non_matching.transfer_grid import TransferGrid
 
 from selfconv import (
     relative_error_p1_mpsa,  
@@ -25,10 +22,10 @@ import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 import os
-save_fig = "figures/convergence/selfconv/mpsa"
+save_fig = "figures/selfconv/mpsa"
 os.makedirs(save_fig, exist_ok=True)
 
-save_csv = "data/convergence/selfconv/mpsa/ws"
+save_csv = "data/selfconv/mpsa/ws"
 os.makedirs(save_csv, exist_ok=True)
 
 # Basic model
@@ -82,16 +79,13 @@ if __name__ == "__main__":
     matrix_errors = []
     fracture_errors = []
     interface_errors = []
-    matrix_errors2 = []
-    fracture_errors2 = []
-    interface_errors2 = []
     sqrt_dofs = []
 
     for h in cell_sizes[:-1]:
         print(f"\nRunning coarse model h = {h}")
         coarse_model = run_benchmark_model(h)
 
-        err_matrix, err_fracture, err_interface, err_matrix2, err_fracture2, err_interface2 = (
+        err_matrix, err_fracture, err_interface = (
             relative_error_p1_mpsa(
                 coarse_model,
                 fine_model,
@@ -111,27 +105,11 @@ if __name__ == "__main__":
 
         # 2D matrix
         dof_md = matrix_dof
-
-        # 2D matrix + 1D fracture
-        # dof_md = (
-        #     coarse_model.nd * sd_matrix.num_cells 
-        #     + coarse_model.nd * sd_frac.num_cells
-        # )
-
-        # 2D matrix + 1D interfaces
-        # dof_md = (
-        #     coarse_model.nd * sd_matrix.num_cells
-        #     + coarse_model.nd * mg.num_cells
-        # )
-
         sqrt_dof = np.sqrt(dof_md)
 
         matrix_errors.append(err_matrix)
         fracture_errors.append(err_fracture)
         interface_errors.append(err_interface)
-        matrix_errors2.append(err_matrix2)
-        fracture_errors2.append(err_fracture2)
-        interface_errors2.append(err_interface2)
         sqrt_dofs.append(sqrt_dof)
 
         print(f"Matrix relative L2 error: {err_matrix:.6e}")
@@ -147,18 +125,11 @@ if __name__ == "__main__":
             "matrix_error_quad": err_matrix,
             "fracture_error_quad": err_fracture,
             "interface_error_quad": err_interface,
-            "matrix_error_exact": err_matrix2,
-            "fracture_error_exact": err_fracture2,
-            "interface_error_exact": err_interface2,
-
         })
 
     matrix_errors = np.asarray(matrix_errors)
     fracture_errors = np.asarray(fracture_errors)
     interface_errors = np.asarray(interface_errors)
-    matrix_errors2 = np.asarray(matrix_errors2)
-    fracture_errors2 = np.asarray(fracture_errors2)
-    interface_errors2 = np.asarray(interface_errors2)
     sqrt_dofs = np.asarray(sqrt_dofs)
 
     df = pd.DataFrame(results)
@@ -192,42 +163,21 @@ if __name__ == "__main__":
         sqrt_dofs, 
         matrix_errors, 
         "o-", color='tab:blue',
-        label="MPSA matrix (quad)"
+        label="MPSA matrix"
     )
 
     ax.loglog(
         sqrt_dofs,
         fracture_errors,
         "s-", color='tab:orange',
-        label="MPSA fracture (quad)",
+        label="MPSA fracture",
     )
 
     ax.loglog(
         sqrt_dofs,
         interface_errors,
         "^-",color='tab:pink',
-        label="MPSA interface (quad)",
-    )
-
-    ax.loglog(
-        sqrt_dofs, 
-        matrix_errors2, 
-        "o--", color='tab:blue',
-        label="MPSA matrix (exact)",
-    )
-
-    ax.loglog(
-        sqrt_dofs,
-        fracture_errors2,
-        "s--", color='tab:orange',
-        label="MPSA fracture (exact)",
-    )
-
-    ax.loglog(
-        sqrt_dofs,
-        interface_errors2,
-        "^--",color='tab:pink',
-        label="MPSA interface (exact)",
+        label="MPSA interface",
     )
 
     # Reference slopes.
@@ -297,4 +247,3 @@ if __name__ == "__main__":
 # Slope for MPSA matrix (quad): -1.28
 # Slope for MPSA fracture (quad): -1.23
 # Slope for MPSA interface (quad): -1.25
-
