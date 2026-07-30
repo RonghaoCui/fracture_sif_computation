@@ -213,7 +213,8 @@ def matrix_error_integration_t6_quad(
     for j, tr_nodes in enumerate(tr_cells):
         xy = Xtr[:, tr_nodes]
 
-        qx, qw = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        # qx, qw = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        qx, qw = QuadratureIntegration.triangle_quadrature_gaussian(xy, num_quad=7)
 
         # Get the parent coarse and fine cells corresponding to 
         # the current transfer cell.
@@ -398,7 +399,7 @@ def fracture_error_integration_p2_quad(
     fine_model: object,
     tol: float = 1e-8,
     num_quad: int = 3,
-) -> tuple[float, float, float, float]:
+) -> tuple[float, float]:
     """Compute overlap-based relative L2 error components for P2 fields on 
     1D fracture grids using the quadrature rule.
 
@@ -432,19 +433,16 @@ def fracture_error_integration_p2_quad(
         )
     )
 
-    xi, wi = np.polynomial.legendre.leggauss(num_quad)
-
     numerator_sq = 0.0
     denominator_sq = 0.0
 
     for s0, s1 in zip(overlap_nodes[:-1], overlap_nodes[1:]):
-        # Mapping of quadrature points from reference coordinates 
-        # to physical coordinates.
-        s_mid = 0.5 * (s0 + s1)
-        s_half = 0.5 * (s1 - s0)
 
-        s_quad = s_mid + s_half * xi
-        w_quad = abs(s_half) * wi
+        s_quad, w_quad = QuadratureIntegration.segment_quadrature_gauss(
+            s0, s1, num_quad=7
+        )
+
+        s_mid = 0.5 * (s0 + s1)
 
         s_seg_H, v_seg_H = _find_parent_segment(segs_H, s_mid, tol=tol)
         s_seg_h, v_seg_h = _find_parent_segment(segs_h, s_mid, tol=tol)

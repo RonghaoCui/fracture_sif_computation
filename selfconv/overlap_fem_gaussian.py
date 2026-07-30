@@ -1,3 +1,9 @@
+"""
+Self-convergence functionlities of P2 fields for 2D standard FEM models containing a fracture. 
+
+The models are solved with the standard T6 element without QPE, where the mid-side nodes are 
+correctly placed at the midpoints of the edges in the original 2D grid.
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -6,6 +12,7 @@ import porepy as pp
 import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
 from mdamr.non_matching.transfer_grid import TransferGrid
 
+from fems import mmfa
 from selfconv import QuadratureIntegration
 
 
@@ -134,6 +141,7 @@ def _eval_t6_2d(
     # Compute T6 shape functions at quadrature points.
     N = _t6_shape_functions_2d(L)
     return element_u @ N
+
 
 def _q8_shape_functions_and_derivatives(
     xi: float,
@@ -270,7 +278,7 @@ def _inverse_collapsed_q8_coordinates(
         residual = x_map - x_phys
 
         if np.linalg.norm(residual) < tol:
-            print(f"Converged in {_} iterations with residual norm {np.linalg.norm(residual):.2e}")
+            # print(f"Converged in {_} iterations with residual norm {np.linalg.norm(residual):.2e}")
             return xi, eta
 
         dx_dxi = element_nodes.T @ dM_dxi
@@ -334,119 +342,10 @@ def _qpe_cell_set(model: object) -> set[int]:
     return set(np.unique(qpe_cells).tolist())
 
 
-def _t6_shape_function_derivatives_from_xi_eta(
-    xi: float,
-    eta: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Derivatives of T6 shape functions wrt xi and eta.
-
-    Reference coordinates:
-        L0 = 1 - xi - eta
-        L1 = xi
-        L2 = eta
-
-    Node order:
-        [v0, m01, v1, m12, v2, m02]
-    """
-    L0 = 1.0 - xi - eta
-    L1 = xi
-    L2 = eta
-
-    dN_dxi = np.array([
-        1.0 - 4.0 * L0,          # d/dxi of L0(2L0-1)
-        4.0 * (L0 - L1),         # d/dxi of 4L0L1
-        4.0 * L1 - 1.0,          # d/dxi of L1(2L1-1)
-        4.0 * L2,                # d/dxi of 4L1L2
-        0.0,                     # d/dxi of L2(2L2-1)
-        -4.0 * L2,               # d/dxi of 4L0L2
-    ])
-
-    dN_deta = np.array([
-        1.0 - 4.0 * L0,          # d/deta of L0(2L0-1)
-        -4.0 * L1,               # d/deta of 4L0L1
-        0.0,                     # d/deta of L1(2L1-1)
-        4.0 * L1,                # d/deta of 4L1L2
-        4.0 * L2 - 1.0,          # d/deta of L2(2L2-1)
-        4.0 * (L0 - L2),         # d/deta of 4L0L2
-    ])
-
-    return dN_dxi, dN_deta
-
-
-def _inverse_t6_isoparametric_coordinates(
-    x_phys: np.ndarray,
-    element_nodes: np.ndarray,
-    tol: float = 1e-12,
-    max_iter: int = 500,
-) -> tuple[float, float]:
-    """Find reference coordinates (xi, eta) for one physical point.
-
-    This is needed for QPE elements, where the mid-side nodes are shifted and
-    the physical-to-reference map is no longer the linear barycentric map.
-    """
-    vertices = element_nodes[[0, 2, 4], :].T
-
-    # Linear barycentric coordinates are a good initial guess.
-    L_init = _barycentric_coordinates(vertices, x_phys.reshape(2, 1)).ravel()
-    xi = float(L_init[1])
-    eta = float(L_init[2])
-
-    for _ in range(max_iter):
-        L = np.array([[1.0 - xi - eta], [xi], [eta]])
-        N = _t6_shape_functions_2d(L).ravel()
-
-        x_map = element_nodes.T @ N
-        residual = x_map - x_phys
-
-        if np.linalg.norm(residual) < tol:
-            return xi, eta
-
-        dN_dxi, dN_deta = _t6_shape_function_derivatives_from_xi_eta(xi, eta)
-
-        dx_dxi = element_nodes.T @ dN_dxi
-        dx_deta = element_nodes.T @ dN_deta
-
-        J = np.column_stack((dx_dxi, dx_deta))
-
-        delta = np.linalg.solve(J, residual)
-
-        xi -= float(delta[0])
-        eta -= float(delta[1])
-
-    raise RuntimeError(
-        "Newton iteration failed in inverse T6 isoparametric mapping."
-    )
-
-
-def _eval_t6_isoparametric_2d(
-    qx: np.ndarray,
-    element_nodes: np.ndarray,
-    element_u: np.ndarray,
-) -> np.ndarray:
-    """Evaluate a T6/QPE displacement field at physical points.
-
-    This works for both standard T6 and QPE elements. For QPE, it performs
-    an inverse isoparametric mapping from physical coordinates to reference
-    coordinates before evaluating the T6 shape functions.
-    """
-    uq = np.zeros((2, qx.shape[1]), dtype=float)
-
-    for k in range(qx.shape[1]):
-        xi, eta = _inverse_t6_isoparametric_coordinates(
-            x_phys=qx[:, k],
-            element_nodes=element_nodes,
-        )
-
-        L = np.array([[1.0 - xi - eta], [xi], [eta]])
-        N = _t6_shape_functions_2d(L)
-
-        uq[:, k] = (element_u @ N).ravel()
-
-    return uq
-
 def matrix_error_integration_t6_quad(
     coarse_model: object,
     fine_model: object,
+    num_quad: int,
     use_qpe: bool,
     tol: float = 1e-8,
 ) -> tuple[float, float]:
@@ -519,52 +418,36 @@ def matrix_error_integration_t6_quad(
     for j, tr_nodes in enumerate(tr_cells):
         xy = Xtr[:, tr_nodes]
 
-        qx, qw = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        # qx, qw = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        qx, qw = QuadratureIntegration.triangle_quadrature_gaussian(xy, num_quad)
 
         # Get the parent coarse and fine cells corresponding to 
         # the current transfer cell.
         KH = t2s[j].indices[0]
         kh = t2t[j].indices[0]
 
+        # if KH in qpe_H or kh in qpe_h:
+        #     continue
+
         eH = elems_H[KH]
         eh = elems_h[kh]
-        
-        # if KH in qpe_H:
-        #     uH_q = _eval_qpe_collapsed_q8_2d(
-        #         qx=qx,
-        #         element_nodes=nodes_H[eH],
-        #         element_u=UH_node[:, eH],
-        #     )
-        # else:
-        #     uH_q = _eval_t6_2d(
-        #         qx=qx,
-        #         element_nodes=nodes_H[eH],
-        #         element_u=UH_node[:, eH],
-        #     )
 
-        # if kh in qpe_h:
-        #     uh_q = _eval_qpe_collapsed_q8_2d(
-        #         qx=qx,
-        #         element_nodes=nodes_h[eh],
-        #         element_u=Uh_node[:, eh],
-        #     )
-        # else:
-        #     uh_q = _eval_t6_2d(
-        #         qx=qx,
-        #         element_nodes=nodes_h[eh],
-        #         element_u=Uh_node[:, eh],
-        #     )
+        # uH_q = _eval_t6_2d(
+        #     qx=qx,
+        #     element_nodes=nodes_H[eH],
+        #     element_u=UH_node[:, eH],
+        # )
+        # uh_q = _eval_t6_2d(
+        #     qx=qx,
+        #     element_nodes=nodes_h[eh],
+        #     element_u=Uh_node[:, eh],
+        # )
 
-        if use_qpe:
-            uH_q = _eval_t6_isoparametric_2d(
+        if KH in qpe_H:
+            uH_q = _eval_qpe_collapsed_q8_2d(
                 qx=qx,
                 element_nodes=nodes_H[eH],
                 element_u=UH_node[:, eH],
-            )
-            uh_q = _eval_t6_isoparametric_2d(
-                qx=qx,
-                element_nodes=nodes_h[eh],
-                element_u=Uh_node[:, eh],
             )
         else:
             uH_q = _eval_t6_2d(
@@ -572,6 +455,14 @@ def matrix_error_integration_t6_quad(
                 element_nodes=nodes_H[eH],
                 element_u=UH_node[:, eH],
             )
+
+        if kh in qpe_h:
+            uh_q = _eval_qpe_collapsed_q8_2d(
+                qx=qx,
+                element_nodes=nodes_h[eh],
+                element_u=Uh_node[:, eh],
+            )
+        else:
             uh_q = _eval_t6_2d(
                 qx=qx,
                 element_nodes=nodes_h[eh],
@@ -585,69 +476,30 @@ def matrix_error_integration_t6_quad(
     return numerator_sq, denominator_sq
 
 
-def _inverse_p2_segment_coordinate(
-    s_query: np.ndarray,
-    s_seg: np.ndarray,
-    tol: float = 1e-12,
-    max_iter: int = 500,
-) -> np.ndarray:
-    """Find reference coordinates xi for points on a possibly quarter-point P2 segment."""
-    s_query = np.asarray(s_query, dtype=float)
-
-    s0 = float(s_seg[0])
-    s2 = float(s_seg[2])
-
-    # Linear initial guess.
-    xi = 2.0 * (s_query - s0) / (s2 - s0) - 1.0
-
-    for _ in range(max_iter):
-        N = _p2_shape_functions_1d(xi)
-
-        s_map = s_seg @ N
-
-        dN_dxi = np.vstack([
-            xi - 0.5,
-            -2.0 * xi,
-            xi + 0.5,
-        ])
-
-        ds_dxi = s_seg @ dN_dxi
-
-        residual = s_map - s_query
-
-        if np.max(np.abs(residual)) < tol:
-            print(f"Converged in {_} iterations with max residual {np.max(np.abs(residual)):.2e}")
-            return xi
-
-        xi -= residual / ds_dxi
-
-    raise RuntimeError("Newton failed in inverse P2 segment mapping.")
-
-
-
 # For displacement jump on 1D fracture
-def _p2_shape_functions_1d(xi: np.ndarray) -> np.ndarray:
-    """Calculate values of quadratic (P2) shape functions at given points on 1D 
-    reference coordinates, [-1, 1]. Three nodes on the 1D edge follows the 
-    order: left, middle, right.
+# def _p2_shape_functions_1d(xi: np.ndarray) -> np.ndarray:
+#     """Calculate values of quadratic (P2) shape functions at given points on 1D 
+#     reference coordinates, [-1, 1]. Three nodes on the 1D edge follows the 
+#     order: left, middle, right.
 
-    Shape functions of these three nodes on 1D reference coordinates are defined 
-    as follows:
-        N0 = 0.5 * xi * (xi - 1.0),
-        N1 = 1.0 - xi**2,
-        N2 = 0.5 * xi * (xi + 1.0).
+#     Shape functions of these three nodes on 1D reference coordinates are defined 
+#     as follows:
+#         N0 = 0.5 * xi * (xi - 1.0),
+#         N1 = 1.0 - xi**2,
+#         N2 = 0.5 * xi * (xi + 1.0).
 
-    Parameters:
-        xi: shape = (num_points,)
+#     Parameters:
+#         xi: shape = (num_points,)
 
-    Returns:
-        N: shape = (num_points, 3)
-    """
-    return np.vstack([
-        0.5 * xi * (xi - 1.0),
-        1.0 - xi**2,
-        0.5 * xi * (xi + 1.0),
-    ])
+#     Returns:
+#         N: shape = (num_points, 3)
+#     """
+#     return np.vstack([
+#         0.5 * xi * (xi - 1.0),
+#         1.0 - xi**2,
+#         0.5 * xi * (xi + 1.0),
+#     ])
+
 
 # def _eval_p2_segment_1d(
 #     s_quad: np.ndarray,
@@ -655,13 +507,27 @@ def _p2_shape_functions_1d(xi: np.ndarray) -> np.ndarray:
 #     v_seg: np.ndarray,
 # ) -> np.ndarray:
 #     """
-#     Calculate values of P2 field at given pointson one physical 1D segment.
+#     Calculate values of P2 field at given point on one physical 1D segment.
+
+#     Parameters:
+#         s_quad: shape = (num_quad,)
+#             quadrature points in physical 1D coordinates.
+#         s_seg: shape = (3,)
+#             physical coordinates of the left, middle, and right nodes on 
+#             the P2 segment.
+#         v_seg: shape = (2,3)
+#             nodal vectors on the segment. 
+    
+#     Returns:
+#         Interpolated values of 1D P2 field at quadrature points, 
+#         shape = (2, num_quad).
     
 #     """
 #     s0 = s_seg[0]
 #     s2 = s_seg[2]
 
-#     # Map quadrature points from [s0, s2] to [-1, 1].
+#     # Map quadrature points from physical coordinates [s0, s2] to 
+#     # reference coordinates [-1, 1].
 #     xi = 2.0 * (s_quad - s0) / (s2 - s0) - 1.0
 #     N = _p2_shape_functions_1d(xi)
 
@@ -671,61 +537,89 @@ def _eval_p2_segment_1d(
     s_quad: np.ndarray,
     s_seg: np.ndarray,
     v_seg: np.ndarray,
-    use_qpe: bool,
 ) -> np.ndarray:
-    """Evaluate a scalar P2 field on one physical 1D segment.
+    """Calculate values of P2 field at given point on one physical 1D segment
+    by use of Lagrange interpolation polynomial.
 
-    If use_qpe=True, the middle node may not be at the physical midpoint,
-    so the physical coordinate is mapped to the reference coordinate by
-    inverse isoparametric mapping.
+    This can be used for both standard P2 edges and quarter-point edges.
     """
-    if use_qpe:
-        xi = _inverse_p2_segment_coordinate(s_quad, s_seg)
-    else:
-        s0 = s_seg[0]
-        s2 = s_seg[2]
-        xi = 2.0 * (s_quad - s0) / (s2 - s0) - 1.0
+    s0 = s_seg[0]
+    sm = s_seg[1]
+    s1 = s_seg[2]
 
-    N = _p2_shape_functions_1d(xi)
+    L0 = ((s_quad - sm) * (s_quad - s1)) / ((s0 - sm) * (s0 - s1))
+    Lm = ((s_quad - s0) * (s_quad - s1)) / ((sm - s0) * (sm - s1))
+    L1 = ((s_quad - s0) * (s_quad - sm)) / ((s1 - s0) * (s1 - sm))
+
+    N = np.vstack((L0, Lm, L1))
 
     return v_seg @ N
 
 
-def _fracture_p2_jump_segments_from_model(model: object):
+def _fracture_p2_jump_segments_from_model(
+    model: object,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """
+    Calculate values of P2 field at given pointson one physical 1D segment.
+
+    Fracture orientation is considered here by projecting fracture nodes onto the 
+    tangential direction of the fracture. This produces 1D coordinates along the 
+    fracture, used for sorting the three nodes on each quadratic edge in the 
+    order: left, middle, right. 
+
+    Parameters: 
+        model: a solved FEM model. 
+
+    Returns:
+        segs: the list of fracture P2 segments. 
+            Each segment is represented as (s, jump_xy),
+            where 
+            s: shape = (3,)
+                1D coordinates of the left, middle, and right nodes along the
+                fracture. 
+            jump_xy: shape = (2,3)
+                displacement jump values in global xy coordinates.
+    
+    """
     theta = model.theta_rad
     t = np.array([np.sin(theta), np.cos(theta)])
-    n = np.array([-np.cos(theta), np.sin(theta)])
 
     ux = model.U[0::2]
     uy = model.U[1::2]
 
+    # [n0, m01, n1] for each edge. 
     upper_edges = model.upper_frac_edge_dofs
     lower_edges = model.lower_frac_edge_dofs
 
-    segs_n = []
-    segs_t = []
+    segs = []
 
     for upper, lower in zip(upper_edges, lower_edges):
-        pts = model.nodes_p6[upper, :2]
-        s = pts @ t
+        
+        nodes = model.nodes_p6[upper, :2]
 
+        # 1D coordinates along the fracture, used for sorting 
+        # the points in the correct order. 
+        s = nodes @ t
         idx = np.argsort(s)
+
         s = s[idx]
         upper = upper[idx]
         lower = lower[idx]
 
+        # Shape = (3, 2), where the three rows correspond to the 
+        # three nodes on the 1D segment. 
         u_upper = np.column_stack((ux[upper], uy[upper]))
         u_lower = np.column_stack((ux[lower], uy[lower]))
 
-        jump = u_upper - u_lower
+        jump = u_upper - u_lower  # shape = (3,2)
+        jump_xy = jump.T          # shape = (2,3)
 
-        segs_n.append((s, jump @ n))
-        segs_t.append((s, jump @ t))
+        segs.append((s, jump_xy))
 
-    segs_n.sort(key=lambda seg: seg[0][0])
-    segs_t.sort(key=lambda seg: seg[0][0])
+    # Sort using n0 in 1D
+    segs.sort(key=lambda seg: seg[0][0])
 
-    return segs_n, segs_t
+    return segs
 
 
 def _find_parent_segment(
@@ -733,128 +627,121 @@ def _find_parent_segment(
     s_mid: float,
     tol: float = 1e-8,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Find the P2 segment containing s_mid."""
+    """Find the parent P2 segment containing the given 1D point.
+
+    Parameters:
+        segments: list of fracture P2 segments.
+        s_mid: 1D coordinate of the given point. 
+        tol: tolerance for interval checks.
+
+    Returns:
+        s_seg: shape = (3,)
+            1D coordinates of the parent P2 segment. 
+        v_seg: shape = (2,3)
+            nodal jump values corresponding to the parant segment.
+    """
     for s_seg, v_seg in segments:
-        s_left = min(float(s_seg[0]), float(s_seg[2]))
-        s_right = max(float(s_seg[0]), float(s_seg[2]))
+        s_left = s_seg[0]
+        s_right = s_seg[2]
 
         if s_left - tol <= s_mid <= s_right + tol:
             return s_seg, v_seg
 
     raise RuntimeError(f"No parent P2 segment found for s = {s_mid}.")
 
+
 def fracture_error_integration_p2_quad(
     coarse_model: object,
     fine_model: object,
-    use_qpe: bool,
+    num_quad: int,
     tol: float = 1e-8,
-    num_quad: int = 3,
-) -> tuple[float, float, float, float]:
+) -> tuple[float, float]:
+    """Compute overlap-based relative L2 error components for P2 fields on 
+    1D fracture grids using the quadrature rule.
 
-    segs_H_n, segs_H_t = _fracture_p2_jump_segments_from_model(coarse_model)
-    segs_h_n, segs_h_t = _fracture_p2_jump_segments_from_model(fine_model)
+    It computes: 
+        numerator_sq   = ∫_Gamma |w_H^P2 - w_h^P2|^2 ds
+        denominator_sq = ∫_Gamma |w_h^P2|^2 ds
+    """
+    segs_H = _fracture_p2_jump_segments_from_model(coarse_model)
+    segs_h = _fracture_p2_jump_segments_from_model(fine_model)
 
-    H_endpoints = np.array([seg[0][0] for seg in segs_H_n] + [segs_H_n[-1][0][2]])
-    h_endpoints = np.array([seg[0][0] for seg in segs_h_n] + [segs_h_n[-1][0][2]])
+    # Reconstruct 1D fracture nodes: left endnodes of all P2 edges plus the right 
+    # endnodes on the last edge. 
+    H_endpoints = np.array([seg[0][0] for seg in segs_H] + [segs_H[-1][0][2]])
+    h_endpoints = np.array([seg[0][0] for seg in segs_h] + [segs_h[-1][0][2]])
 
+    # Restrict the range of 1D grids in case that 1D fractures in coarse and 
+    # fine meshes may have slightly different length. 
     s_min = max(np.min(H_endpoints), np.min(h_endpoints))
     s_max = min(np.max(H_endpoints), np.max(h_endpoints))
 
+    # Construct transfer nodes for 1D overlaps partition between coarse and fine 
+    # grids. Floating-point noise is removed to avoid generating nearly-zero 
+    # overlap intervals. 
     overlap_nodes = np.unique(
         np.round(
             np.concatenate([
                 H_endpoints[(H_endpoints >= s_min - tol) & (H_endpoints <= s_max + tol)],
                 h_endpoints[(h_endpoints >= s_min - tol) & (h_endpoints <= s_max + tol)],
             ]),
-            decimals=14,
+            decimals=8,
         )
     )
 
-    xi, wi = np.polynomial.legendre.leggauss(num_quad)
-
-    normal_num_sq = 0.0
-    normal_den_sq = 0.0
-    tangential_num_sq = 0.0
-    tangential_den_sq = 0.0
+    numerator_sq = 0.0
+    denominator_sq = 0.0
 
     for s0, s1 in zip(overlap_nodes[:-1], overlap_nodes[1:]):
-        s0 = float(s0)
-        s1 = float(s1)
 
-        if abs(s1 - s0) < tol:
-            continue
+        s_quad, w_quad = QuadratureIntegration.segment_quadrature_gauss(
+            s0, s1, num_quad
+        )
 
-        smid = 0.5 * (s0 + s1)
+        s_mid = 0.5 * (s0 + s1)
 
-        s_seg_H_n, v_seg_H_n = _find_parent_segment(segs_H_n, smid, tol=tol)
-        s_seg_h_n, v_seg_h_n = _find_parent_segment(segs_h_n, smid, tol=tol)
+        s_seg_H, v_seg_H = _find_parent_segment(segs_H, s_mid, tol=tol)
+        s_seg_h, v_seg_h = _find_parent_segment(segs_h, s_mid, tol=tol)
 
-        s_seg_H_t, v_seg_H_t = _find_parent_segment(segs_H_t, smid, tol=tol)
-        s_seg_h_t, v_seg_h_t = _find_parent_segment(segs_h_t, smid, tol=tol)
+        jump_H_quad = _eval_p2_segment_1d(s_quad, s_seg_H, v_seg_H)
+        jump_h_quad = _eval_p2_segment_1d(s_quad, s_seg_h, v_seg_h)
 
-        mid = 0.5 * (s0 + s1)
-        half = 0.5 * (s1 - s0)
+        diff_quad = jump_H_quad - jump_h_quad
 
-        sq = mid + half * xi
-        wq = abs(half) * wi
+        numerator_sq += float(np.sum(w_quad * np.sum(diff_quad**2, axis=0)))
+        denominator_sq += float(np.sum(w_quad * np.sum(jump_h_quad**2, axis=0)))
 
-        jumpH_n_q = _eval_p2_segment_1d(sq, s_seg_H_n, v_seg_H_n, use_qpe=use_qpe)
-        jumph_n_q = _eval_p2_segment_1d(sq, s_seg_h_n, v_seg_h_n, use_qpe=use_qpe)
-
-        jumpH_t_q = _eval_p2_segment_1d(sq, s_seg_H_t, v_seg_H_t, use_qpe=use_qpe)
-        jumph_t_q = _eval_p2_segment_1d(sq, s_seg_h_t, v_seg_h_t, use_qpe=use_qpe)
-
-        diff_n_q = jumpH_n_q - jumph_n_q
-        diff_t_q = jumpH_t_q - jumph_t_q
-
-        normal_num_sq += float(np.sum(wq * diff_n_q**2))
-        normal_den_sq += float(np.sum(wq * jumph_n_q**2))
-
-        tangential_num_sq += float(np.sum(wq * diff_t_q**2))
-        tangential_den_sq += float(np.sum(wq * jumph_t_q**2))
-
-    return (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    )
+    return numerator_sq, denominator_sq
 
 
-def relative_error_p2_between_fem_models(
+def relative_error_p2_fem_qpe(
     coarse_model: object,
     fine_model: object,
+    num_quad: int,
     use_qpe: bool,
     tol: float = 1e-8,
 ) -> tuple[float, float]:
-    """Return matrix relative L2 error and its squared components.
+    """Return relative L2 error of matrix displacement and fracture displacement jump.
     """
 
     matrix_num_sq, matrix_den_sq = matrix_error_integration_t6_quad(
         coarse_model=coarse_model,
         fine_model=fine_model,
+        num_quad = num_quad,
         use_qpe=use_qpe,
         tol=tol,
     )
 
-    (
-        normal_num_sq,
-        normal_den_sq,
-        tangential_num_sq,
-        tangential_den_sq,
-    ) = fracture_error_integration_p2_quad(
+    # QPE does not need to be speficied in 1D.
+    fracture_num_sq, fracture_den_sq = fracture_error_integration_p2_quad(
         coarse_model=coarse_model,
         fine_model=fine_model,
-        use_qpe=use_qpe,
+        num_quad=num_quad,
         tol=tol,
-        num_quad=3,
     )
 
     matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
-    fracture_error = np.sqrt(
-        (normal_num_sq + tangential_num_sq) 
-        / (normal_den_sq + tangential_den_sq)
-    )  
+    fracture_error = np.sqrt(fracture_num_sq / fracture_den_sq)  
   
     return matrix_error, fracture_error
 

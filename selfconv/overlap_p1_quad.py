@@ -180,10 +180,12 @@ def matrix_error_integration_p1_quad(
 
     numerator_sq = 0.0
     denominator_sq = 0.0
+    num_quad = 7
     for j, nodes in enumerate(tr_cells):
         xy = Xtr[:, nodes]
         
-        quad_x, quad_w = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        # quad_x, quad_w = QuadratureIntegration.triangle_quadrature_degree4(xy)
+        quad_x, quad_w = QuadratureIntegration.triangle_quadrature_gaussian(xy, num_quad)
 
         # Get the parent coarse and fine cells corresponding to 
         # the current transfer cell.
@@ -647,19 +649,19 @@ def relative_error_p1_mpsa(
         )
     )
 
-    matrix_num_sq2, matrix_den_sq2 = (
-        matrix_error_integration_p1_exact(
-            sd_H=sd_H,
-            sd_h=sd_h,
-            uH_cc=uH_cc,
-            uh_cc=uh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
+    # matrix_num_sq2, matrix_den_sq2 = (
+    #     matrix_error_integration_p1_exact(
+    #         sd_H=sd_H,
+    #         sd_h=sd_h,
+    #         uH_cc=uH_cc,
+    #         uh_cc=uh_cc,
+    #         weight=averaging_weight,
+    #         tol=tol,
+    #     )
+    # )
 
-    print("matrix error", abs(matrix_num_sq - matrix_num_sq2) / abs(matrix_num_sq2))
-    print("matrix error", abs(matrix_den_sq - matrix_den_sq2) / abs(matrix_den_sq2))
+    # print("matrix error", abs(matrix_num_sq - matrix_num_sq2) / abs(matrix_num_sq2))
+    # print("matrix error", abs(matrix_den_sq - matrix_den_sq2) / abs(matrix_den_sq2))
 
     # 1D fracture displacement jump
     gamma_H = coarse_model.mdg.subdomains(dim=1)[0]
@@ -679,19 +681,19 @@ def relative_error_p1_mpsa(
         )
     )
 
-    fracture_num_sq2, fracture_den_sq2 = (
-        fracture_error_integration_p1_exact(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            wH_cc=wH_cc,
-            wh_cc=wh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
+    # fracture_num_sq2, fracture_den_sq2 = (
+    #     fracture_error_integration_p1_exact(
+    #         sd_H=gamma_H,
+    #         sd_h=gamma_h,
+    #         wH_cc=wH_cc,
+    #         wh_cc=wh_cc,
+    #         weight=averaging_weight,
+    #         tol=tol,
+    #     )
+    # )
 
-    print("fracture error", abs(fracture_num_sq - fracture_num_sq2) / abs(fracture_num_sq2))
-    print("fracture error", abs(fracture_den_sq - fracture_den_sq2) / abs(fracture_den_sq2))
+    # print("fracture error", abs(fracture_num_sq - fracture_num_sq2) / abs(fracture_num_sq2))
+    # print("fracture error", abs(fracture_den_sq - fracture_den_sq2) / abs(fracture_den_sq2))
 
     # 1D interface displacement
     # interface_H = coarse_model.mdg.interfaces()[0]
@@ -713,33 +715,26 @@ def relative_error_p1_mpsa(
         )
     )
 
-    interface_num_sq2, interface_den_sq2 = (
-        interface_error_integration_p1_exact(
-            sd_H=gamma_H,
-            sd_h=gamma_h,
-            mH_cc=mH_cc,
-            mh_cc=mh_cc,
-            weight=averaging_weight,
-            tol=tol,
-        )
-    )
+    # interface_num_sq2, interface_den_sq2 = (
+    #     interface_error_integration_p1_exact(
+    #         sd_H=gamma_H,
+    #         sd_h=gamma_h,
+    #         mH_cc=mH_cc,
+    #         mh_cc=mh_cc,
+    #         weight=averaging_weight,
+    #         tol=tol,
+    #     )
+    # )
 
-    print("interface error", abs(interface_num_sq - interface_num_sq2) / abs(interface_num_sq2))
-    print("interface error", abs(interface_den_sq - interface_den_sq2) / abs(interface_den_sq2))
+    # print("interface error", abs(interface_num_sq - interface_num_sq2) / abs(interface_num_sq2))
+    # print("interface error", abs(interface_den_sq - interface_den_sq2) / abs(interface_den_sq2))
 
     matrix_error = np.sqrt(matrix_num_sq / matrix_den_sq)
     fracture_error = np.sqrt(fracture_num_sq / fracture_den_sq)
     interface_error = np.sqrt(interface_num_sq / interface_den_sq)
 
-    matrix_error2 = np.sqrt(matrix_num_sq2 / matrix_den_sq2)
-    fracture_error2 = np.sqrt(fracture_num_sq2 / fracture_den_sq2)
-    interface_error2 = np.sqrt(interface_num_sq2 / interface_den_sq2)
-
     return (
         float(matrix_error),
         float(fracture_error),
         float(interface_error),
-        float(matrix_error2),
-        float(fracture_error2),
-        float(interface_error2),
     )

@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 import porepy as pp
 
+from fems import mmfa
+
 
 class QuadratureIntegration:
     """Quadrature-based integration utilities for self-convergence analysis."""
@@ -71,14 +73,14 @@ class QuadratureIntegration:
             ]
         )
 
-        weights_ref = np.array([w1, w1, w1, w2, w2, w2])
+        weight_ref = np.array([w1, w1, w1, w2, w2, w2])
 
         area = QuadratureIntegration.triangle_area(xy)
         quad_x = xy @ bary.T
 
         # Dunavant weights sum to 0.5 on the reference triangle.
         # Therefore multiply by 2 * physical area.
-        quad_w = 2.0 * area * weights_ref
+        quad_w = 2.0 * area * weight_ref
 
         return quad_x, quad_w
     
@@ -100,26 +102,55 @@ class QuadratureIntegration:
     def segment_quadrature_gauss(
         s0: float,
         s1: float,
-        num_quad: int = 3,
+        num_quad: int,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Compute Gauss-Legendre quadrature rule on one 1D segment [s0, s1].
 
         Here, we use the standard Gauss-Legendre quadrature, which is exact 
         for polynomials of degree up to 2*num_quad - 1. Therefore, in order to cover
         the P1 and P2 fields (whose squared errors have degrees of 2 and 4, repectively), 
-        num_quad = 3 is used.
+        num_quad = 3 or higher order can be used.
 
         Returns: 
             quad_s: quadrature points, shape = (num_quad,).
             quad_w: weights, shape = (num_quad,).
         """
-        xi, wi = np.polynomial.legendre.leggauss(num_quad)
+        # position_ref, weight_ref = np.polynomial.legendre.leggauss(num_quad)
+        position_ref, weight_ref = mmfa.gausspoint(num_quad, '1D')
 
-        mid = 0.5 * (s0 + s1)
-        half = 0.5 * (s1 - s0)
+        mid_pts = 0.5 * (s0 + s1)
+        half_length = 0.5 * (s1 - s0)
 
-        quad_s = mid + half * xi
-        quad_w = abs(half) * wi
+        quad_s = mid_pts + half_length * position_ref.ravel()
+        quad_w = abs(half_length) * weight_ref.ravel()
 
         return quad_s, quad_w
+    
+    @staticmethod
+    def triangle_quadrature_gaussian(
+        xy: np.ndarray,
+        num_quad: int, 
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Triangle quadrature on one physical triangle using Gaussian quadrature. 
+
+        
+        """
+        position_ref, weight_ref = mmfa.gausspoint(num_quad, 'T3')
+
+        xi = position_ref[:, 0]
+        eta = position_ref[:, 1]
+
+        # Mapping from reference triangle to physical triangle. 
+        quad_x = (
+            xy[:, [0]]
+            + (xy[:, [1]] - xy[:, [0]]) * xi[None, :]
+            + (xy[:, [2]] - xy[:, [0]]) * eta[None, :]
+        )
+        
+        area = QuadratureIntegration.triangle_area(xy)
+
+        quad_w = 2.0 * area * weight_ref.ravel()
+
+        return quad_x, quad_w
+
     
