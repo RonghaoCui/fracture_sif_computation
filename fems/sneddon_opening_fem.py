@@ -1,12 +1,16 @@
 """
-Model for Sneddon's problem by a quadratic finite element method with/without quarter-point elements
-using Sneddon's analytical solution for normal displacement jump.
+Model for the Sneddon benchmark by a quadratic finite element method 
+with/without quarter-point elements using Sneddon's analytical solution 
+for normal displacement jump.
 
-This model considers a single central fracture in a 2D domain with pressurized fracture surfaces. 
-The fracture orientation can be from 0 to 90 degrees.
+This model considers a single central fracture in a 2D domain with 
+pressurized fracture surfaces. 
+
+The fracture orientation can be from 0 to 180 degrees.
 
 FEM code resources:
-    - [1] Dang et al., International Journal of Rock Mechanics and Mining Sciences, 160 (2022): 105248.
+    - [1] Dang et al., International Journal of Rock Mechanics and Mining 
+        Sciences, 160 (2022): 105248.
 
 """
 from __future__ import annotations
@@ -17,12 +21,6 @@ import numpy as np
 from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
 from fems import mmfa
 from fems import FemMeshFromPorePy
-
-import matplotlib.pyplot as plt
-
-import os
-save_dir = "figures/benchmarks/femqpe/sol"
-os.makedirs(save_dir, exist_ok=True)
 
 # Directly use boundary element methods in Sneddon problem
 class FemExactDirichletBCSneddon:

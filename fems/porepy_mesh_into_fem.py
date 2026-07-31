@@ -165,17 +165,29 @@ class FemMeshFromPorePy:
             else:
                 D = material[e]
 
-            # Use a local copy to avoid modifying input t6 in-place
-            tri = t6[e, :].copy()
+            # # Use a local copy to avoid modifying input t6 in-place
+            # tri = t6[e, :].copy()
+            # X = p6[tri, 0]
+            # Y = p6[tri, 1]
+
+            # # Orientation check for node ordering in the element. 
+            # if (X[1] - X[0]) * (Y[-1] - Y[0]) - (X[-1] - X[0]) * (Y[1] - Y[0]) < 0:
+            #     indinv = tri[::-1]
+            #     tri[1:] = indinv[:-1]
+            #     X = p6[tri, 0]
+            #     Y = p6[tri, 1]
+
+            tri = t6[e, :]
             X = p6[tri, 0]
             Y = p6[tri, 1]
 
-            # Orientation check for node ordering in the element. 
             if (X[1] - X[0]) * (Y[-1] - Y[0]) - (X[-1] - X[0]) * (Y[1] - Y[0]) < 0:
-                indinv = tri[::-1]
-                tri[1:] = indinv[:-1]
-                X = p6[tri, 0]
-                Y = p6[tri, 1]
+                indinv = t6[e, ::-1].copy()
+                t6[e, 1:] = indinv[:-1]
+
+            tri = t6[e, :]
+            X = p6[tri, 0]
+            Y = p6[tri, 1]
             
             # The index mapping from local element DOFs to global DOFs.
             index = np.array([

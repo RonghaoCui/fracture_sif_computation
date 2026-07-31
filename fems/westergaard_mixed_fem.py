@@ -1,11 +1,16 @@
 """
-Model for Westergaard's problem in the mixed mode by a quadratic finite 
+Model for the Westergaard mixed-mode benchmark by a quadratic finite 
 element method with/without quarter-point elements using Westergaard's 
 analytical solution for tangential displacement jump.
 
+This model considers a single central fracture in a 2D domain with 
+pressurized fracture surfaces. 
+
+The fracture orientation can be from 0 to 180 degrees.
+
 FEM code resources:
     - [1] Dang et al., International Journal of Rock Mechanics and Mining 
-          Sciences, 160 (2022): 105248.
+        Sciences, 160 (2022): 105248.
 
 """
 from __future__ import annotations
@@ -541,7 +546,8 @@ class FemWestergaardMixedMode2d(
     WestergaardMixedFem2dSolver,
 ): 
     """
-    Mixer class for the FEM model with or without QPE in Westergaard's mixed-mode problem. 
+    Mixer class for the FEM model with or without QPE in Westergaard's 
+    mixed-mode problem. 
     """
     def __init__(self, params: dict, use_qpe: bool) -> None:
         FemExactDirichletBCWestergaardMixed.__init__(self, params)
