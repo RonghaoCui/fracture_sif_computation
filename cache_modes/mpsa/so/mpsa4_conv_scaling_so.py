@@ -3,7 +3,7 @@ Convergence analysis for KI in the Sneddon benchmark by MPSA with fracture rotat
 using multiple fracture angles within the range [0°, 180°).
 
 This script loads the cache results of the Sneddon benchmark for different mesh 
-sizes and fracture orientations, and calculates SIF errors with the mesh refinement,
+sizes and fracture orientations, and calculates SIF KI errors with the mesh refinement,
 using the scaling-based sampling strategy.
 """
 from __future__ import annotations

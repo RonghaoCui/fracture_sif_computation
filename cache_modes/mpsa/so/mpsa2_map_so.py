@@ -3,8 +3,8 @@ Convergence analysis for the Sneddon benchmark by MPSA with fracture rotations
 using multiple fracture angles within the range [0°, 180°). 
 
 This script loads the cache results of the Sneddon benchmark for different mesh 
-sizes and fracture orientations, and calculates the map of SIF errors between radial 
-distances to the tip and mesh sizes.
+sizes and fracture orientations, and calculates the map of SIF KI errors between 
+radial distances to the tip and mesh sizes.
 
 This script also shows the fitting results of the scaling law between the radial 
 distance to the tip and mesh size. 
