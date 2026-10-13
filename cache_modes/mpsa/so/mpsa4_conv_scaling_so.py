@@ -42,7 +42,7 @@ theta_rads = [
     90, 105, 120, 135, 150, 165,
 ]
 
-# We employ an exponent-type function for point selections
+# We employ an exponent-type function for point selections.
 C = 0.844
 alpha = 0.341
 

@@ -201,7 +201,7 @@ for i, h in enumerate(cell_sizes):
     })
 
 conv_data = pd.DataFrame(conv_results)
-conv_data.to_csv(os.path.join(save_csv, "conv_sif_so_qfem_nearest.csv"), index=False)
+conv_data.to_csv(os.path.join(save_csv, "conv_sif_ws_qfem_nearest.csv"), index=False)
 
 print("\n sqrt_dofs: ", mean_dofs)
 print("\n error_ave: ", mean_err_ave)

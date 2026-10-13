@@ -38,7 +38,7 @@ os.makedirs(save_model, exist_ok=True)
 # Save cache models for different mesh sizes and fracture angles.
 # cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 cell_sizes = [
-    0.1, 0.075, 0.05, 0.0375, 0.025, 
+    0.1, 0.074, 0.05, 0.037, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625, 0.0046875, 0.003125,
 ]
 theta_rads = [
