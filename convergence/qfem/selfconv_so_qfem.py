@@ -1,11 +1,8 @@
 """
-Self-convergence analysis for the 2D Sneddon benchmark solved by standard quadratic FEM
-without quarter-point elements, using overlap integration with degree-4/higher-order
-triangle quadrature.
+Self-convergence analysis by L2-norm error for the 2D Sneddon benchmark solved by
+standard quadratic FEM without quarter-point elements, using overlap integration
+with degree-4/higher-order triangle quadrature.
 
-This script computes the matrix-domain relative L2 error
-    ||u_H^{T6} - u_h^{T6}|| / ||u_h^{T6}||
-where the finest mesh in cell_sizes is used as the reference solution.
 """
 from __future__ import annotations
 
@@ -20,9 +17,6 @@ import porepy as pp
 from matplotlib.ticker import LogFormatterMathtext, LogLocator, ScalarFormatter
 
 from fems import FemSneddonModel2d
-# from selfconv import (
-#     relative_error_p2_fem,
-# )
 from selfconv import (
     relative_error_p2_fem_qpe,
 )

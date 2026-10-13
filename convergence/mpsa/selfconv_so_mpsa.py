@@ -1,6 +1,6 @@
 """
-Self-convergence analysis for the 2D Sneddon benchmark in the mixed-dimensional grids
-solved by MPSA in PorePy. 
+Self-convergence analysis by L2-norm error for the 2D Sneddon benchmark in
+the mixed-dimensional grids solved by MPSA in PorePy. 
 """
 
 from __future__ import annotations

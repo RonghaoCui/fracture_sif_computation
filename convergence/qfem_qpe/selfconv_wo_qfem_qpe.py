@@ -1,11 +1,8 @@
 """
-Self-convergence analysis for the 2D Westergaard opening-mode benchmark solved 
-by quadratic FEM with quarter-point elements, using overlap integration with 
+Self-convergence analysis by L2-norm error for the 2D Westergaard opening-mode benchmark
+solved by quadratic FEM with quarter-point elements, using overlap integration with 
 high-degree quadrature rules.
 
-This script computes the matrix-domain relative L2 error
-    ||u_H^{T6} - u_h^{T6}|| / ||u_h^{T6}||
-where the finest mesh in cell_sizes is used as the reference solution.
 """
 from __future__ import annotations
 

@@ -1,20 +1,21 @@
 """
-Self-convergence functionlities of P2 fields for 2D standard FEM models containing a fracture. 
+Self-convergence functionlities of P2 fields for both QFEM and QFEM-QPE 2D models
+containing a fracture.
 
-The models are solved with the standard T6 element without QPE, where the mid-side nodes are 
-correctly placed at the midpoints of the edges in the original 2D grid.
+The QFEM models are solved with the standard T6 elements, where the mid-side nodes are
+placed at the midpoints of the edges.
+
+The QFEM-QPE models are solved with the standard T6 elements and QPEs represented by
+collapsed Q8 elements, where the mid-side nodes in QPEs are shifted to the location of
+quarter points along the edges in the original 2D grid.
 """
 from __future__ import annotations
 
 import numpy as np
-import porepy as pp
 
-import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
 from mdamr.non_matching.transfer_grid import TransferGrid
 
-from fems import mmfa
 from selfconv import QuadratureIntegration
-
 
 def _rotate_fem_nodes_to_transfer_frame(
     nodes_xy: np.ndarray,

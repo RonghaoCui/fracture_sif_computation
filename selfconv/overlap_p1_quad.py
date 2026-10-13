@@ -7,10 +7,6 @@ from __future__ import annotations
 import numpy as np
 import porepy as pp
 
-import helpers.mdamr_local  # adds external/mdamr-main/src to sys.path
-
-# import quadpy
-# from mdamr.utils.quadrature import get_quadpy_elements
 from mdamr.non_matching.transfer_grid import TransferGrid, TransferLine
 
 from selfconv import QuadratureIntegration
