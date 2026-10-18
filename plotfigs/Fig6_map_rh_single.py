@@ -96,7 +96,7 @@ def plot_case(fig, ax, df: pd.DataFrame, number: str):
         pad=0.25,
         fraction=0.05,
     )
-    cbar.ax.tick_params(labelsize=6)
+    cbar.ax.tick_params(labelsize=8)
     cbar.outline.set_visible(False)
 
     return sc

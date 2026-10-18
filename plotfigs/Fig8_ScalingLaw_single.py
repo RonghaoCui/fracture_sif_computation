@@ -106,8 +106,8 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
     r_fit_band = C_band * norm_h_fit ** alpha_band
 
     h1 = ax.loglog(
-        df_band["norm_h"],
         df_band["r_mean"],
+        df_band["norm_h"],
         "o",
         color="tab:orange",
         markersize=3,
@@ -115,15 +115,15 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
     )[0]
 
     h2 = ax.loglog(
-        norm_h_fit,
         r_fit_band,
+        norm_h_fit,
         "--",
         color="tab:orange",
         linewidth=1.0,
         label="Fitting (mean optimal $r/a$)",
     )[0]
 
-    h3 = ax.fill_between(
+    h3 = ax.fill_betweenx(
         df_band["norm_h"],
         df_band["r_lower"],
         df_band["r_upper"],
@@ -134,8 +134,8 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
     )
 
     h4 = ax.loglog(
-        df_best["norm_h"],
         df_best["r"],
+        df_best["norm_h"],
         "o",
         color="tab:blue",
         markersize=3,
@@ -143,19 +143,19 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
     )[0]
 
     h5 = ax.loglog(
-        norm_h_fit,
         r_fit,
+        norm_h_fit,
         "--",
         color="tab:blue",
         linewidth=1.0,
         label="Fitting (averaged map)",
     )[0]
 
-    ax.set_xlabel(r"$h/a$")
-    ax.set_ylabel(r"$r/a$")
+    ax.set_xlabel(r"$r/a$")
+    ax.set_ylabel(r"$h/a$")
 
-    ax.set_xlim(0.008, 1.0)
-    ax.set_ylim(0.07, 1.0)
+    ax.set_xlim(0.07, 1.0)
+    ax.set_ylim(0.008, 1.0)
 
     ax.xaxis.set_major_locator(LogLocator(base=10))
     ax.xaxis.set_major_formatter(LogFormatterMathtext())
