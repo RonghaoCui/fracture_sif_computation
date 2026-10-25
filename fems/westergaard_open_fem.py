@@ -3,8 +3,8 @@ Model for the Westergaard opening-mode benchmark by a quadratic finite
 element method with/without quarter-point elements using Westergaard's 
 analytical solution for normal displacement jump.
 
-This model considers a single central fracture in a 2D domain with 
-pressurized fracture surfaces. 
+This model considers a single central fracture in a 2D domain with the 
+far-field normal stress.
 
 The fracture orientation can be from 0 to 180 degrees.
 
@@ -25,7 +25,7 @@ from fems import FemMeshFromPorePy
 # Directly use boundary element methods in Westergaard's problem in a opening mode. 
 class FemExactDirichletBCWestergaardOpen:
     """Class representing the analytical solution for Westergaard's problem in
-       in an opening mode.
+       an opening mode.
     """
 
     def __init__(self, params: dict) -> None:
@@ -33,7 +33,7 @@ class FemExactDirichletBCWestergaardOpen:
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
-        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # Poisson's ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
         self.p0 = self.params["p0"]
         self.sigma_inf = self.params["sigma_inf"]
@@ -44,7 +44,7 @@ class FemExactDirichletBCWestergaardOpen:
 
     def analytical_displacements(self, eta: np.ndarray) -> np.ndarray:
         """
-        Westergaard's analytical tangential displacement jump. 
+        Westergaard's analytical normal displacement jump.
         """
         cons = (1.0 - self.poi) / self.mu * self.sigma_inf * self.a * 2.0
         return cons * np.sqrt(1.0 - (eta / self.a) ** 2)
@@ -80,10 +80,15 @@ class FemExactDirichletBCWestergaardOpen:
         return x_bar
 
     def bem_kernel_displacement(
-        self, xloc: np.ndarray, h: float, du: float
-    ) -> tuple[float, float]:
+        self,
+        xloc: np.ndarray | tuple[np.ndarray, np.ndarray],
+        h: float,
+        du: float | np.ndarray,
+    ) -> tuple[float | np.ndarray, float | np.ndarray]:
         """
         Displacement contribution (ux, uy) at a point from one BEM segment.
+
+        It could be a single point or multiple points.
         """
         xf, yf = xloc
         
@@ -148,7 +153,7 @@ class FemExactDirichletBCWestergaardOpen:
             ux_frac += dux
             uy_frac += duy
 
-        # # Rotate far-field opening displacements to global coordinates
+        # Rotate far-field opening displacements to global coordinates
         t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
         n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
@@ -184,7 +189,7 @@ class WestergaardOpenFem2dSolver:
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
-        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # Poisson's ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
         self.p0 = self.params["p0"]
         self.sigma_inf = self.params["sigma_inf"]
@@ -218,7 +223,7 @@ class WestergaardOpenFem2dSolver:
         """
         This is the main part of the FEM solver. It follows the steps as below: 
             1. Get fractured mesh from the matrix mesh for fractured domain from the PorePy existing model. 
-            2. Get quardratic triangles with 6 nodes with/without quarter-point elements (QPE) for fracture tips. 
+            2. Get quadratic triangles with 6 nodes with/without quarter-point elements (QPE) for fracture tips. 
             3. Assemble Dirichlet and Neumann boundary conditions.
             4. Get traction forces for nodes based on Neumann traction on edges.
             5. Get the stiffness matrix.
@@ -245,7 +250,7 @@ class WestergaardOpenFem2dSolver:
 
         # nodes_p6: node coordinates, np.array(shape = (n, 2), dtype = float)
         # elements_t6: node connection in cells, np.array(shape = (n, 6), dtype = int)
-        # elements_quarter: node connection in cells with fractrue tip nodes, list: shape = (n, 6)
+        # elements_quarter: node connection in cells with fracture tip nodes, list: shape = (n, 6)
         self.nodes_p6, self.elements_t6, self.elements_quarter = mmfa.t3tot6(
             self.nodes_mdg, 
             self.elements_mdg, 
@@ -366,7 +371,7 @@ class WestergaardOpenFem2dSolver:
         # Dirichlet DOFs (ux, uy)
         dirdof = np.concatenate([2*domain_boundaries, 2*domain_boundaries + 1])
         dirval = np.zeros_like(dirdof, dtype=float)      # All zero
-        # Values of Dirichlet boundary nodes directly get from BEM: ExactDirichletBCSneddon
+        # Values of Dirichlet boundary nodes directly get from BEM.
         for i, dof in enumerate(dirdof):
             node = dof // 2
             component = dof % 2
@@ -381,7 +386,7 @@ class WestergaardOpenFem2dSolver:
         Set up types and values of Neumann boundary conditions for internal boundaries (fracture surfaces).
 
         Returns: 
-            NeuDof: three node indices of edges correponding to traction.             
+            NeuDof: three node indices of edges corresponding to traction.         
             NeuVal: values of traction corresponding to edges. 
 
         Notes:
@@ -444,7 +449,7 @@ class WestergaardOpenFem2dSolver:
         A mapping from mesh edges to their middle nodes. 
 
         Returns: 
-            A mapping pf each edge to the middle nodes in T6. 
+            A mapping of each edge to the middle nodes in T6.
 
         """
         # Array of shape=(num_cells, 6) containing the node indices of T6. 

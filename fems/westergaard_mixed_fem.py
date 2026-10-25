@@ -1,10 +1,10 @@
 """
 Model for the Westergaard mixed-mode benchmark by a quadratic finite 
 element method with/without quarter-point elements using Westergaard's 
-analytical solution for tangential displacement jump.
+analytical solution for normal and tangential displacement jumps.
 
-This model considers a single central fracture in a 2D domain with 
-pressurized fracture surfaces. 
+This model considers a single central fracture in a 2D domain with the
+far-field normal and in-plane shear stresses.
 
 The fracture orientation can be from 0 to 180 degrees.
 
@@ -25,7 +25,7 @@ from fems import FemMeshFromPorePy
 # Directly use boundary element methods in Westergaard's problem in the mixed mode. 
 class FemExactDirichletBCWestergaardMixed:
     """Class representing the analytical solution for Westergaard's problem in
-       in the mixed mode.
+       the mixed mode.
     """
 
     def __init__(self, params: dict) -> None:
@@ -33,7 +33,7 @@ class FemExactDirichletBCWestergaardMixed:
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
-        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # Poisson's ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
         self.p0 = self.params["p0"]
         self.sigma_inf = self.params["sigma_inf"]
@@ -88,10 +88,15 @@ class FemExactDirichletBCWestergaardMixed:
         return x_bar
 
     def bem_kernel_normal_displacement(
-        self, xloc: np.ndarray, h: float, du: float
-    ) -> tuple[float, float]:
+        self,
+        xloc: np.ndarray | tuple[np.ndarray, np.ndarray],
+        h: float,
+        du: float | np.ndarray,
+    ) -> tuple[float | np.ndarray, float | np.ndarray]:
         """
         Normal displacement contribution (ux, uy) at a point from one BEM segment.
+
+        It could be a single point or multiple points.
         """
         xf, yf = xloc
         
@@ -133,10 +138,15 @@ class FemExactDirichletBCWestergaardMixed:
         return ux, uy
 
     def bem_kernel_tangential_displacement(
-        self, xloc: np.ndarray, h: float, du: float
-    ) -> tuple[float, float]:
+        self,
+        xloc: np.ndarray | tuple[np.ndarray, np.ndarray],
+        h: float,
+        du: float | np.ndarray,
+    ) -> tuple[float | np.ndarray, float | np.ndarray]:
         """
         Tangential displacement contribution (ux, uy) at a point from one BEM segment.
+
+        It could be a single point or multiple points.
         """
         xf, yf = xloc
         
@@ -209,7 +219,7 @@ class FemExactDirichletBCWestergaardMixed:
             ux_frac += dux_shear + dux_normal
             uy_frac += duy_shear + duy_normal
 
-        # Rotate far-field shear displacements to global coordinates
+        # Rotate far-field normal and shear displacements to global coordinates
         t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
         n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
@@ -247,7 +257,7 @@ class WestergaardMixedFem2dSolver:
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
-        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # Poisson's ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
         self.p0 = self.params["p0"]
         self.sigma_inf = self.params["sigma_inf"]
@@ -282,7 +292,7 @@ class WestergaardMixedFem2dSolver:
         """
         This is the main part of the FEM solver. It follows the steps as below: 
             1. Get fractured mesh from the matrix mesh for fractured domain from the PorePy existing model. 
-            2. Get quardratic triangles with 6 nodes with/without quarter-point elements (QPE) for fracture tips. 
+            2. Get quadratic triangles with 6 nodes with/without quarter-point elements (QPE) for fracture tips. 
             3. Assemble Dirichlet and Neumann boundary conditions.
             4. Get traction forces for nodes based on Neumann traction on edges.
             5. Get the stiffness matrix.
@@ -309,7 +319,7 @@ class WestergaardMixedFem2dSolver:
 
         # nodes_p6: node coordinates, np.array(shape = (n, 2), dtype = float)
         # elements_t6: node connection in cells, np.array(shape = (n, 6), dtype = int)
-        # elements_quarter: node connection in cells with fractrue tip nodes, list: shape = (n, 6)
+        # elements_quarter: node connection in cells with fracture tip nodes, list: shape = (n, 6)
         self.nodes_p6, self.elements_t6, self.elements_quarter = mmfa.t3tot6(
             self.nodes_mdg, 
             self.elements_mdg, 
@@ -358,8 +368,8 @@ class WestergaardMixedFem2dSolver:
         Extract the displacement jump between the conforming fracture surfaces.
 
         Returns: 
-            x_coords: shape = (n, )
-                x coordinates of fracture surface nodes from small to large values.            
+            s_coords: shape = (n, )
+                s coordinates of fracture surface nodes from small to large values.          
             u_jump_normal: shape = (n, )
                 normal displacement jump along the fracture.
             u_jump_tangential: shape = (n, )
@@ -430,7 +440,7 @@ class WestergaardMixedFem2dSolver:
         # Dirichlet DOFs (ux, uy)
         dirdof = np.concatenate([2*domain_boundaries, 2*domain_boundaries + 1])
         dirval = np.zeros_like(dirdof, dtype=float)      # All zero
-        # Values of Dirichlet boundary nodes directly get from BEM: ExactDirichletBCSneddon
+        # Values of Dirichlet boundary nodes directly get from BEM.
         for i, dof in enumerate(dirdof):
             node = dof // 2
             component = dof % 2
@@ -446,7 +456,7 @@ class WestergaardMixedFem2dSolver:
         boundaries (fracture surfaces).
 
         Returns: 
-            NeuDof: three node indices of edges correponding to traction.             
+            NeuDof: three node indices of edges corresponding to traction.            
             NeuVal: values of traction corresponding to edges. 
 
         Notes:
@@ -510,7 +520,7 @@ class WestergaardMixedFem2dSolver:
         A mapping from mesh edges to their middle nodes. 
 
         Returns: 
-            A mapping pf each edge to the middle nodes in T6. 
+            A mapping of each edge to the middle nodes in T6. 
 
         """
         # Array of shape=(num_cells, 6) containing the node indices of T6. 
