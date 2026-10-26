@@ -42,13 +42,13 @@ def prepare_mean_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def plot_case(fig, ax, df: pd.DataFrame, number: str):
+def plot_case(fig, ax, df: pd.DataFrame, number: str, vmin: float, vmax: float):
     """Plot a scatter subplot."""
 
     df_mean = prepare_mean_data(df)
 
-    vmin = df_mean["mean_error"].min()
-    vmax = df_mean["mean_error"].max()
+    # vmin = df_mean["mean_error"].min()
+    # vmax = df_mean["mean_error"].max()
 
     sc = ax.scatter(
         df_mean["r"],
@@ -88,16 +88,16 @@ def plot_case(fig, ax, df: pd.DataFrame, number: str):
         va="top",
     )
 
-    cbar = fig.colorbar(
-        sc,
-        ax=ax,
-        location="bottom",
-        shrink=0.80,
-        pad=0.25,
-        fraction=0.05,
-    )
-    cbar.ax.tick_params(labelsize=8)
-    cbar.outline.set_visible(False)
+    # cbar = fig.colorbar(
+    #     sc,
+    #     ax=ax,
+    #     location="bottom",
+    #     shrink=0.80,
+    #     pad=0.25,
+    #     fraction=0.05,
+    # )
+    # cbar.ax.tick_params(labelsize=8)
+    # cbar.outline.set_visible(False)
 
     return sc
 
@@ -145,14 +145,14 @@ all_mean_errors = np.concatenate(all_mean_errors)
 
 vmin = all_mean_errors.min()
 vmax = all_mean_errors.max()
-vmin = 2e-3
-vmax = 1e-1
+# vmin = 2e-3
+# vmax = 1e-1
 
 # Plot three horizontal subfigures
 fig, axes = plt.subplots(
     2,
     3,
-    figsize=(6.8, 5.0),
+    figsize=(6.8, 4.9),
     sharey=False,
 )
 
@@ -166,38 +166,43 @@ for ax, df, item, number in zip(axes_flat, all_data, case_files, numbers):
         ax=ax,
         df=df,
         number=number,
+        vmin=vmin,
+        vmax=vmax,
     )
 
-# Shared colorbar
-# cbar = fig.colorbar(
-#     sc,
-#     ax=axes_flat,
-#     location="bottom",
-#     shrink=0.60,
-#     pad=0.08,
-#     fraction=0.05,
-# )
-
-# cbar.set_label("Mean of relative error")
 
 # Adjust layout to make room for the legend
 # plt.tight_layout(rect=[0, 0.08, 1, 1])
 fig.subplots_adjust(
     left=0.08,
     right=0.98,
-    bottom=0.05,
-    top=0.95,
+    bottom=0.09,
+    top=0.97,
     wspace=0.40,
-    hspace=0.15,
+    hspace=0.30,
 )
 
+# Shared colorbar
+cbar = fig.colorbar(
+    sc,
+    ax=axes_flat,
+    location="bottom",
+    shrink=0.35,
+    pad=0.12,
+    fraction=0.022,
+)
+
+cbar.set_label("Mean of relative error")
+cbar.ax.tick_params(labelsize=8)
+cbar.outline.set_visible(False)
+
 plt.savefig(
-    os.path.join(save_fig, "Fig7_Map_r_h_mixed.pdf"),
+    os.path.join(save_fig, "Fig7_Map_r_h_mixed_2.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig7_Map_r_h_mixed.tiff"),
+    os.path.join(save_fig, "Fig7_Map_r_h_mixed_2.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
