@@ -18,7 +18,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
+from mpsa_sneddon2d import ManuSneddonModel2d
 from fems import mmfa
 from fems import FemMeshFromPorePy
 

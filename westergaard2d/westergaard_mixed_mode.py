@@ -1,7 +1,7 @@
 """
 Model for Westergaard's problem in the mixed mode 
 using Westergaard's analytical solution for both normal and 
-tangential displacement jump.
+tangential displacement jumps.
 
 References:
 
@@ -18,7 +18,8 @@ import numpy as np
 import porepy as pp
 from porepy.applications.convergence_analysis import ConvergenceAnalysis
 from porepy.geometry.distances import point_pointset
-from tests.functional.setups.manu_sneddon_2d import (
+
+from mpsa_sneddon2d.manu_sneddon_2d import (
     ManuSneddonGeometry2d,
     ManuSneddonBoundaryConditions,
     SneddonExactSolution2d,

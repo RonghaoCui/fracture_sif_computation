@@ -14,7 +14,7 @@ from __future__ import annotations
 import porepy as pp
 import numpy as np
 
-from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
+from mpsa_sneddon2d import ManuSneddonModel2d
 
 import math
 import matplotlib.pyplot as plt
@@ -38,7 +38,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 0),
+    "theta_rad": math.radians(90 - 45),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.1,
 }
@@ -75,7 +75,7 @@ pp.plot_grid(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_grids_so_0d.tiff"),
+    os.path.join(save_dir, "MPSA_grids_so_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -105,7 +105,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_uy_map_so_0d.tiff"),
+    os.path.join(save_dir, "MPSA_uy_map_so_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -134,7 +134,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_ux_map_so_0d.tiff"),
+    os.path.join(save_dir, "MPSA_ux_map_so_45d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -197,7 +197,7 @@ ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "MPSA_un_so_0d.tiff"), 
+    os.path.join(save_dir, "MPSA_un_so_45d.tiff"),
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -227,7 +227,7 @@ ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "MPSA_ut_so_0d.tiff"), 
+    os.path.join(save_dir, "MPSA_ut_so_45d.tiff"),
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
