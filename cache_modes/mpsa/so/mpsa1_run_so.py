@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 import porepy as pp
-from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
+from mpsa_sneddon2d import ManuSneddonModel2d
 from fracture import FractureDisplacementJump
 
 import math

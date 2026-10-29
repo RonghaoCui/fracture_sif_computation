@@ -11,18 +11,18 @@ FEM code resources:
 """
 from __future__ import annotations
 
-import porepy as pp
+# import porepy as pp
 import numpy as np
 
-from tests.functional.setups.manu_sneddon_2d import ManuSneddonModel2d
+from mpsa_sneddon2d import ManuSneddonModel2d
 from fems import mmfa
 from porepy_mesh_into_fem import FemMeshFromPorePy
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-import os
-save_dir = "figures/benchmarks/femqpe/sol"
-os.makedirs(save_dir, exist_ok=True)
+# import os
+# save_dir = "figures/benchmarks/femqpe/sol"
+# os.makedirs(save_dir, exist_ok=True)
 
 # Directly use boundary element methods in Sneddon problem
 class FemExactDirichletBCSneddon:
