@@ -1,4 +1,4 @@
-r"""Figure 11: Illustration of fracture orientation in the domain, with
+r"""Figure 6: Illustration of fracture orientation in the domain, with
 the fracture angle $\beta$ measured counterclockwise from the horizontal
 reference. The fracture center is fixed at the domain center.
 """
