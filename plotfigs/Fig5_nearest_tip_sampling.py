@@ -1,3 +1,13 @@
+"""Figure 5: Convergence behavior of the nearest-tip sampling
+strategy for SIF estimations across different benchmark cases and
+discretization methods. Panels (a)-(c) show the relative errors of the
+mode-I SIF for Sneddon's problem, Westergaard's mode-I problem, and
+Westergaard's mixed-mode problem, respectively. Panels (d)-(e) show
+the relative errors of the mode-II SIF for Westergaard's mode-II problem
+and Westergaard's mixed-mode problem, respectively. Solid lines denote
+relative errors averaged over all fracture orientations, while shaded
+regions show ±1 standard deviation.
+"""
 from __future__ import annotations
 
 import os
@@ -9,7 +19,6 @@ import matplotlib as mpl
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
-
 
 save_fig = "figures/publication/Fig5/"
 os.makedirs(save_fig, exist_ok=True)
@@ -130,7 +139,6 @@ def plot_case(ax, data_items: list[dict], number: str):
         va="top",
     )
 
-
 panel_cases = [
     {"number": "(a)", "case_key": "so"},
     {"number": "(b)", "case_key": "wo"},
@@ -138,7 +146,6 @@ panel_cases = [
     {"number": "(d)", "case_key": "ws"},
     {"number": "(e)", "case_key": "wms"},
 ]
-
 
 fig, axes = plt.subplots(
     2,
@@ -156,7 +163,7 @@ for ax, panel in zip(axes_flat[:5], panel_cases):
         number=panel["number"],
     )
 
-# Legend panel
+# Legend panel.
 ax_leg = axes_flat[5]
 ax_leg.axis("off")
 
@@ -192,15 +199,21 @@ fig.subplots_adjust(
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig5_sif_failure.pdf"),
+    os.path.join(save_fig, "Fig5_nearest_tip_sampling.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig5_sif_failure.tiff"),
+    os.path.join(save_fig, "Fig5_nearest_tip_sampling.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+plt.savefig(
+    os.path.join(save_fig, "Fig5_nearest_tip_sampling.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)

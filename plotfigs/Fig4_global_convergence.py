@@ -1,3 +1,9 @@
+"""Figure 4: Convergence of the numerical displacement and displacement
+jump fields for (a) QFEM, (b) QFEM-QPE, and (c) MPSA. Relative errors of
+displacement fields are evaluated over the matrix domain denoted by
+solid lines, while relative errors of displacement jump fields are
+calculated along the fracture denoted by dashed lines.
+"""
 from __future__ import annotations
 
 import os
@@ -10,7 +16,7 @@ from matplotlib.ticker import LogLocator, LogFormatterMathtext
 from matplotlib.lines import Line2D
 
 
-save_fig = "figures/publication/Fig4_2/"
+save_fig = "figures/publication/Fig4/"
 os.makedirs(save_fig, exist_ok=True)
 
 
@@ -47,7 +53,7 @@ def read_case(base_path: str, method_name: str):
     return data
 
 
-def add_reference_triangle(ax, x0, x1, y0, slope=1.5):
+def add_reference_triangle(ax, x0, x1, y0, slope):
     """Add reference slope triangle."""
     y1 = y0 * (x0 / x1) ** slope
 
@@ -142,7 +148,7 @@ def plot_method(ax, data, title):
     )
 
 
-# Read data
+# Read data.
 qfem_data = read_case(
     base_path="data/global_conv/qfem",
     method_name="qfem",
@@ -159,7 +165,7 @@ mpsa_data = read_case(
 )
 
 
-# Plot three horizontal subfigures
+# Plot three subfigures.
 fig, axes = plt.subplots(
     1,
     3,
@@ -167,14 +173,14 @@ fig, axes = plt.subplots(
     sharey=False,
 )
 
-# QFEM
+# QFEM.
 plot_method(axes[0], qfem_data, "(a)")
-# QFEM-QPE
+# QFEM-QPE.
 plot_method(axes[1], qfem_qpe_data, "(b)")
-# MPSA
+# MPSA.
 plot_method(axes[2], mpsa_data, "(c)")
 
-# Axis limits
+# Axis limits.
 axes[0].set_xlim(10, 1000)
 axes[0].set_ylim(1e-5, 1.0)
 
@@ -185,38 +191,38 @@ axes[2].set_xlim(10, 1000)
 axes[2].set_ylim(1e-5, 1.0)
 
 
-# Reference triangles
-add_reference_triangle(axes[0], x0=25, x1=45, y0=1e-4)
-add_reference_triangle(axes[1], x0=25, x1=45, y0=1e-4)
-add_reference_triangle(axes[2], x0=25, x1=45, y0=1e-4)
+# Reference triangles.
+add_reference_triangle(axes[0], x0=25, x1=45, y0=1e-4, slope=1.0)
+add_reference_triangle(axes[1], x0=25, x1=45, y0=1e-4, slope=1.5)
+add_reference_triangle(axes[2], x0=25, x1=45, y0=1e-4, slope=1.0)
 
 
-# Color legend
+# Color legend.
 handles = [
 
-    # col1
+    # Column 1.
     Line2D([], [], color='none', label='Displacement:'),
     Line2D([], [], color='none', label='Displacement jump:'),
 
-    # col2
+    # Column 2.
     Line2D([], [], color="tab:blue", ls="-",  lw=1.0,
            label=r"Sneddon $K_I$"),
     Line2D([], [], color="tab:blue", ls="--", lw=1.0,
            label=r"Sneddon $K_I$"),
 
-    # col3
+    # Column 3.
     Line2D([], [], color="tab:orange", ls="-",  lw=1.0,
            label=r"Westergaard $K_I$"),
     Line2D([], [], color="tab:orange", ls="--", lw=1.0,
            label=r"Westergaard $K_I$"),
 
-    # col4
+    # Column 4.
     Line2D([], [], color="tab:pink", ls="-",  lw=1.0,
            label=r"Westergaard $K_{II}$"),
     Line2D([], [], color="tab:pink", ls="--", lw=1.0,
            label=r"Westergaard $K_{II}$"),
 
-    # col5
+    # Column 5.
     Line2D([], [], color="tab:green", ls="-",  lw=1.0,
            label="Westergaard Mixed"),
     Line2D([], [], color="tab:green", ls="--", lw=1.0,
@@ -233,8 +239,7 @@ legend = fig.legend(
     columnspacing=1.2,
 )
 
-# Adjust layout to make room for the legend
-# plt.tight_layout(rect=[0, 0.08, 1, 1])
+# Adjust layout.
 fig.subplots_adjust(
     left=0.08,
     right=0.98,
@@ -244,15 +249,21 @@ fig.subplots_adjust(
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig4_Global_conv.pdf"),
+    os.path.join(save_fig, "Fig4_global_convergence.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig4_Global_conv.tiff"),
+    os.path.join(save_fig, "Fig4_global_convergence.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+plt.savefig(
+    os.path.join(save_fig, "Fig4_global_convergence.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)

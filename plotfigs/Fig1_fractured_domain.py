@@ -25,7 +25,6 @@ plt.rcParams.update(
 fig = plt.figure(figsize=(3.5, 2.2))
 ax = fig.add_axes([0, 0, 1, 1])
 
-# Set limits and aspect ratio.
 ax.set_xlim(0, 9.6)
 ax.set_ylim(0, 6.0)
 ax.set_aspect("equal")
@@ -49,15 +48,15 @@ domain_size = 5.0
 fracture_length = 3.20
 fracture_angle_deg = 45.0
 
-# Circular enlargement
+# Circular enlargement.
 R = 1.8
 circle_gap = 0.50
 cy = 4.0
 
-# Opening width in enlarged fracture
+# Opening width in enlarged fracture.
 opening_gap = 0.80
 
-# Dashed guide lines
+# Dashed guide lines.
 source_fraction = 0.65
 guide_angle_upper_deg = 135.0
 guide_angle_lower_deg = 245.0
@@ -80,7 +79,7 @@ domain_cy = domain_y + domain_size / 2.0
 domain_right = domain_x + domain_size
 domain_top = domain_y + domain_size
 
-# External boundary label.
+# Label for external boundary.
 ax.text(
     domain_cx,
     domain_top + 0.25,
@@ -133,17 +132,16 @@ circle = Circle(
 )
 ax.add_patch(circle)
 
-# Fracture surfaces in circular inset.
+# Fracture surfaces in circular enlargement.
 upper_cx = cx + 0.5 * opening_gap * nx
 upper_cy = cy + 0.5 * opening_gap * ny
 lower_cx = cx - 0.5 * opening_gap * nx
 lower_cy = cy - 0.5 * opening_gap * ny
 
-# Long enough to pass completely through the circle.
-# Clipping removes everything outside the circle.
+# Set clipping that removes everything outside the circle.
 L = 2.5 * R
 
-# White fracture opening.
+# Fracture opening.
 p1 = (
     upper_cx - L * tx,
     upper_cy - L * ty,
@@ -174,10 +172,10 @@ fracture_opening = Polygon(
 
 ax.add_patch(fracture_opening)
 
-# Clip the white opening to the circular inset.
+# Clip the white opening to the circular enlargement.
 fracture_opening.set_clip_path(circle)
 
-# Thick fracture surfaces.
+# Plot fracture surfaces.
 upper_line, = ax.plot(
     [
         upper_cx - L * tx,
@@ -211,8 +209,7 @@ lower_line, = ax.plot(
 upper_line.set_clip_path(circle)
 lower_line.set_clip_path(circle)
 
-# Labels inside inset.
-# Put labels along the normal direction, well outside the white opening.
+# Labels in the circular enlargement.
 label_offset = 0.62 * R
 
 ax.text(
@@ -233,11 +230,10 @@ ax.text(
     zorder=5,
 )
 
-# Dashed guide lines
+# Dashed guide lines.
 # Both start from exactly the same point on the fracture.
 # Their endpoints are computed from the circle equation, so
 # they lie exactly on the circular boundary.
-# Point on the fracture used as the common source.
 source = (
     fracture_start[0]
     + source_fraction * (fracture_end[0] - fracture_start[0]),
@@ -276,7 +272,7 @@ ax.plot(
     zorder=2.5,
 )
 
-# Redraw circular boundary on top.
+# Plot circular boundary on top.
 circle_outline = Circle(
     (cx, cy),
     R,
@@ -291,15 +287,21 @@ ax.add_patch(circle_outline)
 
 # Save.
 fig.savefig(
-    os.path.join(save_dir, "Fig1_problem.pdf"),
+    os.path.join(save_dir, "Fig1_fractured_domain.pdf"),
     format="pdf",
 )
 
 fig.savefig(
-    os.path.join(save_dir, "Fig1_problem.tiff"),
+    os.path.join(save_dir, "Fig1_fractured_domain.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+fig.savefig(
+    os.path.join(save_dir, "Fig1_fractured_domain.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)

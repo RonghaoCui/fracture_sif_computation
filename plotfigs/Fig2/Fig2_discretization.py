@@ -1,6 +1,10 @@
 """
-Plot three types of meshes:
-(a) QFEM, (b) QFEM-QPE, and (c) MPSA.
+Figure 2: Discretization illustrations of the 2D fractured domain
+by three numerical methods: (a) QFEM, (b) QFEM-QPE, and (c) MPSA.
+Black dots, purple dots, and green dots denote locations of displacement
+unknowns, fracture tips, and quarter-point nodes, respectively. Fracture
+tips coincide with displacement unknowns in both QFEM and QFEM-QPE,
+whereas they are not represented by displacement unknowns in MPSA.
 """
 
 from __future__ import annotations
@@ -15,7 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-
 
 save_dir = "figures/publication/Fig2/"
 os.makedirs(save_dir, exist_ok=True)
@@ -59,7 +62,6 @@ mpl.rcParams.update({
 
 formatter = ScalarFormatter(useMathText=True)
 
-
 def clean_axis(ax):
     """Remove ticks, labels, and spines."""
     ax.set_xlabel("")
@@ -82,10 +84,10 @@ def clean_axis(ax):
     ax.set_aspect("equal")
 
 
-# Plot the whole figure with three horizontal subfigures
+# Plot three subfigures in the whole figure.
 fig1, axes = plt.subplots(1, 3, figsize=(7.0, 2.40))  # inches
 
-# (a) QFEM
+# (a) QFEM.
 ax1 = axes[0]
 
 use_qpe = False
@@ -162,7 +164,7 @@ ax1.text(
     va="top",
 )
 
-# (b) QFEM-QPE
+# (b) QFEM-QPE.
 ax1 = axes[1]
 
 use_qpe = True
@@ -227,7 +229,7 @@ ax1.scatter(
     zorder=15,
 )
 
-# Highlight true quarter-point nodes
+# Highlight true quarter-point nodes.
 qpe_node_ids = []
 corner_locs = [0, 2, 4]
 
@@ -281,7 +283,7 @@ ax1.text(
 )
 
 
-# (c) MPSA
+# (c) MPSA.
 ax1 = axes[2]
 
 use_qpe = False
@@ -372,20 +374,25 @@ ax1.text(
     va="top",
 )
 
-# Save combined figure
-# Set the spacing between subplots
 fig1.tight_layout(w_pad=0.1)
 
+# Save.
 fig1.savefig(
-    os.path.join(save_dir, "Fig2_Meshes.pdf"),
+    os.path.join(save_dir, "Fig2_discretization.pdf"),
     format="pdf",
 )
 
 fig1.savefig(
-    os.path.join(save_dir, "Fig2_Meshes.tiff"),
+    os.path.join(save_dir, "Fig2_discretization.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+fig1.savefig(
+    os.path.join(save_dir, "Fig2_discretization.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig1)

@@ -1,4 +1,8 @@
-"""Figure 3: mixed-mode displacement fields and fracture displacement jumps."""
+"""Figure 3: Solution of displacement components, u_x (a) and u_y (b)
+in Westergaard's problems of mixed modes. Corresponding normal and
+tangential displacement jump profiles are shown in (c) and (d), respectively.
+MPSA discretization is adopted as an example.
+"""
 from __future__ import annotations
 
 import math
@@ -9,13 +13,12 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.tri as mtri
+
 import numpy as np
 import porepy as pp
 
 from westergaard2d import WestergaardMixedMode2d
 
-
-# Keep the output location used by Fig3_plot_wm_jump.py.
 save_dir = "figures/publication/Fig3/"
 os.makedirs(save_dir, exist_ok=True)
 
@@ -48,11 +51,9 @@ params = {
 model = WestergaardMixedMode2d(params=params)
 pp.run_time_dependent_model(model)
 
-# Matrix displacement, stored cell-wise as (u_x, u_y).
 matrix_grid = model.mdg.subdomains(dim=2)[0]
-u_matrix = np.asarray(
-    model.displacement([matrix_grid]).value(model.equation_system)
-).reshape((2, matrix_grid.num_cells), order="F")
+u = model.displacement([matrix_grid]).value(model.equation_system)
+u_matrix = u.reshape((2, matrix_grid.num_cells), order="F")
 
 
 def cell_polygons(grid: pp.Grid) -> list[np.ndarray]:
@@ -82,9 +83,6 @@ for cell in range(matrix_grid.num_cells):
         cell_nodes.indptr[cell] : cell_nodes.indptr[cell + 1]
     ]
 
-    if len(nodes) != 3:
-        raise ValueError("tripcolor version assumes a triangular simplex grid.")
-
     triangles.append(nodes)
 
 triangles = np.asarray(triangles)
@@ -95,7 +93,7 @@ triangulation = mtri.Triangulation(
     triangles,
 )
 
-# Fracture displacement jump. This follows Fig3_plot_wm_jump.py, including the
+# Fracture displacement jump. This includes the
 # orientation correction for PorePy's local tangential basis.
 fracture_grid = model.mdg.subdomains(dim=1)[0]
 theta = params["theta_rad"]
@@ -115,13 +113,12 @@ u_slip_numerical = sign_t * (tangent_op @ u_jump).value(model.equation_system)
 u_open_analytical = model.exact_sol.exact_sol_normal_fracture(model.mdg)
 u_slip_analytical = model.exact_sol.exact_sol_tangential_fracture(model.mdg)
 
-# Explicit sorting makes both analytical curves independent of fracture-cell order.
 order = np.argsort(x_plot)
 x_plot = x_plot[order]
-u_open_numerical = np.asarray(u_open_numerical)[order]
-u_slip_numerical = np.asarray(u_slip_numerical)[order]
-u_open_analytical = np.asarray(u_open_analytical)[order]
-u_slip_analytical = np.asarray(u_slip_analytical)[order]
+u_open_numerical = u_open_numerical[order]
+u_slip_numerical = u_slip_numerical[order]
+u_open_analytical = u_open_analytical[order]
+u_slip_analytical = u_slip_analytical[order]
 
 mpl.rcParams.update(
     {
@@ -138,12 +135,7 @@ mpl.rcParams.update(
     }
 )
 
-# fig = plt.subplots(figsize=(6.3, 5.5), constrained_layout=True)
-# ax_ux, ax_uy = axes[0]
-# ax_un, ax_ut = axes[1]
-
 fig = plt.figure(
-    # figsize=(6.3, 4.6),
     figsize=(5.5, 4.0),
     constrained_layout=True,
 )
@@ -157,8 +149,8 @@ gs = fig.add_gridspec(
 ax_ux = fig.add_subplot(gs[0, 0])
 ax_uy = fig.add_subplot(gs[0, 1])
 
-# Colorbar axis for displacement.
-cax   = fig.add_subplot(gs[0, 2])
+# Colorbar for displacement.
+cax = fig.add_subplot(gs[0, 2])
 pos = cax.get_position()
 cax.set_position([
     pos.x0 - 0.05,
@@ -170,7 +162,7 @@ cax.set_position([
 ax_un = fig.add_subplot(gs[1, 0])
 ax_ut = fig.add_subplot(gs[1, 1])
 
-# Legend axis for displacement jump.
+# Legend for displacement jump.
 lax   = fig.add_subplot(gs[1, 2])
 
 limit = max(
@@ -219,7 +211,7 @@ def plot_displacement_map(ax, values: np.ndarray, component: str):
 collection_ux = plot_displacement_map(ax_ux, u_matrix[0], "x")
 collection_uy = plot_displacement_map(ax_uy, u_matrix[1], "y")
 
-# Use the same colorbar limits for both displacement components, and add a label.
+# Use the same colorbar for both displacement components.
 colorbar = fig.colorbar(collection_uy, cax=cax,)
 colorbar.set_label(rf"Displacement")
 colorbar.formatter = ScalarFormatter(useMathText=True)
@@ -279,13 +271,21 @@ for ax, label in zip((ax_ux, ax_uy, ax_un, ax_ut), ("(a)", "(b)", "(c)", "(d)"))
     )
 
 fig.savefig(
-    os.path.join(save_dir, "Fig3_wm.pdf"), 
+    os.path.join(save_dir, "Fig3_solution_example.pdf"), 
     format="pdf",
 )
+
 fig.savefig(
-    os.path.join(save_dir, "Fig3_wm.tiff"), 
+    os.path.join(save_dir, "Fig3_solution_example.tiff"), 
     format="tiff", 
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
 )
+
+fig.savefig(
+    os.path.join(save_dir, "Fig3_solution_example.png"), 
+    format="png", 
+    dpi=600,
+)
+
 plt.close(fig)
