@@ -1,3 +1,9 @@
+"""Figure 10: The fitting performance of the scaling law relating
+the optimal sampling distance to the normalized mesh size for QFEM,
+QFEM-QPE, and MPSA in Westergaard's mixed-mode problem. Panels (a)-(c)
+and panels (d)-(f) show SIF relative errors for mode I and mode II,
+respectively. Columns correspond to QFEM, QFEM-QPE, and MPSA, respectively.
+"""
 from __future__ import annotations
 
 import os
@@ -6,14 +12,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-from matplotlib.colors import LogNorm
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
-from matplotlib.lines import Line2D
 
-
-save_fig = "figures/publication/Fig8/"
+save_fig = "figures/publication/Fig10/"
 os.makedirs(save_fig, exist_ok=True)
-
 
 mpl.rcParams.update({
     "font.family": "serif",
@@ -44,7 +46,7 @@ def prepare_mean_data(df: pd.DataFrame) -> pd.DataFrame:
 def compute_optimal_plot(diag_data: pd.DataFrame, diag_data_theta: pd.DataFrame):
     """Compute optimal r/a plots from averaged map and angle-dependent maps."""
 
-    # Optimal curve from averaged map
+    # Optimal curve from averaged map.
     df_mean = prepare_mean_data(diag_data)
 
     idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
@@ -56,7 +58,7 @@ def compute_optimal_plot(diag_data: pd.DataFrame, diag_data_theta: pd.DataFrame)
     alpha, logC = np.polyfit(x, y, 1)
     C = 10 ** logC
 
-    # Optimal curve for each theta
+    # Optimal curve for each theta.
     best_theta_results = []
 
     for theta_rad in sorted(diag_data_theta["theta_rad"].unique()):
@@ -184,57 +186,45 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
     return [h1, h2, h3, h4, h5]
 
 
-# Read data
+# Read data.
 case_files = [
     {
-        "mean_csv": "data/sifconv/cache_modes/qfem/so/map/map_so.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem/so/map/map_theta_so.csv",
+        "mean_csv": "data/sifconv/cache_modes/qfem/wm/map/map_wmo.csv",
+        "theta_csv": "data/sifconv/cache_modes/qfem/wm/map/map_theta_wmo.csv",
     },
     {
-        "mean_csv": "data/sifconv/cache_modes/qfem_qpe/so/map/map_so.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem_qpe/so/map/map_theta_so.csv",
+        "mean_csv": "data/sifconv/cache_modes/qfem_qpe/wm/map/map_wmo.csv",
+        "theta_csv": "data/sifconv/cache_modes/qfem_qpe/wm/map/map_theta_wmo.csv",
     },
     {
-        "mean_csv": "data/sifconv/cache_modes/mpsa/so/map/map_so.csv",
-        "theta_csv": "data/sifconv/cache_modes/mpsa/so/map/map_theta_so.csv",
+        "mean_csv": "data/sifconv/cache_modes/mpsa/wm/map/map_wmo.csv",
+        "theta_csv": "data/sifconv/cache_modes/mpsa/wm/map/map_theta_wmo.csv",
     },
     {
-        "mean_csv": "data/sifconv/cache_modes/qfem/wo/map/map_wo.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem/wo/map/map_theta_wo.csv",
+        "mean_csv": "data/sifconv/cache_modes/qfem/wm/map/map_wms.csv",
+        "theta_csv": "data/sifconv/cache_modes/qfem/wm/map/map_theta_wms.csv",
     },
     {
-        "mean_csv": "data/sifconv/cache_modes/qfem_qpe/wo/map/map_wo.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem_qpe/wo/map/map_theta_wo.csv",
+        "mean_csv": "data/sifconv/cache_modes/qfem_qpe/wm/map/map_wms.csv",
+        "theta_csv": "data/sifconv/cache_modes/qfem_qpe/wm/map/map_theta_wms.csv",
     },
     {
-        "mean_csv": "data/sifconv/cache_modes/mpsa/wo/map/map_wo.csv",
-        "theta_csv": "data/sifconv/cache_modes/mpsa/wo/map/map_theta_wo.csv",
-    },
-    {
-        "mean_csv": "data/sifconv/cache_modes/qfem/ws/map/map_ws.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem/ws/map/map_theta_ws.csv",
-    },
-    {
-        "mean_csv": "data/sifconv/cache_modes/qfem_qpe/ws/map/map_ws.csv",
-        "theta_csv": "data/sifconv/cache_modes/qfem_qpe/ws/map/map_theta_ws.csv",
-    },
-    {
-        "mean_csv": "data/sifconv/cache_modes/mpsa/ws/map/map_ws.csv",
-        "theta_csv": "data/sifconv/cache_modes/mpsa/ws/map/map_theta_ws.csv",
+        "mean_csv": "data/sifconv/cache_modes/mpsa/wm/map/map_wms.csv",
+        "theta_csv": "data/sifconv/cache_modes/mpsa/wm/map/map_theta_wms.csv",
     },
 ]
 
-# Plot nine subfigures
+# Plot six subfigures.
 fig, axes = plt.subplots(
+    2,
     3,
-    3,
-    figsize=(6.8, 7.0),
+    figsize=(6.8, 4.9),
     sharey=False,
 )
 
 axes_flat = axes.ravel()
 legend_handles = None
-numbers = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)", "(i)"]
+numbers = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"]
 
 for ax, item, number in zip(axes_flat, case_files, numbers):
     diag_data, diag_data_theta = read_case(
@@ -262,27 +252,32 @@ fig.legend(
     columnspacing=1.2,
 )
 
-# Adjust layout to make room for the legend
-# plt.tight_layout(rect=[0, 0.08, 1, 1])
+# Adjust layout for the legend.
 fig.subplots_adjust(
     left=0.08,
     right=0.98,
-    bottom=0.15,
+    bottom=0.22,
     top=0.95,
     wspace=0.40,
     hspace=0.30,
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig8_ScalingLaw_single.pdf"),
+    os.path.join(save_fig, "Fig10_fitting_scaling_law_mixed_mode.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig8_ScalingLaw_single.tiff"),
+    os.path.join(save_fig, "Fig10_fitting_scaling_law_mixed_mode.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+plt.savefig(
+    os.path.join(save_fig, "Fig10_fitting_scaling_law_mixed_mode.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)

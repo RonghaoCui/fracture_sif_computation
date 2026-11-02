@@ -1,3 +1,10 @@
+"""Figure 11: The convergence behavior of the scaling law for mode-I
+SIF estimates in panels (a)-(c) and for mode-II SIF estimates in
+panels (d)-(e) across different discretization methods. Panels (a),
+(b), and (d) are Sneddon's problem, Westergaard's mode-I problem,
+and Westergaard's mode-II problem, respectively. Panels (c) and (e)
+are both Westergaard's mixed-mode problem.
+"""
 from __future__ import annotations
 
 import os
@@ -11,7 +18,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 
-save_fig = "figures/publication/Fig10/"
+save_fig = "figures/publication/Fig11/"
 os.makedirs(save_fig, exist_ok=True)
 
 
@@ -62,7 +69,7 @@ def make_method_files(case_key: str) -> list[dict]:
 
 
 def plot_case(ax, data_items: list[dict], number: str):
-    """Plot one convergence-failure subplot."""
+    """Plot one convergence subplot."""
 
     plot_info = {
         "QFEM": "tab:blue",
@@ -156,7 +163,7 @@ for ax, panel in zip(axes_flat[:5], panel_cases):
         number=panel["number"],
     )
 
-# Legend panel
+# Legend panel.
 ax_leg = axes_flat[5]
 ax_leg.axis("off")
 
@@ -192,15 +199,21 @@ fig.subplots_adjust(
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig10_conv_scaling.pdf"),
+    os.path.join(save_fig, "Fig11_scaling_law_convergence.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig10_conv_scaling.tiff"),
+    os.path.join(save_fig, "Fig11_scaling_law_convergence.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+plt.savefig(
+    os.path.join(save_fig, "Fig11_scaling_law_convergence.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)

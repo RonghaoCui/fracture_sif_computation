@@ -71,7 +71,7 @@ def make_method_files(case_key: str) -> list[dict]:
 
 
 def plot_case(ax, data_items: list[dict], number: str):
-    """Plot one convergence-failure subplot."""
+    """Plot one convergence subplot."""
 
     plot_info = {
         "QFEM": "tab:blue",

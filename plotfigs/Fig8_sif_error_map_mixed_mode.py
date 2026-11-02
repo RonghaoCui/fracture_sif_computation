@@ -1,3 +1,10 @@
+"""Figure 8: The maps of averaged SIF relative errors over different
+fracture orientations for sampling locations and mesh resolutions in
+the (r/a,h/a) space for QFEM, QFEM-QPE, and MPSA in Westergaard's
+problem of mixed modes. Panels (a)-(c) and panels (d)-(f) show SIF
+relative error for mode I and mode II, respectively. Columns correspond
+to QFEM, QFEM-QPE, and MPSA, respectively.
+"""
 from __future__ import annotations
 
 import os
@@ -8,10 +15,9 @@ import matplotlib as mpl
 
 from matplotlib.colors import LogNorm
 from matplotlib.ticker import LogLocator, LogFormatterMathtext
-from matplotlib.lines import Line2D
 
 
-save_fig = "figures/publication/Fig7/"
+save_fig = "figures/publication/Fig8/"
 os.makedirs(save_fig, exist_ok=True)
 
 
@@ -47,9 +53,6 @@ def plot_case(fig, ax, df: pd.DataFrame, number: str, vmin: float, vmax: float):
 
     df_mean = prepare_mean_data(df)
 
-    # vmin = df_mean["mean_error"].min()
-    # vmax = df_mean["mean_error"].max()
-
     sc = ax.scatter(
         df_mean["r"],
         df_mean["norm_h"],
@@ -77,7 +80,6 @@ def plot_case(fig, ax, df: pd.DataFrame, number: str, vmin: float, vmax: float):
         LogLocator(base=10, subs=np.arange(2, 10) * 0.1)
     )
 
-    # ax.grid(True, which="both", linestyle="--", alpha=0.5)
     ax.text(
         -0.15,
         0.98,
@@ -88,21 +90,10 @@ def plot_case(fig, ax, df: pd.DataFrame, number: str, vmin: float, vmax: float):
         va="top",
     )
 
-    # cbar = fig.colorbar(
-    #     sc,
-    #     ax=ax,
-    #     location="bottom",
-    #     shrink=0.80,
-    #     pad=0.25,
-    #     fraction=0.05,
-    # )
-    # cbar.ax.tick_params(labelsize=8)
-    # cbar.outline.set_visible(False)
-
     return sc
 
 
-# Read data
+# Read data.
 case_files = [
     {
         "csv": "data/sifconv/cache_modes/qfem/wm/map/map_wmo.csv",
@@ -131,10 +122,10 @@ case_files = [
 ]
 
 
-# Read all data
+# Read all data.
 all_data = [read_case(item["csv"]) for item in case_files]
 
-# Use a shared color scale for all six subplots
+# Use a shared color scale for all six subplots.
 all_mean_errors = []
 
 for df in all_data:
@@ -145,10 +136,8 @@ all_mean_errors = np.concatenate(all_mean_errors)
 
 vmin = all_mean_errors.min()
 vmax = all_mean_errors.max()
-# vmin = 2e-3
-# vmax = 1e-1
 
-# Plot three horizontal subfigures
+# Plot three subfigures.
 fig, axes = plt.subplots(
     2,
     3,
@@ -171,8 +160,7 @@ for ax, df, item, number in zip(axes_flat, all_data, case_files, numbers):
     )
 
 
-# Adjust layout to make room for the legend
-# plt.tight_layout(rect=[0, 0.08, 1, 1])
+# Adjust layout for the legend.
 fig.subplots_adjust(
     left=0.08,
     right=0.98,
@@ -182,7 +170,7 @@ fig.subplots_adjust(
     hspace=0.30,
 )
 
-# Shared colorbar
+# Shared colorbar.
 cbar = fig.colorbar(
     sc,
     ax=axes_flat,
@@ -197,15 +185,21 @@ cbar.ax.tick_params(labelsize=8)
 cbar.outline.set_visible(False)
 
 plt.savefig(
-    os.path.join(save_fig, "Fig7_Map_r_h_mixed_2.pdf"),
+    os.path.join(save_fig, "Fig8_sif_error_map_mixed_mode.pdf"),
     format="pdf",
 )
 
 plt.savefig(
-    os.path.join(save_fig, "Fig7_Map_r_h_mixed_2.tiff"),
+    os.path.join(save_fig, "Fig8_sif_error_map_mixed_mode.tiff"),
     format="tiff",
     dpi=600,
     pil_kwargs={"compression": "tiff_lzw"},
+)
+
+plt.savefig(
+    os.path.join(save_fig, "Fig8_sif_error_map_mixed_mode.png"),
+    format="png",
+    dpi=600,
 )
 
 plt.close(fig)
