@@ -1,4 +1,4 @@
-"""Model for the fracturized pressure problem using Sneddon's analytical solution
+"""Model for the pressurized fracture problem using Sneddon's analytical solution
 adapted from PorePy.
 
 Source: 
@@ -72,7 +72,7 @@ class SneddonExactSolution2d:
         Parameters:
             mdg: Mixed-dimensional domain of the model.
 
-        Return:
+        Returns:
             A numpy array with the analytical apertures.
 
         """
@@ -82,7 +82,7 @@ class SneddonExactSolution2d:
         fracture_center = np.array([self.length / 2, self.length / 2, 0])
         fracture_faces = g_1.cell_centers
 
-        # See [2], p. 425, equ. 92
+        # See [2], p. 425, equ. 92.
         eta = point_pointset(fracture_faces, fracture_center)
         apertures = self.analytical_displacements(eta)
 
@@ -95,12 +95,12 @@ class SneddonExactSolution2d:
             h: BEM segment length.
             center: Coordinates of the fracture center.
 
-        Return:
+        Returns:
             Array containing the BEM segment centers.
 
         """
 
-        # See [1], p. 57 coordinate system (4.5.1)
+        # See [1], p. 57 coordinate system (4.5.1).
         bem_centers = np.zeros((3, self.n))
         x_0 = center[0] - (self.a - 0.5 * h) * np.sin(self.theta_rad)
         y_0 = center[1] - (self.a - 0.5 * h) * np.cos(self.theta_rad)
@@ -117,7 +117,7 @@ class SneddonExactSolution2d:
         Parameters:
             eta: Distances of fracture points to the fracture center.
 
-        Return
+        Returns:
             Array containing the analytical normal displacement jumps.
 
         """
@@ -128,19 +128,20 @@ class SneddonExactSolution2d:
     def tranform_boundary_face_coordinates_bem(
         self, xc: np.ndarray, x: np.ndarray
     ) -> np.ndarray:
-        """Translation and rotation transform of boundary face coordinates for the BEM.
+        """Translation and rotation transform of boundary face coordinates
+        for the BEM.
 
         Parameters:
-            xc: Coordinates of BEM segment centre.
+            xc: Coordinates of BEM segment center.
             x: Coordinates of boundary faces.
 
-        Return:
+        Returns:
             Transformed coordinates.
 
         """
         alpha = np.pi / 2 - self.theta_rad
         x_bar = np.zeros_like(x)
-        # See [1], p. 168 equ. 7.4.6
+        # See [1], p. 168 equ. 7.4.6.
         x_bar[0, :] = (x[0, :] - xc[0]) * np.cos(alpha) + (x[1, :] - xc[1]) * np.sin(
             alpha
         )
@@ -160,18 +161,18 @@ class SneddonExactSolution2d:
         """Computes semi-analytical displacement values on the boundary using the BEM
         for the Sneddon problem.
 
-        Parameter
+        Parameters:
             sd: The matrix grid.
             bound_faces: Array of indices of boundary faces of ``sd``.
             xf: Coordinates of boundary faces.
-            h: BEM segment length.
+            h: half length of BEM segment.
             du: Sneddon's analytical relative normal displacement.
 
-        Return:
+        Returns:
             Boundary values for the displacement.
 
         """
-        # See [1], pages 57, 84-92, 168
+        # See [1], pages 57, 84-92, 168.
         f2 = np.zeros(bound_faces.size)
         f3 = np.zeros(bound_faces.size)
         f4 = np.zeros(bound_faces.size)
@@ -181,7 +182,7 @@ class SneddonExactSolution2d:
 
         alpha = np.pi / 2 - self.theta_rad
 
-        # See [1], equ. (7.4.5)
+        # See [1], equ. (7.4.5).
         m = 1 / (4 * np.pi * (1 - self.poi))
         f2[:] = m * (
             np.log(np.sqrt((xf[0, :] - h) ** 2 + xf[1] ** 2))
@@ -191,7 +192,7 @@ class SneddonExactSolution2d:
             np.arctan2(xf[1, :], (xf[0, :] - h)) - np.arctan2(xf[1, :], (xf[0, :] + h))
         )
 
-        # See [1], equations 5.5.3, 5.5.1, and p. 57, equ. 4.5.1
+        # See [1], equations 5.5.3, 5.5.1, and p. 57, equ. 4.5.1.
         f4[:] = m * (
             xf[1, :] / ((xf[0, :] - h) ** 2 + xf[1, :] ** 2)
             - xf[1, :] / ((xf[0, :] + h) ** 2 + xf[1, :] ** 2)
@@ -226,14 +227,14 @@ class SneddonExactSolution2d:
         """Computes semi-analytical displacement values using the BEM for the Sneddon
         problem.
 
-        Parameter
+        Parameters:
             grid: The matrix grid.
-            h: BEM segment length.
+            h: half length of BEM segment.
             bound_faces: Array of indices of boundary faces of ``grid``.
             bem_centers: BEM segments centers.
             u_a: Sneddon's analytical relative normal displacement.
 
-        Return:
+        Returns:
             Semi-analytical boundary displacement values.
 
         """
@@ -256,7 +257,7 @@ class SneddonExactSolution2d:
 
 
 class ManuSneddonGeometry2d(SquareDomainOrthogonalFractures):
-    """Square domain  with a single, arbitrarily oriented fracture at the center."""
+    """Square domain with a single, arbitrarily oriented fracture at the center."""
 
     def set_fractures(self):
         """Setting a single line fracture which runs through the domain center."""
@@ -428,7 +429,7 @@ class ManuSneddonConstitutiveLaws(pp.constitutive_laws.PressureStress):
         """Defines a constant pressure given by ``params['p0']``.
 
         Parameters:
-            subdomains: List of grids or boundary grids where the pressure is defined.
+            domains: List of grids or boundary grids where the pressure is defined.
 
         Returns:
             A dense array broadcasting the constant pressure into a suitable array.
