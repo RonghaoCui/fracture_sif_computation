@@ -1,6 +1,7 @@
 """
-Model for Westergaard's problem in the opening mode 
-using Westergaard's analytical solution for normal displacement jump.
+Model for Westergaard's problem in the opening mode by boundary
+element method (BEM) using Westergaard's analytical solution
+for normal displacement jump.
 
 References:
 
@@ -25,6 +26,7 @@ from mpsa_sneddon2d.manu_sneddon_2d import (
     ManuSneddonDataSaving,
 )
 
+
 class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
     """
     Class representing Westergaard's analytical solution in the opening mode 
@@ -40,6 +42,8 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
 
     Attributes:
         sigma_inf: Normal stress at infinity.
+        lamda: First Lamé parameter, computed from shear modulus and Poisson's
+            ratio.
     """
     def __init__(self, model) -> None:
         """
@@ -63,11 +67,11 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
             sd: Subdomain for analytical displacement values on boundary faces.
 
         Returns: 
-            Displacement values on boundary faces with shape ``(dim, num_faces)``.
+            Displacement values on boundary faces with shape ``(sd.dim, sd.num_faces)``.
 
         Note: 
-            The far-field shear strain is centered at the domain midpoint in order to 
-            remove rigid translation. 
+            The far-field displacement is measured relative to the domain midpoint
+            in order to remove rigid translation.
         """
         h = 2 * self.a / self.n
         box_faces = sd.get_boundary_faces()
@@ -77,10 +81,16 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         eta = point_pointset(bem_centers, center)
 
         u_a = -self.analytical_normal_opening(eta)
-        u_frac = self.displacement_bc_values_from_bem(sd, h / 2, box_faces, bem_centers, u_a)
+        u_frac = self.displacement_bc_values_from_bem(
+            sd,
+            h / 2.0,
+            box_faces,
+            bem_centers,
+            u_a,
+        )
 
-        # Rotate far-field shear displacements to global coordinates
-        t= np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
+        # Rotate far-field normal displacements to global coordinates.
+        t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
         n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
         x = sd.face_centers[0, box_faces]
@@ -88,8 +98,8 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
 
         dx = x - center[0]
         dy = y - center[1]
-        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate
-        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate
+        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate.
+        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate.
 
         eps_coeff = self.sigma_inf / (2.0 * self.shear_modulus + 2.0 * self.lamda)
         u_inf = np.zeros((sd.dim, sd.num_faces))
@@ -101,13 +111,13 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
     
     def exact_sol_normal_fracture(self, mdg: pp.MixedDimensionalGrid) -> np.ndarray:
         """
-        Compute Westergaard's analytical solution in the normal mode for the question.
+        Compute Westergaard's analytical solution in the normal mode.
 
         Parameters:
             mdg: Mixed-dimensional domain of the model.
 
-        Return:
-            A numpy array with the analytical apertures at fracture face centers. 
+        Returns:
+            A numpy array with the analytical apertures at fracture face centers.
         """
         ambient_dim = mdg.dim_max()
         g_1 = mdg.subdomains(dim=ambient_dim - 1)[0]
@@ -128,11 +138,10 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         Parameters:
             eta: Distances of fracture cell centers to the fracture center.
 
-        Return: 
+        Returns:
             Array containing analytical normal displacement jumps.
 
         """
-        # See [2], Ch 2.4 
         cons = 2.0 * (1.0 - self.poi) / self.shear_modulus * self.sigma_inf * self.a
         return cons * np.sqrt(1.0 - np.power(eta / self.a, 2))
 
@@ -145,24 +154,24 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         du: float, 
     ) -> np.ndarray:
         """
-        Computes semi-analytical displacement values on the boundary using the BEM
-        for the Westergaard's problem.
+        Computes semi-analytical displacement values on the boundary using
+        normal BEM segments.
 
-        Parameter
+        Parameters:
             sd: The matrix grid.
             bound_faces: Array of indices of boundary faces of ``sd``.
             xf: Coordinates of boundary faces.
-            h: BEM segment length.
+            h: half length of BEM segment.
             du: Westergaard's analytical relative normal displacement.
 
-        Return:
+        Returns:
             Boundary values for the displacement.
         """
         u = np.zeros((sd.dim, sd.num_faces))
         alpha = np.pi / 2 - self.theta_rad
         nu = self.poi
 
-        # See [1], Ch 4.5 Coordinate transformations eq. (4.5.4) and eq. (4.5.5)
+        # See [1], Ch 4.5 Coordinate transformations eq. (4.5.4) and eq. (4.5.5).
         m = 1.0 / (4.0 * np.pi * (1.0 - nu))
         f2 = m * (np.log(np.sqrt((xf[0, :] - h) ** 2 + xf[1, :] ** 2))
                   - np.log(np.sqrt((xf[0, :] + h) ** 2 + xf[1, :] ** 2)))
@@ -173,8 +182,7 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
                  - (xf[0, :] + h) / ((xf[0, :] + h) ** 2 + xf[1, :] ** 2))
 
         # See [1], Ch 4.5 Coordinate transformations eq. (4.5.1) 
-        # and Ch5.2 Displacement discontinuity eq. (5.2.3)
-        # As descrped in Sneddon's model: ManuSneddonModel2d
+        # and Ch5.2 Displacement discontinuity eq. (5.2.3).
         u[0, bound_faces] = du * (
             -(1 - 2 * self.poi) * np.cos(alpha) * f2[:]
             - 2 * (1 - self.poi) * np.sin(alpha) * f3[:]
@@ -197,19 +205,17 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
         u_a: np.ndarray,              
     ) -> np.ndarray:
         """
-        Computes semi-analytical displacement values using the BEM for the Westergaard's
-        problem in the opening mode.
+        Sum the boundary displacement values from normal BEM segments.
 
-        Parameter
+        Parameters:
             grid: The matrix grid.
-            h: BEM segment length.
+            h: half length of BEM segment.
             bound_faces: Array of indices of boundary faces of ``grid``.
             bem_centers: BEM segments centers.
             u_a: Westergaard's analytical relative normal displacement.
 
-        Return:
-            Semi-analytical boundary displacement values.
-
+        Returns:
+            Boundary displacement values.
         """
         bc_val = np.zeros((grid.dim, grid.num_faces))
         bound_face_centers = grid.face_centers[:, bound_faces]
@@ -224,6 +230,7 @@ class WestergaardOpenModeExactSolution2d(SneddonExactSolution2d):
             bc_val += u_bound
 
         return bc_val
+
 
 @dataclass
 class WestergaardOpenModeSaveData:
@@ -241,13 +248,12 @@ class WestergaardOpenModeDataSaving(ManuSneddonDataSaving):
         frac_sd = self.mdg.subdomains(dim=self.nd - 1)
         nd_vec_to_normal = self.normal_component(frac_sd)
 
-        # Computing the numerical displacement jump along the fracture on the fracture.
+        # Computing the normal displacement jump on the fracture
         # cell centers.
         u_n = (nd_vec_to_normal @ self.displacement_jump(frac_sd)).value(
             self.equation_system
         )
 
-        # Checking convergence specifically on the fracture.
         u_a = self.exact_sol.exact_sol_normal_fracture(self.mdg)
 
         # Truncate the solution at the fracture cells close to the boundary.
@@ -263,6 +269,7 @@ class WestergaardOpenModeDataSaving(ManuSneddonDataSaving):
 
         collect_data = WestergaardOpenModeSaveData(error_normal_displacement=e)
         return collect_data
+
 
 class WestergaardOpenModeConstitutiveLaws(
     pp.constitutive_laws.CoulombFrictionBound,

@@ -1,6 +1,7 @@
 """
-Model for Westergaard's problem in the shear mode 
-using Westergaard's analytical solution for tangential displacement jump.
+Model for Westergaard's problem in the shear mode by boundary
+element method (BEM) using Westergaard's analytical solution
+for tangential displacement jump.
 
 References:
 
@@ -24,6 +25,7 @@ from mpsa_sneddon2d.manu_sneddon_2d import (
     SneddonExactSolution2d,
     ManuSneddonDataSaving,
 )
+
 
 class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
     """
@@ -62,11 +64,11 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
             sd: Subdomain for analytical displacement values on boundary faces.
 
         Returns: 
-            Displacement values on boundary faces with shape ``(dim, num_faces)``.
+            Displacement values on boundary faces with shape ``(sd.dim, sd.num_faces)``.
 
         Note: 
-            The far-field shear strain is centered at the domain midpoint in order to 
-            remove rigid translation. 
+            The far-field displacement is measured relative to the domain midpoint
+            in order to remove rigid translation.
         """
         h = 2 * self.a / self.n
         box_faces = sd.get_boundary_faces()
@@ -76,9 +78,15 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         eta = point_pointset(bem_centers, center)
 
         v_a = -self.analytical_tangential_slip(eta)
-        u_frac = self.displacement_bc_values_from_bem(sd, h / 2, box_faces, bem_centers, v_a)
+        u_frac = self.displacement_bc_values_from_bem(
+            sd,
+            h / 2.0,
+            box_faces,
+            bem_centers,
+            v_a,
+        )
 
-        # Rotate far-field shear displacements to global coordinates
+        # Rotate far-field shear displacements to global coordinates.
         t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
         n = np.array([-np.cos(self.theta_rad), np.sin(self.theta_rad)])
 
@@ -87,13 +95,12 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
 
         dx = x - center[0]
         dy = y - center[1]
-        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate
-        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate
+        r_t = dx * t[0] + dy * t[1]   # Local tangential coordinate.
+        r_n = dx * n[0] + dy * n[1]   # Local normal coordinate.
 
         eps_coeff = self.tau_inf / (2.0 * self.shear_modulus)
         u_inf = np.zeros((sd.dim, sd.num_faces))
 
-        # cx, cy = center[:2]
         u_inf[0, box_faces] = eps_coeff * (r_n * t[0] + r_t * n[0])
         u_inf[1, box_faces] = eps_coeff * (r_n * t[1] + r_t * n[1])
 
@@ -101,13 +108,13 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
     
     def exact_sol_tangential_fracture(self, mdg: pp.MixedDimensionalGrid) -> np.ndarray:
         """
-        Compute Westergaard's analytical solution in the shear mode for the question.
+        Compute Westergaard's analytical solution in the shear mode.
 
         Parameters:
             mdg: Mixed-dimensional domain of the model.
 
-        Return:
-            A numpy array with the analytical slips at fracture face centers. 
+        Returns:
+            A numpy array with the analytical slips at fracture face centers.
         """
         ambient_dim = mdg.dim_max()
         g_1 = mdg.subdomains(dim=ambient_dim - 1)[0]
@@ -128,11 +135,10 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         Parameters:
             eta: Distances of fracture cell centers to the fracture center.
 
-        Return
+        Returns:
             Array containing analytical tangential displacement jumps.
 
         """
-        # See [2], Ch 2.4 
         cons = 2.0 * (1.0 - self.poi) / self.shear_modulus * self.tau_inf * self.a
         return cons * np.sqrt(1.0 - np.power(eta / self.a, 2))
 
@@ -145,24 +151,24 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         dv: float, 
     ) -> np.ndarray:
         """
-        Computes semi-analytical displacement values on the boundary using the BEM
-        for the Westergaard's problem.
+        Computes semi-analytical displacement values on the boundary using
+        tangential BEM segments.
 
-        Parameter
+        Parameters:
             sd: The matrix grid.
             bound_faces: Array of indices of boundary faces of ``sd``.
             xf: Coordinates of boundary faces.
-            h: BEM segment length.
-            du: Westergaard's analytical relative tangential displacement.
+            h: half length of BEM segment.
+            dv: Westergaard's analytical relative tangential displacement.
 
-        Return:
+        Returns:
             Boundary values for the displacement.
         """
         u = np.zeros((sd.dim, sd.num_faces))
         alpha = np.pi / 2 - self.theta_rad
         nu = self.poi
 
-        # See [1], Ch 4.5 Coordinate transformations eq. (4.5.4) and eq. (4.5.5)
+        # See [1], Ch 4.5 Coordinate transformations eq. (4.5.4) and eq. (4.5.5).
         m = 1.0 / (4.0 * np.pi * (1.0 - nu))
         f2 = m * (np.log(np.sqrt((xf[0, :] - h) ** 2 + xf[1, :] ** 2))
                   - np.log(np.sqrt((xf[0, :] + h) ** 2 + xf[1, :] ** 2)))
@@ -173,7 +179,7 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
                  - (xf[0, :] + h) / ((xf[0, :] + h) ** 2 + xf[1, :] ** 2))
 
         # See [1], Ch 4.5 Coordinate transformations eq. (4.5.1) 
-        # and Ch5.2 Displacement discontinuity eq. (5.2.3)
+        # and Ch5.2 Displacement discontinuity eq. (5.2.3).
         u[0, bound_faces] = dv * (
             -(1 - 2 * nu) * np.sin(alpha) * f2
             + 2 * (1 - nu) * np.cos(alpha) * f3
@@ -182,7 +188,7 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         u[1, bound_faces] = dv * (
             +(1 - 2 * nu) * np.cos(alpha) * f2
             + 2 * (1 - nu) * np.sin(alpha) * f3
-            - xf[1, :] * ( np.cos(alpha) * f4 + np.sin(alpha) * f5 )
+            - xf[1, :] * ( np.cos(alpha) * f4 + np.sin(alpha) * f5)
         )
         return u
 
@@ -195,18 +201,17 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
         v_a: np.ndarray,              
     ) -> np.ndarray:
         """
-        Computes semi-analytical displacement values using the BEM for the Westergaard's
-        problem in the shear mode.
+        Sum the boundary displacement values from tangential BEM segments.
 
-        Parameter
+        Parameters:
             grid: The matrix grid.
-            h: BEM segment length.
+            h: half length of BEM segment.
             bound_faces: Array of indices of boundary faces of ``grid``.
             bem_centers: BEM segments centers.
             v_a: Westergaard's analytical relative tangential displacement.
 
-        Return:
-            Semi-analytical boundary displacement values.
+        Returns:
+            Boundary displacement values.
 
         """
         bc_val = np.zeros((grid.dim, grid.num_faces))
@@ -222,6 +227,7 @@ class WestergaardShearModeExactSolution2d(SneddonExactSolution2d):
             bc_val += u_bound
 
         return bc_val
+
 
 @dataclass
 class WestergaardShearModeSaveData:
@@ -239,13 +245,12 @@ class WestergaardShearModeDataSaving(ManuSneddonDataSaving):
         frac_sd = self.mdg.subdomains(dim=self.nd - 1)
         nd_vec_to_tangential = self.tangential_component(frac_sd)
 
-        # Computing the numerical displacement jump along the fracture on the fracture.
+        # Computing the tangential displacement jump on the fracture
         # cell centers.
         u_n = (nd_vec_to_tangential @ self.displacement_jump(frac_sd)).value(
             self.equation_system
         )
 
-        # Checking convergence specifically on the fracture.
         u_a = self.exact_sol.exact_sol_tangential_fracture(self.mdg)
 
         # Truncate the solution at the fracture cells close to the boundary.
@@ -261,6 +266,7 @@ class WestergaardShearModeDataSaving(ManuSneddonDataSaving):
 
         collect_data = WestergaardShearModeSaveData(error_tangential_displacement=e)
         return collect_data
+
 
 class WestergaardShearModeConstitutiveLaws(
     pp.constitutive_laws.CoulombFrictionBound,
