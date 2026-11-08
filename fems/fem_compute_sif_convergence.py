@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import porepy as pp
 import numpy as np
 
 class FEMComputeSifErrorConvergence:
@@ -28,11 +27,10 @@ class FEMComputeSifErrorConvergence:
         solid = self.params["material_constants"]["solid"]
         self.mu = solid.shear_modulus          # μ
         self.lam = solid.lame_lambda           # λ
-        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # possion ratio
+        self.poi = self.lam / 2.0 / (self.mu + self.lam)    # Poisson's ratio
         self.E = 2.0 * self.mu * (1.0 + self.poi)           # Young's modulus
 
         # The tangential vector here is obtained by theta_rad, instead of coordinates from two tips.
-        # We assume that they should be the same. 
         self.theta_rad = self.params["theta_rad"]        
         t = np.array([np.sin(self.theta_rad), np.cos(self.theta_rad)])
 
@@ -41,10 +39,9 @@ class FEMComputeSifErrorConvergence:
         tip0 = self.tip_face_centers[np.argmin(s_tip)]
 
         # Convert coordinates of tip face centers to the local system along the fracture 
-        # as 1D coordinates, with tip0 as the origin. 
+        # as 1D coordinates, with tip0 as the origin.
         # The coordinates of Tip 1 and Tip 2 are 0.0 and 2a, respectively.
-        self.tip_face_centers = (self.tip_face_centers - tip0)@t
-        # print("tip_face_centers: ", self.tip_face_centers)
+        self.tip_face_centers = (self.tip_face_centers - tip0) @ t
         
         # Make sure tip_face_centers are in ascending order. 
         self.tip_face_centers = np.sort(self.tip_face_centers)
@@ -79,7 +76,7 @@ class FEMComputeSifErrorConvergence:
         closer tip with given sampling locations for two symmetrical tips. 
 
         Parameters: 
-            n_steps: the n-th cell near the tip. 
+            n_steps: the n-th node from the tip (excluding the tip node).
 
         Returns: 
             u_jump: shape = (n_tips, )
@@ -88,9 +85,8 @@ class FEMComputeSifErrorConvergence:
                 the radial distance to the closer fracture tip. 
 
         """
-        x_coords = self.fracture_node_coords   
+        x_coords = self.fracture_node_coords
         current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
-        # only [x,] and shape = (n_tips,)
         r_cell_to_tip = np.abs(self.tip_face_centers - x_coords[current_frac_nodes])
         u_jump = self.u_jump_normal[current_frac_nodes]
         return u_jump, r_cell_to_tip
@@ -101,7 +97,7 @@ class FEMComputeSifErrorConvergence:
         closer tip with given sampling locations for two symmetrical tips. 
 
         Parameters: 
-            n_steps: the n-th cell near the tip. 
+            n_steps: the n-th node from the tip (excluding the tip node).
 
         Returns: 
             u_jump: shape = (n_tips, )
@@ -110,9 +106,8 @@ class FEMComputeSifErrorConvergence:
                 the radial distance to the closer fracture tip. 
 
         """
-        x_coords = self.fracture_node_coords   
+        x_coords = self.fracture_node_coords
         current_frac_nodes = self.FEM_sampling_frac_cell(n_steps)
-        # only [x, y] and shape = (n_tips, 2)
         r_cell_to_tip = np.abs(self.tip_face_centers - x_coords[current_frac_nodes])
         u_jump = self.u_jump_tangential[current_frac_nodes]
         return u_jump, r_cell_to_tip
@@ -122,10 +117,10 @@ class FEMComputeSifErrorConvergence:
         Get sampling indices of fracture nodes for both tips of one fracture. 
 
         Parameters: 
-            n_steps: the n-th cell near the tip. 
+            n_steps: the n-th node from the tip (excluding the tip node).
 
         Returns: 
-            current_frac_cells: shape = (2, )
+            current_frac_nodes: shape = (2, )
                 sampling indices of fracture nodes for tips 1 and 2 of one fracture.
 
         Notes: 
@@ -154,7 +149,7 @@ class FEMComputeSifErrorConvergence:
         u_jump_n_one, r_n_one = self.FEM_extract_sampling_normal_jump(sampling_pair[1])
         u_jump_n_two, r_n_two = self.FEM_extract_sampling_normal_jump(sampling_pair[0])
         
-        return self.FEM_TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+        return self.FEM_TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
     
     def FEM_two_points_single_scale_tangential(
         self, sampling_pair: list
@@ -172,7 +167,7 @@ class FEMComputeSifErrorConvergence:
         u_jump_t_one, r_t_one = self.FEM_extract_sampling_tangential_jump(sampling_pair[1])
         u_jump_t_two, r_t_two = self.FEM_extract_sampling_tangential_jump(sampling_pair[0])
         
-        return self.FEM_TwoPoints_SIF_KII_errors(u_jump_t_one, r_t_one,u_jump_t_two, r_t_two)
+        return self.FEM_TwoPoints_SIF_KII_errors(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two)
     
     def FEM_TwoPoints_SIF_KI_errors(
         self, 
@@ -199,7 +194,7 @@ class FEMComputeSifErrorConvergence:
         Notes: 
             node 1 here is the one which is farther from the fracture tips. 
         """
-        singularity_orders = 0.5
+        singularity_orders = 0.5  # This is a default value.
         KIs = self.FEM_KI_from_two_points(
             u_jump_n_one, 
             r_n_one, 
@@ -235,7 +230,7 @@ class FEMComputeSifErrorConvergence:
         Notes: 
             node 1 here is the one which is farther from the fracture tips. 
         """
-        singularity_orders = 0.5
+        singularity_orders = 0.5  # This is a default value.
         KIIs = self.FEM_KII_from_two_points(
             u_jump_t_one, 
             r_t_one, 
@@ -263,7 +258,7 @@ class FEMComputeSifErrorConvergence:
             r_n_one: radial distance to the tip of node 1.
             u_jump_n_two: displacement jump of node 2.
             r_n_two: radial distance to the tip of node 2.
-            singularity_orders: singularity exponent, 0.5 by default.
+            singularity_orders: singularity exponent.
 
         Returns: 
             KIs: SIF values for tips from FEM.  
@@ -293,17 +288,17 @@ class FEMComputeSifErrorConvergence:
             singularity_orders: float,
     ) -> np.ndarray: 
         """
-        Calculate SIFs by FEM for tips based on extracted displacement jump. 
+        Calculate SIFs by FEM for tips based on extracted displacement jump.
         
         Parameters:
             u_jump_t_one: displacement jump of node 1.
             r_t_one: radial distance to the tip of node 1.
             u_jump_t_two: displacement jump of node 2.
             r_t_two: radial distance to the tip of node 2.
-            singularity_orders: singularity exponent, 0.5 by default.
+            singularity_orders: singularity exponent.
 
         Returns: 
-            KIs: SIF values for tips from FEM.  
+            KIIs: SIF values for tips from FEM.
         """
         KIIs_t_one = (
             self.E / (8.0 * (1 - self.poi**2.0))
@@ -366,14 +361,14 @@ class FEMComputeSifErrorConvergence:
         return KII_exact
     
     def FEM_relative_L2_error(
-        self, KIs: np.ndarray, KI_exact: float
+        self, SIFs: np.ndarray, SIF_exact: float
     ) -> tuple[float, np.ndarray]:
         """
-        Compute relative errors of SIF KI against an exact reference.
+        Compute relative errors of the SIF against an exact reference.
 
         Parameters:
-            KIs: Estimated KI values per tip.
-            KI_exact: Exact KI used as the scalar reference.
+            SIFs: Estimated SIF values per tip.
+            SIF_exact: Exact SIF used as the scalar reference.
 
         Returns:
             rel_l2_error_ave: relative L2 error averaged by two tips.
@@ -381,11 +376,11 @@ class FEMComputeSifErrorConvergence:
             
         """
         rel_l2_error_ave = (
-            np.linalg.norm(KIs - KI_exact, ord=2) /
-            (KI_exact * np.sqrt(len(KIs)))
+            np.linalg.norm(SIFs - SIF_exact, ord=2) /
+            (SIF_exact * np.sqrt(len(SIFs)))
         )
 
-        rel_error_per_tip = np.abs(KIs - KI_exact) / KI_exact
+        rel_error_per_tip = np.abs(SIFs - SIF_exact) / SIF_exact
 
         return rel_l2_error_ave, rel_error_per_tip
     
@@ -397,7 +392,7 @@ class FEMComputeSifErrorConvergence:
         closer tip with given sampling locations for two symmetrical tips. 
 
         Parameters: 
-            sampling_points: the sampled group of cells near the tip. 
+            sampling_points: the sampled group of nodes near the tip.
 
         Returns: 
             u_jump: shape = (n_tips, n_steps)
@@ -429,7 +424,7 @@ class FEMComputeSifErrorConvergence:
         closer tip with given sampling locations for two symmetrical tips. 
 
         Parameters: 
-            sampling_points: the sampled group of cells near the tip. 
+            sampling_points: the sampled group of nodes near the tip.
 
         Returns: 
             u_jump: shape = (n_tips, n_steps)
@@ -460,11 +455,10 @@ class FEMComputeSifErrorConvergence:
         Get sampling indices of fracture nodes for both tips of one fracture. 
 
         Parameters: 
-            n_steps: the sampled group of cells near the tip.
-            num_frac: the number of fracture cells. 
+            n_steps: the sampled group of nodes near the tip.
 
         Returns: 
-            current_frac_cells: shape = (2, n_steps)
+            current_frac_nodes: shape = (2, len(n_steps))
                 sampling indices of fracture nodes for tips 1 and 2 of one fracture.
 
         Notes: 
@@ -525,11 +519,11 @@ class FEMComputeSifErrorConvergence:
         Parameters:
             u_jump_n: displacement jump of sampled nodes.
             r_n: radial distance to the tip of sampled nodes.
-            singularity_orders: singularity exponent, 0.5 by default.
+            singularity_orders: singularity exponent.
 
         Returns: 
-            KIs: SIF values for tips from FEM. 
-            KIs_n:  
+            KIs: SIF estimates for tips from FEM.
+            KIs_n: SIF estimates for sampled nodes from FEM.
         
         """
         KIs_n = (
@@ -555,11 +549,11 @@ class FEMComputeSifErrorConvergence:
         Parameters:
             u_jump_t: displacement jump of sampled nodes.
             r_t: radial distance to the tip of sampled nodes.
-            singularity_orders: singularity exponent, 0.5 by default.
+            singularity_orders: singularity exponent.
 
         Returns: 
-            KIIs: SIF values for tips from FEM. 
-            KIIs_n:  
+            KIIs: SIF estimates for tips from FEM. 
+            KIIs_t: SIF estimates for sampled nodes from FEM.
         
         """
         KIIs_t = (
@@ -598,7 +592,7 @@ class FEMComputeSifErrorConvergence:
         # The power function
         r_from_tip = C * (a ** (1 - alpha)) * (h ** alpha)
 
-        # convert distance to cell index
+        # convert distance to node index
         idx = int(np.round(r_from_tip / h * 2.0) - 1)
         # ensure index >= 0
         idx = max(idx, 0)

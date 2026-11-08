@@ -15,7 +15,6 @@ FEM code resources:
 """
 from __future__ import annotations
 
-import porepy as pp
 import numpy as np
 
 from mpsa_sneddon2d import ManuSneddonModel2d
@@ -130,7 +129,7 @@ class FemExactDirichletBCSneddon:
 
     def displacement_at_point(self, x: float, y: float) -> tuple[float, float]:
         """
-        Return analytical displacement (ux, uy) at a point (x, y).
+        Return semi-analytical displacement (ux, uy) at a point (x, y).
         """
         h = 2.0 * self.a / self.n
         center = np.array([self.length / 2.0, self.length / 2.0, 0.0])
@@ -166,6 +165,7 @@ class SneddonFem2dSolver:
 
         Parameters:
             params: dictionary of model parameters.
+            use_qpe: whether to use quarter-point elements (QPE) for fracture tips.
 
         """
         self.params = params
@@ -219,8 +219,7 @@ class SneddonFem2dSolver:
         """
         # nodes_mdg: node coordinates: np.array(shape = (n, 2), dtype = float)
         # elements_mdg: nodes from each triangle: np.array(shape = (n, 3), dtype = int)
-        # Note: frac_gap is the assumed distance between two fracture faces. It should be very small. 
-        # self.nodes_mdg, self.elements_mdg = mmfa.adjustmesh(self.grid2d, self.tip_face_centers, self.frac_gap)
+        # Note: frac_gap is not used here.
         self.nodes_mdg, self.elements_mdg, self.upper_frac_edges, self.lower_frac_edges = (
             FemMeshFromPorePy.split_fracture_nodes(
                 self.grid2d, 
@@ -252,11 +251,9 @@ class SneddonFem2dSolver:
         # Assemble matrices for the linear system: Ku=F
         # Assemble the right hand side
         # Get traction forces for nodes based on Neumann traction on edges
-        # F = mmfa.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
         F = FemMeshFromPorePy.loadsegment(self.nodes_p6, NeuDof=NeuDof, NeuVal=NeuVal)
         print("Pass loadsegment\n")
         # Plane strain: constitutive law in 2D
-        # σ​=2·μe​+λ·​trace(e)·I: e=[exx, eyy, exy].T
         D = np.array([
             [self.lam + 2.0*self.mu, self.lam,               0.0],
             [self.lam,               self.lam + 2.0*self.mu, 0.0],
@@ -267,11 +264,9 @@ class SneddonFem2dSolver:
             self.elements_quarter = []   # No quarter-point elements (QPE) if not using QPE.
 
         # Assemble the left hand side
-        # K = mmfa.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
         K = FemMeshFromPorePy.stiffness(self.nodes_p6, self.elements_t6, D, self.elements_quarter)
         print("Pass stiffness\n")
 
-        # self.U = mmfa.linearsolver(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])  # (1, 2N)
         self.U = FemMeshFromPorePy.linearsolverII(K, F, dirdof.astype(int), dirval.astype(float), sdof=2*self.nodes_p6.shape[0])
         print("Pass linearsolver\n")
 
@@ -286,8 +281,8 @@ class SneddonFem2dSolver:
         The coordinates of Tip 1 and Tip 2 are 0.0 and 2a, respectively.  
 
         Returns: 
-            x_coords: shape = (n, ),
-                x coordinates of fracture surface nodes from small to large values.            
+            s_coords: shape = (n, ),
+                local coordinates of fracture surface nodes from small to large values.            
             u_jump_normal: shape = (n, ),
                 normal displacement jump along the fracture.
             u_jump_tangential: shape = (n, ),
@@ -311,13 +306,8 @@ class SneddonFem2dSolver:
         upper_frac_nodes = upper_frac_nodes[idx]
         lower_frac_nodes = lower_frac_nodes[idx]
         s_coords = s_coords[idx]
-
-        # print("tip_face_centers:\n", self.tip_face_centers)
-        # print("t =", t)
-        # print("s_tip =", s_tip)
-        # print("chosen tip0 =", tip0)
         
-        uy = self.U[1::2]  
+        uy = self.U[1::2]
         ux = self.U[0::2]
         u_upper = np.column_stack([ux[upper_frac_nodes], uy[upper_frac_nodes]])
         u_lower = np.column_stack([ux[lower_frac_nodes], uy[lower_frac_nodes]])
@@ -369,13 +359,15 @@ class SneddonFem2dSolver:
         
         return dirdof, dirval
 
-    def Neumann_bc_fracture(self) -> tuple[np.ndarray, np.ndarray]:
+    def Neumann_bc_fracture(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Set up types and values of Neumann boundary conditions for internal boundaries (fracture surfaces).
 
         Returns: 
             NeuDof: three node indices of edges corresponding to traction.           
             NeuVal: values of traction corresponding to edges.
+            upper_frac_nodes: indices of nodes on the upper fracture surface.
+            lower_frac_nodes: indices of nodes on the lower fracture surface.
         
         Notes:
             Tip 1 does not mean the left tip! It is determined by the order of tip_face_centers from the mesh. 
@@ -403,7 +395,6 @@ class SneddonFem2dSolver:
             if key not in midnodes_edges:
                 continue
             m01 = midnodes_edges[key]
-            # tr = np.array([0.0, +self.p0], dtype=float)
             tr_upper = +self.p0 * n
 
             NeuDof.append([n0, m01, n1])
@@ -415,7 +406,6 @@ class SneddonFem2dSolver:
             if key not in midnodes_edges:
                 continue
             m01 = midnodes_edges[key]
-            # tr = np.array([0.0, -self.p0], dtype=float)
             tr_lower = -self.p0 * n
 
             NeuDof.append([n0, m01, n1])
@@ -424,8 +414,6 @@ class SneddonFem2dSolver:
       
         NeuDof = np.array(NeuDof, dtype=int)
         NeuVal = np.array(NeuVal, dtype=float)
-        # upper_frac_nodes = np.unique(np.array(NeuDof_upper, dtype=int).ravel())
-        # lower_frac_nodes = np.unique(np.array(NeuDof_lower, dtype=int).ravel())
         self.upper_frac_edge_dofs = np.array(NeuDof_upper, dtype=int)
         self.lower_frac_edge_dofs = np.array(NeuDof_lower, dtype=int)
 

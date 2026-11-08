@@ -17,23 +17,22 @@ class FemMeshFromPorePy:
         Split the nodes on the fracture surfaces into upper and lower parts. 
         The tip nodes are not included in both upper and lower parts. 
 
-        This method is modified from def adjustmesh(g, tips, gap): in Dang et al. (2022)
+        This method is modified from def adjustmesh(g, tips, gap) in Dang et al. (2022).
 
         Parameters: 
-        g : 2d grid dictionary
-            g = gb.grids_of_dimension(2)[0]
-        tips : np.array(shape = (n, 2), dtype = float)
-            each row is coordiante of each tip.
-        gap : float
-            gap between fractures' faces.
+            grid2d: 2d PorePy grid.
+            tip_face_centers: np.array(shape = (n, 2), dtype = float)
+                each row is the coordinate of each tip (not used here).
+            frac_gap: gap between fractures' faces (not used here).
+            theta_rad: fracture orientation in radian.
 
         Returns: 
-        nodes_coords : np.array(shape = (n, 2), dtype = float)
-            each row is coordiante of each node.
-        elements : np.array(shape = (m, 3), dtype = float)
-            each row is index of each cell.
-        upper_frac_edges: node indices on the upper fracture surface.
-        lower_frac_edges: node indices on the lower fracture surface.
+            nodes_coords: np.array(shape = (n, 2), dtype = float)
+                each row is coordiante of each node.
+            elements: np.array(shape = (m, 3), dtype = int)
+                each row is the node indices of each cell.
+            upper_frac_edges: node indices on the upper fracture surface.
+            lower_frac_edges: node indices on the lower fracture surface.
         """
         nodes_coords = grid2d.nodes[[0, 1], :].T.copy()
         elements = grid2d.cell_nodes().indices.reshape((3, grid2d.num_cells), order='F').T
@@ -58,24 +57,11 @@ class FemMeshFromPorePy:
         for i in frac_faces:
             nodes = face_ind[i] 
             n0, n1 = nodes
-            # cells = np.intersect1d(
-            #     np.where(elements == nodes[0])[0],
-            #     np.where(elements == nodes[1])[0]
-            # )
             cells = edge_to_cells[(min(n0, n1), max(n0, n1))]
             
             # Note: there is only one cell that has both nodes of the fracture face as its vertices.
             cell = cells[0]
-
-            # third_node = np.setdiff1d(elements[cell], nodes)[0]
             tri = elements[cell]
-
-            # if tri[0] != n0 and tri[0] != n1:
-            #     third_node = tri[0]
-            # elif tri[1] != n0 and tri[1] != n1:
-            #     third_node = tri[1]
-            # else:
-            #     third_node = tri[2]
             third_node = tri[(tri != n0) & (tri != n1)][0]
 
             A, B = nodes_coords[nodes]
@@ -85,8 +71,6 @@ class FemMeshFromPorePy:
             AM = M - A
             proj = A + np.dot(AM, AB) / np.dot(AB, AB) * AB
             
-            # Here we only consider the fracture orientation from 0 to 90 degree. 
-            # For other orientations, the sign of the normal vector may need to be carefully determined.
             # According to the current definition of the normal vector, the upper face is on the left-hand 
             # side of the fracture and the lower face is on the right-hand side of the fracture.
             norm_on_frac_face = M - proj
@@ -103,9 +87,6 @@ class FemMeshFromPorePy:
             for n in nodes:
                 if n not in node_side:
                     node_side[n] = side
-
-        # for n, side in node_side.items():
-        #     nodes_coords[n] = nodes_coords[n] + side * n_vec * frac_gap / 2
 
         upper_frac_edges = np.array(upper_frac_edges, dtype=int)
         lower_frac_edges = np.array(lower_frac_edges, dtype=int)
@@ -164,18 +145,6 @@ class FemMeshFromPorePy:
                 D = material
             else:
                 D = material[e]
-
-            # # Use a local copy to avoid modifying input t6 in-place
-            # tri = t6[e, :].copy()
-            # X = p6[tri, 0]
-            # Y = p6[tri, 1]
-
-            # # Orientation check for node ordering in the element. 
-            # if (X[1] - X[0]) * (Y[-1] - Y[0]) - (X[-1] - X[0]) * (Y[1] - Y[0]) < 0:
-            #     indinv = tri[::-1]
-            #     tri[1:] = indinv[:-1]
-            #     X = p6[tri, 0]
-            #     Y = p6[tri, 1]
 
             tri = t6[e, :]
             X = p6[tri, 0]
@@ -275,10 +244,10 @@ class FemMeshFromPorePy:
         return U[:sdof]
     
     def linearsolverII(
-            K: sps.spmatrix, 
-            F: np.ndarray, 
-            udof:np.ndarray, 
-            uval:np.ndarray, 
+            K: sps.spmatrix,
+            F: np.ndarray,
+            udof: np.ndarray,
+            uval: np.ndarray,
             sdof:int
     ) -> np.ndarray:
         """
@@ -329,7 +298,6 @@ class FemMeshFromPorePy:
             return F
 
         # Three-point Gauss rule on [-1, 1].
-        # Two-point is exact for straight quarter-point edges, but three-point is safer.
         gauss_xi = np.array([
             -np.sqrt(3.0 / 5.0),
             0.0,
