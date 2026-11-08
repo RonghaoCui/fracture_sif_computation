@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/solutions/mpsa/sol/wm/"
+save_dir = "figures/solutions/mpsa/wm/"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.3
@@ -29,6 +29,7 @@ poi = 0.25
 shear_modulus = 1.0
 lam = 2 * shear_modulus * poi / (1 - 2 * poi)
 
+theta_deg = 45
 
 params = {
     "prepare_simulation": True,
@@ -37,7 +38,7 @@ params = {
     "domain_size": 1.0,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 45),
+    "theta_rad": math.radians(90 - theta_deg),
     "num_bem_segments": 1000,
     "poi": poi,
     "error_exclusion_zone_fracture_tips": 0.0,
@@ -80,7 +81,7 @@ pp.plot_grid(
 )
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_grids_wm_45d.tiff"),
+    os.path.join(save_dir, f"MPSA_grids_wm_{theta_deg:g}d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -110,7 +111,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_uy_map_wm_45d.tiff"),
+    os.path.join(save_dir, f"MPSA_uy_map_wm_{theta_deg:g}d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -139,7 +140,7 @@ for g, data in model.mdg.subdomains(return_data=True):
 
 plt.tight_layout()
 plt.savefig(
-    os.path.join(save_dir, "MPSA_ux_map_wm_45d.tiff"),
+    os.path.join(save_dir, f"MPSA_ux_map_wm_{theta_deg:g}d.tiff"),
     format="tiff",
     dpi=300,
     bbox_inches="tight",
@@ -150,7 +151,6 @@ plt.close()
 # For displacement along the fracture
 # Get the 1D fracture grid (assumes only one fracture)
 fracture_grid = model.mdg.subdomains(dim=1)[0]
-# x_coords = fracture_grid.cell_centers[0]  # X coordinate of each fracture cell center
 theta = params["theta_rad"]
 t_vec_frac = np.array([np.sin(theta), np.cos(theta)])  # Tangential vector along the fracture
 coords = fracture_grid.cell_centers[:2, :]
@@ -210,7 +210,7 @@ ax4.legend()
 ax4.grid(True, linestyle="--", alpha=0.5)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "MPSA_un_wm_45d.tiff"), 
+    os.path.join(save_dir, f"MPSA_un_wm_{theta_deg:g}d.tiff"),
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
@@ -249,7 +249,7 @@ ax5.legend()
 ax5.grid(True, linestyle="--", alpha=0.5)
 fig5.tight_layout()
 fig5.savefig(
-    os.path.join(save_dir, "MPSA_ut_wm_45d.tiff"), 
+    os.path.join(save_dir, f"MPSA_ut_wm_{theta_deg:g}d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 

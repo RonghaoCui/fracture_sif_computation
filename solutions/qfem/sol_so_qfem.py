@@ -25,13 +25,15 @@ import matplotlib.tri as mtri
 import matplotlib as mpl
 from matplotlib.ticker import ScalarFormatter
 import os
-save_dir = "figures/solutions/qfem/sol/so/"
+save_dir = "figures/solutions/qfem/so/"
 os.makedirs(save_dir, exist_ok=True)
 
 a = 0.30
 poi = 0.25
 shear_modulus = 1.0
 lam = 2 * shear_modulus * poi / (1 - 2 * poi)
+
+theta_deg = 45
 
 params = {
     "prepare_simulation": True,
@@ -42,7 +44,7 @@ params = {
     "poi": poi,
     "meshing_arguments": {"cell_size": 0.05},
     "grid_type": "simplex",
-    "theta_rad": math.radians(90 - 45),
+    "theta_rad": math.radians(90 - theta_deg),
     "num_bem_segments": 1000,
     "error_exclusion_zone_fracture_tips": 0.0,
 }
@@ -78,30 +80,21 @@ ax1.xaxis.set_major_formatter(formatter)
 ax1.yaxis.set_major_formatter(formatter)
 ax1.set_xlabel("$x$")
 ax1.set_ylabel("$y$")
-ax1.set_title("FEM mesh with the central fracture (T3)")
+ax1.set_title("FEM mesh: so")
 ax1.set_xlim(0.0, 1.0)
 ax1.set_ylim(0.0, 1.0)
-# ax1.set_xticks(np.arange(0.20, 0.8, 0.1))
-# ax1.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
-# ax1.legend()
-# ax1.grid(True, linestyle="--", alpha=0.5)
 fig1.tight_layout()
 fig1.savefig(
-    os.path.join(save_dir, "QFEM_grids_so_45d.tiff"), 
+    os.path.join(save_dir, f"QFEM_grids_so_{theta_deg:g}d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
 plt.close(fig1)
 
 # Only for the horizontal fracture
 x_coords, u_jump_normal, u_jump_tangential = fem_model.extract_displacement_jump()
-
-# print("x_coords: ", x_coords.shape)
-# print("u_jump_normal: ", u_jump_normal.shape)
-# print("u_jump_tangential: ", u_jump_tangential.shape)
 
 # Get analytical solutions
 eta_exact = np.abs(x_coords - fem_model.a)
@@ -139,13 +132,12 @@ ax2.legend()
 ax2.grid(True, linestyle="--", alpha=0.5)
 fig2.tight_layout()
 fig2.savefig(
-    os.path.join(save_dir, "QFEM_un_so_45d.tiff"), 
+    os.path.join(save_dir, f"QFEM_un_so_{theta_deg:g}d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-plt.show()
 plt.close(fig2)
 
 ux = fem_model.U[0::2]
@@ -190,13 +182,12 @@ ax3.set_xlim(0.0, 1.0)
 ax3.set_ylim(0.0, 1.0)
 fig3.tight_layout()
 fig3.savefig(
-    os.path.join(save_dir, "QFEM_uy_map_so_45d.tiff"), 
+    os.path.join(save_dir, f"QFEM_uy_map_so_{theta_deg:g}d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-# plt.show()
 plt.close(fig3)
 
 fig4, ax4 = plt.subplots(figsize=(3.5, 3.0))   # inches
@@ -217,12 +208,11 @@ ax4.set_xlim(0.0, 1.0)
 ax4.set_ylim(0.0, 1.0)
 fig4.tight_layout()
 fig4.savefig(
-    os.path.join(save_dir, "QFEM_ux_map_so_45d.tiff"), 
+    os.path.join(save_dir, f"QFEM_ux_map_so_{theta_deg:g}d.tiff"), 
     format="tiff", 
     dpi=300, 
     bbox_inches="tight", 
     pil_kwargs={"compression": "tiff_lzw"}
 )
-# plt.show()
 plt.close(fig4)
 
