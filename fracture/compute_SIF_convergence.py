@@ -34,7 +34,7 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         Initialize the SIF convergence computation class.
 
         Parameters: 
-            model : object
+            model: object
                 A PorePy-based model that contains the mixed-dimensional grid (mdg),
                 displacement results, projection operators, and a ``params`` dictionary
         """
@@ -48,18 +48,17 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
         The single-point option with a single-scale sampling fracture cell.
 
         Parameters: 
-            steps_pair (tuple[int, int]): 
-            Two integers ``(k0, k1)`` specifying the
-                number of fracture cells away from the tip to sampling locations.
+            steps_pair: Two integers ``(k0, k1)`` specifying the number of fracture
+                cells away from the tip to sampling locations, shape = tuple[int, int].
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips .
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that steps_pair[1] is farther from the fracture tip 
-            than steps_pair[0]
+            than steps_pair[0].
 
         """
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
@@ -84,23 +83,18 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that steps_pair[1] is farther from the fracture tip 
-            than steps_pair[0]
+            than steps_pair[0].
 
         """
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
         u_jump_n_two, r_n_two = self.extract_sampling_normal_jump(sampling_pair[0])
-
-        # print("Displacement jump n value 1: ", u_jump_n_one)
-        # print("Displacement jump n value 2: ", u_jump_n_two)
-        # print("Displacement jump n r 1: ", r_n_one)
-        # print("Displacement jump n r 2: ", r_n_two)
         
-        return self.TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
+        return self.TwoPoints_SIF_KI_errors(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
     
     def two_points_single_scale_tangential(
         self, sampling_pair: list
@@ -116,23 +110,18 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips .
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that steps_pair[1] is farther from the fracture tip 
-            than steps_pair[0]
+            than steps_pair[0].
 
         """
         u_jump_t_one, r_t_one = self.extract_sampling_tangential_jump(sampling_pair[1])
         u_jump_t_two, r_t_two = self.extract_sampling_tangential_jump(sampling_pair[0])
-
-        # print("Displacement jump t value 1: ", u_jump_t_one)
-        # print("Displacement jump t value 2: ", u_jump_t_two)
-        # print("Displacement jump t r 1: ", r_t_one)
-        # print("Displacement jump t r 2: ", r_t_two)
         
-        return self.TwoPoints_SIF_KII_errors(u_jump_t_one, r_t_one,u_jump_t_two, r_t_two)
+        return self.TwoPoints_SIF_KII_errors(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two)
     
     def multipoints_single_scale_normal(
         self, sampled_cell: int, num_more_cells: int
@@ -147,17 +136,16 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips .
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that steps_pair[1] is farther from the fracture tip 
-            than steps_pair[0]
+            than steps_pair[0].
 
         """
         sampled_cells = np.arange(sampled_cell - num_more_cells, sampled_cell + num_more_cells + 1)
-        # sampled_cells = np.arange(sampled_cell, sampled_cell + num_more_cells + 1)
-        # sampled_cells = sampled_cells[(sampled_cells <= i_mid) & (sampled_cells >= k_min)]
+
         num_tips = 2
         u_jump_n = np.full((len(sampled_cells), num_tips), np.nan)
         r_n = np.full((len(sampled_cells), num_tips), np.nan)
@@ -165,9 +153,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             u_jump_value, r_n_value = self.extract_sampling_normal_jump(cell_id)
             u_jump_n[i, :] = u_jump_value
             r_n[i, :] = r_n_value
-
-        print("Displacement jump n value at the given sampled cell: ", u_jump_n[0, :])
-        print("Displacement jump n at the given sampled cell: ", r_n[0, :])
         
         return self.multipoints_SIF_KI_errors(u_jump_n, r_n)
     
@@ -189,8 +174,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that ``params["sampling"]`` uses the 
@@ -206,11 +191,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump()
         else: 
             raise ValueError("Sampling mode 'refinement' should be required. ")
-
-        print("Displacement jump n value 1: ", u_jump_n_one)
-        print("Displacement jump n value 2: ", u_jump_n_two)
-        print("Displacement jump n r 1: ", r_n_one)
-        print("Displacement jump n r 2: ", r_n_two)
         
         return self.SinglePoint_SIF_KI_errors(u_jump_n_one, r_n_one,u_jump_n_two, r_n_two)
 
@@ -285,8 +265,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
         """
         SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
@@ -326,8 +306,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
         """
         SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
@@ -336,7 +316,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             singularity_orders = self.singularity_order
 
         KIs = SIFValue.KI_from_two_points(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two, singularity_orders)
-        # print("KI at tips:", KIs)
         
         sigma_inf = self.params.get("sigma_inf", None)
 
@@ -367,8 +346,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
         """
         SIFValue = ComputeSifValue(self.params)
         if self.singularity_order is None:
@@ -377,7 +356,6 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
             singularity_orders = self.singularity_order
 
         KIIs = SIFValue.KII_from_two_points(u_jump_t_one, r_t_one, u_jump_t_two, r_t_two, singularity_orders)
-        # print("KII at tips:", KIIs)
 
         KII_exact =  SIFValue.calculate_exact_SIF_KII_westergaard()
 
@@ -398,8 +376,8 @@ class ComputeSifErrorConvergence(ComputeSingularityErrorForModel):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
         """
         SIFValue = ComputeSifValue(self.params)
         if self.singularity_order != 0.5:

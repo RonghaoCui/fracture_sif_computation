@@ -49,8 +49,8 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips .
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips .
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that ``params["sampling"]`` uses the
@@ -87,8 +87,8 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative absolute error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative absolute error array from two tips.
 
         Notes:
             This method assumes that ``params["sampling"]`` uses the 
@@ -96,11 +96,6 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
         """
         u_jump_n_one, r_n_one = self.extract_sampling_normal_jump(sampling_pair[1])
         u_jump_n_two, r_n_two = jumpmodel_fine.extract_sampling_normal_jump(sampling_pair[0])
-
-        print("Displacement jump n value 1: ", u_jump_n_one)
-        print("Displacement jump n value 2: ", u_jump_n_two)
-        print("Displacement jump n r 1: ", r_n_one)
-        print("Displacement jump n r 2: ", r_n_two)
         
         return self.calculate_singularity_convergence(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
     
@@ -122,8 +117,8 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
 
         Returns:
             Tuple[float, np.ndarray]:
-                ``rel_l2_error_ave``: Relative L2 error averaged by two tips.
-                ``rel_error_per_tip``: Relative error array from two tips.
+                rel_l2_error_ave: Relative L2 error averaged by two tips.
+                rel_error_per_tip: Relative error array from two tips.
         """
         singularity_orders = self.estimated_singularity(u_jump_n_one, r_n_one, u_jump_n_two, r_n_two)
         singularity_order_ave = np.mean(singularity_orders)
@@ -140,7 +135,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
             (exact_singularity_order * np.sqrt(len(singularity_orders)))
         )
 
-        ####### error for each tips
+        # error for each tips
         # Absolute error per tip
         abs_l2_error_tip = np.abs(singularity_orders - exact_singularity_order)
         # Relative error per tip
@@ -166,7 +161,7 @@ class ComputeSingularityErrorForModel(FractureDisplacementJump):
 
         Returns:
             np.ndarray:
-                ``singularity_orders``: computed singularity orders for two tips.
+                singularity_orders: computed singularity orders for two tips.
         """
         # Get log10
         log_u_jump_one = np.log10(np.abs(u_jump_one))
