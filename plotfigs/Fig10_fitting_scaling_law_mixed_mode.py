@@ -113,7 +113,7 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
         "o",
         color="tab:orange",
         markersize=3,
-        label="Mean optimal $r/a$",
+        label="Mean of per-angle optimal $r/a$",
     )[0]
 
     h2 = ax.loglog(
@@ -122,7 +122,7 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
         "--",
         color="tab:orange",
         linewidth=1.0,
-        label="Fitting (mean optimal $r/a$)",
+        label="Fitting by orange points",
     )[0]
 
     h3 = ax.fill_betweenx(
@@ -132,7 +132,7 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
         color="tab:orange",
         alpha=0.35,
         linewidth=0.0,
-        label=r"$\pm 1$ STD of optimal $r/a$",
+        label=r"$\pm 1$ STD of per-angle optimal $r/a$",
     )
 
     h4 = ax.loglog(
@@ -141,7 +141,7 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
         "o",
         color="tab:blue",
         markersize=3,
-        label="Data (averaged map)",
+        label="Optimal $r/a$ from averaged map",
     )[0]
 
     h5 = ax.loglog(
@@ -150,7 +150,7 @@ def plot_case(ax, diag_data, diag_data_theta, number: str):
         "--",
         color="tab:blue",
         linewidth=1.0,
-        label="Fitting (averaged map)",
+        label="Fitting by blue points",
     )[0]
 
     ax.set_xlabel(r"$r/a$")
