@@ -7,7 +7,7 @@ from fems import mmfa
 
 
 class QuadratureIntegration:
-    """Quadrature-based integration utilities for self-convergence analysis."""
+    """Quadrature-based integration utilities for global convergence analysis."""
 
     @staticmethod
     def triangle_area(xy: np.ndarray) -> float:

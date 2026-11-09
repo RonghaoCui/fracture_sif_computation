@@ -35,7 +35,7 @@ mpl.rcParams.update({
 
 
 def read_case(base_path: str, method_name: str):
-    """Read four self-convergence cases."""
+    """Read four global convergence cases."""
     data = {}
 
     for case in ["so", "wo", "ws", "wm"]:
