@@ -1,6 +1,6 @@
-"""Figure 11: The convergence behavior of the scaling law for mode-I
-SIF estimates in panels (a)-(c) and for mode-II SIF estimates in
-panels (d)-(e) across different discretization methods. Panels (a),
+"""Figure 11: The convergence behavior of mode-I SIF estimates in
+panels (a)-(c) and of mode-II SIF estimates in panels (d)-(e) across
+different discretization methods using scaling-law sampling. Panels (a),
 (b), and (d) are Sneddon's problem, Westergaard's mode-I problem,
 and Westergaard's mode-II problem, respectively. Panels (c) and (e)
 are both Westergaard's mixed-mode problem.

@@ -1,7 +1,7 @@
 """Figure 10: The fitting performance of the scaling law relating
 the optimal sampling distance to the normalized mesh size for QFEM,
 QFEM-QPE, and MPSA in Westergaard's mixed-mode problem. Panels (a)-(c)
-and panels (d)-(f) show SIF relative errors for mode I and mode II,
+and panels (d)-(f) show fitting results of SIFs for mode I and mode II,
 respectively. Columns correspond to QFEM, QFEM-QPE, and MPSA, respectively.
 """
 from __future__ import annotations

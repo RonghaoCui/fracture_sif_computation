@@ -1,9 +1,9 @@
 """Figure 9: The fitting performance of the scaling law relating
 the optimal sampling distance to the normalized mesh size for QFEM,
 QFEM-QPE, and MPSA in pure-mode benchmark problems. Panels (a)-(c)
-and panels (d)-(f) show relative errors for the mode-I SIF in
+and panels (d)-(f) show fitting results of the mode-I SIF in
 Sneddon's problem and Westergaard's mode-I problem, respectively.
-Panels (g)-(i) show relative errors for the mode-II SIF in Westergaard's
+Panels (g)-(i) show fitting results of the mode-II SIF in Westergaard's
 mode-II problem. Columns correspond to QFEM, QFEM-QPE, and MPSA, respectively.
 """
 from __future__ import annotations

@@ -10,7 +10,6 @@ import os
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.collections import PolyCollection
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.tri as mtri
 
@@ -57,7 +56,7 @@ u_matrix = u.reshape((2, matrix_grid.num_cells), order="F")
 
 
 def cell_polygons(grid: pp.Grid) -> list[np.ndarray]:
-    """Return the physical vertices of every matrix cell in plotting order."""
+    """Return the physical vertices of every matrix cell."""
     cell_nodes = grid.cell_nodes().tocsc()
     polygons = []
     for cell in range(grid.num_cells):
@@ -171,8 +170,7 @@ limit = max(
 )
 
 def plot_displacement_map(ax, values: np.ndarray, component: str):
-    """Plot a full-domain cell field using the coauthor-tip-field styling."""
-    # limit = float(np.max(np.abs(values)))
+    """Plot one displacement component over the matrix domain."""
     collection = ax.tripcolor(
         triangulation,
         facecolors=np.asarray(values),
@@ -237,7 +235,6 @@ def plot_jump(ax, analytical, numerical, ylabel: str):
     ax.set_xticks(np.arange(0.0, 0.61, 0.2))
     ax.set_yticks(np.arange(1.0e-5, 5.01e-5, 1.0e-5))
     ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
-    # ax.legend(loc="upper left", frameon=False)
     ax.set_box_aspect(0.85)
 
 

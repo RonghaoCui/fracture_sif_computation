@@ -1,11 +1,10 @@
-"""Figure 5: Convergence behavior of the nearest-tip sampling
-strategy for SIF estimations across different benchmark cases and
-discretization methods. Panels (a)-(c) show the relative errors of the
-mode-I SIF for Sneddon's problem, Westergaard's mode-I problem, and
-Westergaard's mixed-mode problem, respectively. Panels (d)-(e) show
-the relative errors of the mode-II SIF for Westergaard's mode-II problem
-and Westergaard's mixed-mode problem, respectively. Solid lines denote
-relative errors averaged over all fracture orientations, while shaded
+"""Figure 5: Convergence behavior of SIF estimates using the nearest-tip
+sampling strategy across different benchmark cases and discretization methods.
+Panels (a)-(c) show the relative errors of the mode-I SIF for Sneddon's problem,
+Westergaard's mode-I problem, and Westergaard's mixed-mode problem, respectively.
+Panels (d)-(e) show the relative errors of the mode-II SIF for Westergaard's
+mode-II problem and Westergaard's mixed-mode problem, respectively. Solid lines
+denote relative errors averaged over all fracture orientations, while shaded
 regions show ±1 standard deviation.
 """
 from __future__ import annotations
