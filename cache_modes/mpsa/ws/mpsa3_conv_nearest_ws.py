@@ -88,10 +88,10 @@ for si, theta_rad in enumerate(theta_rads):
     all_err_per_tip.append(np.vstack(error_per_tip_set))  # shape: (n_h, 2)
     all_dofs.append(np.array(num_dofs_set))               # shape: (n_h,)
 
-err_ave_mat = np.vstack(all_err_ave)                          # (n_seed, n_h)
-err_tip1_mat = np.vstack([E[:, 0] for E in all_err_per_tip])  # (n_seed, n_h)
-err_tip2_mat = np.vstack([E[:, 1] for E in all_err_per_tip])  # (n_seed, n_h)
-dofs_mat = np.vstack(all_dofs)                                # (n_seed, n_h)
+err_ave_mat = np.vstack(all_err_ave)                          # (n_angles, n_h)
+err_tip1_mat = np.vstack([E[:, 0] for E in all_err_per_tip])  # (n_angles, n_h)
+err_tip2_mat = np.vstack([E[:, 1] for E in all_err_per_tip])  # (n_angles, n_h)
+dofs_mat = np.vstack(all_dofs)                                # (n_angles, n_h)
 
 mean_err_ave = err_ave_mat.mean(axis=0)
 std_err_ave  = err_ave_mat.std(axis=0)

@@ -79,10 +79,6 @@ for i, h in enumerate(cell_sizes):
             print("Number of matrix cells:", g.num_cells)
             num_dofs += g.num_cells
 
-        # for g in model.mdg.interfaces():
-        #     print("Number of interface cells:", g.num_cells)
-        #     num_dofs += g.num_cells
-
         model_sol = FractureDisplacementJump(model=model)
 
         cache = {

@@ -39,7 +39,6 @@ cell_sizes = [
     0.1, 0.075, 0.05, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625, 0.0046875, 0.003125,
 ]
-
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
@@ -252,13 +251,13 @@ best_theta_results = []
 for theta_rad in theta_rads:
     df_theta = diag_data_theta[diag_data_theta["theta_rad"] == theta_rad]
 
-    # Get the minimum mean error with correponding sqrt_dof and r for each angle.
+    # Get the minimum mean error with correponding h/a and r/a for each angle.
     idx_theta = df_theta.groupby("norm_h")["error"].idxmin()
     df_best_theta = df_theta.loc[idx_theta].reset_index(drop=True)
 
     best_theta_results.append(df_best_theta)
 
-    # Get the fitting line for the optimal sqrt_dof and r for each angle.
+    # Get the fitting line for the optimal h/a and r/a for each angle.
     x_theta = np.log10(df_best_theta["norm_h"].to_numpy())
     y_theta = np.log10(df_best_theta["r"].to_numpy())
 
@@ -312,11 +311,11 @@ C_band = 10 ** logC_band
 print("The alpha value using mean of optimal r/a:", alpha_band)
 print("The C value using mean of optimal r/a:", C_band)
 
-# Get the minimum mean error with correponding sqrt_dof and r
+# Get the minimum mean error with correponding h/a and r/a
 idx = df_mean.groupby("norm_h")["mean_error"].idxmin()
 df_best = df_mean.loc[idx].reset_index(drop=True)
 
-# Get the fitting line for the optimal sqrt_dof and r
+# Get the fitting line for the optimal h/a and r/a
 x = np.log10(df_best["norm_h"].to_numpy())
 y = np.log10(df_best["r"].to_numpy())
 
