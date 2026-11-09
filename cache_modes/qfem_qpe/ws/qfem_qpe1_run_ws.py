@@ -45,8 +45,7 @@ use_qpe = True
 fem_model = FemWestergaardShearMode2d(params, use_qpe)
 fem_model.model_setup_and_sol()
 
-# Save cache models for different mesh sizes and seeds.
-# cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
+# Save cache models for different mesh sizes and fracture angles.
 cell_sizes = [
     0.1, 0.075, 0.055, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625,

@@ -49,8 +49,7 @@ pp.run_time_dependent_model(model)
 
 print("=== Initial model run completed. ===")
 
-# Save cache models for different mesh sizes and seeds.
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# Save cache models for different mesh sizes and fracture angles.
 cell_sizes = [
     0.1, 0.075, 0.074, 0.05, 0.0375, 0.037, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625, 0.0046875, 0.003125,
@@ -84,10 +83,6 @@ for i, h in enumerate(cell_sizes):
         for g in model.mdg.subdomains(dim=2):
             print("Number of matrix cells:", g.num_cells)
             num_dofs += g.num_cells
-
-        # for g in model.mdg.interfaces():
-        #     print("Number of interface cells:", g.num_cells)
-        #     num_dofs += g.num_cells
 
         model_sol = FractureDisplacementJump(model=model)
 

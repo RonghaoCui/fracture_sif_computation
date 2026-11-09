@@ -31,12 +31,8 @@ os.makedirs(save_fig, exist_ok=True)
 save_csv = "data/sifconv/cache_modes/qfem_qpe/wo/conv"
 os.makedirs(save_csv, exist_ok=True)
 
-#  Define mesh sizes to convergence analysis.
+#  Define mesh sizes and fracture angles for convergence analysis.
 cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
-# cell_sizes = [
-#     0.1, 0.075, 0.055, 0.0375, 0.025, 
-#     0.01875, 0.0125, 0.009375, 0.00625,
-# ]
 theta_rads = [
     0, 15, 30, 45, 60, 75, 
     90, 105, 120, 135, 150, 165,
@@ -146,22 +142,12 @@ ax.loglog(
     label="Reference slope=-1"
 )
 
-# ax.loglog(
-#     num_dofs_line, half_order_line,
-#     '--', color='tab:grey',
-#     linewidth=2.0,
-#     label="Reference slope=-0.5"
-# )
-
-# ax.set_xlabel("Number of fracture cells")
 ax.set_xlabel(r"$\sqrt{\mathrm{DOF}}$")
 ax.set_ylabel("Relative error")
 
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
 ax.yaxis.set_major_formatter(formatter)
-# ax.set_xlim(5.5, 220)
-# ax.set_ylim(0.0002, 1.0)
 ax.set_xlim(10, 700)
 ax.set_ylim(0.00002, 1.0)
 ax.xaxis.set_major_locator(LogLocator(base=10))

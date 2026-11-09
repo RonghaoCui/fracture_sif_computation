@@ -35,7 +35,6 @@ os.makedirs(save_csv, exist_ok=True)
 save_model = "data/sifconv/cache_modes/qfem/wm/models"
 os.makedirs(save_model, exist_ok=True)
 
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625]
 cell_sizes = [
     0.1, 0.075, 0.05, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625,
@@ -389,8 +388,6 @@ ax3.set_ylabel(r"$r/a$")
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
 ax3.yaxis.set_major_formatter(formatter)
-# ax3.set_xlim(10, 700)
-# ax3.set_ylim(0.0002, 1.0)
 ax3.set_xlim(0.008, 1.0)
 ax3.set_ylim(0.07, 1.0)
 ax3.xaxis.set_major_locator(LogLocator(base=10))

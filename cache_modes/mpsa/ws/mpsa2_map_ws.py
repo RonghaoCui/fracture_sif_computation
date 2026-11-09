@@ -36,7 +36,6 @@ save_model = "data/sifconv/cache_modes/mpsa/ws/models"
 os.makedirs(save_model, exist_ok=True)
 
 # Save cache models for different mesh sizes and fracture angles.
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
 cell_sizes = [
     0.1, 0.075, 0.05, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625, 0.0046875, 0.003125,
@@ -65,9 +64,6 @@ for i, h in enumerate(cell_sizes):
 
     compSIF = ComputeSifErrorConvergence(cache=cache)
 
-    # Number of fracture cells
-    # num_frac_cells = compSIF.get_number_of_fracture_cells() 
-    # print("Number of fracture cells:", num_frac_cells)
     # Normalized cell size
     norm_cellsize = (
         cache["params"]["meshing_arguments"]["cell_size"]
@@ -392,8 +388,6 @@ ax3.set_ylabel(r"$r/a$")
 formatter = ScalarFormatter(useMathText=True)
 formatter.set_powerlimits((0, 0))
 ax3.yaxis.set_major_formatter(formatter)
-# ax3.set_xlim(10, 700)
-# ax3.set_ylim(0.0002, 1.0)
 ax3.set_xlim(0.008, 1.0)
 ax3.set_ylim(0.07, 1.0)
 ax3.xaxis.set_major_locator(LogLocator(base=10))

@@ -35,7 +35,6 @@ os.makedirs(save_csv, exist_ok=True)
 save_model = "data/sifconv/cache_modes/qfem_qpe/ws/models"
 os.makedirs(save_model, exist_ok=True)
 
-# cell_sizes = [0.1, 0.055, 0.025, 0.0125, 0.00625]
 cell_sizes = [
     0.1, 0.075, 0.055, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625,

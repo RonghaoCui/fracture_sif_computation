@@ -44,8 +44,7 @@ pp.run_time_dependent_model(model)
 
 print("=== Initial model run completed. ===")
 
-# Save cache models for different mesh sizes and fracture orientations.
-# cell_sizes = [0.1, 0.05, 0.025, 0.0125, 0.00625, 0.003125]
+# Save cache models for different mesh sizes and fracture angles.
 cell_sizes = [
     0.1, 0.075, 0.05, 0.0375, 0.025, 
     0.01875, 0.0125, 0.009375, 0.00625, 0.0046875, 0.003125,
